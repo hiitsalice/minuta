@@ -306,31 +306,33 @@ void HomeActivity::render(RenderLock&&) {
                           recentBooks, selectorIndex, coverRendered, coverBufferStored, bufferRestored,
                           std::bind(&HomeActivity::storeCoverBuffer, this));
 
-  // Build menu items dynamically
-  std::vector<const char*> menuItems = {tr(STR_BROWSE_FILES), tr(STR_MENU_RECENT_BOOKS), tr(STR_FILE_TRANSFER),
-                                        tr(STR_SETTINGS_TITLE)};
-  std::vector<UIIcon> menuIcons = {Folder, Recent, Transfer, Settings};
+    if (SETTINGS.uiTheme != CrossPointSettings::UI_THEME::SOLUM &&
+      SETTINGS.uiTheme != CrossPointSettings::UI_THEME::QUARTUM) {
+    // Build menu items dynamically
+    std::vector<const char*> menuItems = {tr(STR_BROWSE_FILES), tr(STR_MENU_RECENT_BOOKS), tr(STR_FILE_TRANSFER),
+                                          tr(STR_SETTINGS_TITLE)};
+    std::vector<UIIcon> menuIcons = {Folder, Recent, Transfer, Settings};
 
-  if (hasOpdsServers) {
-    menuItems.insert(menuItems.begin() + 2, tr(STR_OPDS_BROWSER));
-    menuIcons.insert(menuIcons.begin() + 2, Library);
+    if (hasOpdsServers) {
+      menuItems.insert(menuItems.begin() + 2, tr(STR_OPDS_BROWSER));
+      menuIcons.insert(menuIcons.begin() + 2, Library);
+    }
+
+    if (metrics.homeContinueReadingInMenu && !recentBooks.empty()) {
+      menuItems.insert(menuItems.begin(), tr(STR_CONTINUE_READING));
+      menuIcons.insert(menuIcons.begin(), Book);
+    }
+
+    GUI.drawButtonMenu(
+        renderer,
+        Rect{0, metrics.homeTopPadding + metrics.homeCoverTileHeight + metrics.homeMenuTopOffset, pageWidth,
+             pageHeight - (metrics.headerHeight + metrics.homeTopPadding + metrics.verticalSpacing +
+                           metrics.homeMenuTopOffset + metrics.buttonHintsHeight)},
+        static_cast<int>(menuItems.size()),
+        metrics.homeContinueReadingInMenu ? selectorIndex : selectorIndex - recentBooks.size(),
+        [&menuItems](int index) { return std::string(menuItems[index]); },
+        [&menuIcons](int index) { return menuIcons[index]; });
   }
-
-  if (metrics.homeContinueReadingInMenu && !recentBooks.empty()) {
-    // Insert Continue Reading at the top if enabled in theme
-    menuItems.insert(menuItems.begin(), tr(STR_CONTINUE_READING));
-    menuIcons.insert(menuIcons.begin(), Book);
-  }
-
-  GUI.drawButtonMenu(
-      renderer,
-      Rect{0, metrics.homeTopPadding + metrics.homeCoverTileHeight + metrics.homeMenuTopOffset, pageWidth,
-           pageHeight - (metrics.headerHeight + metrics.homeTopPadding + metrics.verticalSpacing +
-                         metrics.homeMenuTopOffset + metrics.buttonHintsHeight)},
-      static_cast<int>(menuItems.size()),
-      metrics.homeContinueReadingInMenu ? selectorIndex : selectorIndex - recentBooks.size(),
-      [&menuItems](int index) { return std::string(menuItems[index]); },
-      [&menuIcons](int index) { return menuIcons[index]; });
 
   const auto labels = mappedInput.mapLabels(tr(STR_HOME_BROWSE), tr(STR_HOME_READ), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
