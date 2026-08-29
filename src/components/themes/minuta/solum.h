@@ -1,0 +1,25 @@
+#pragma once
+
+#include "components/themes/lyra/LyraTheme.h"
+
+class GfxRenderer;
+
+// Metrics for the 1-cover Minuta home screen: same look as Lyra everywhere
+// else, but the home screen shows one big cover instead of Lyra's list.
+namespace Minuta1CoverMetrics {
+constexpr ThemeMetrics values = [] {
+  ThemeMetrics v = LyraMetrics::values;
+  // Big single cover: tall tile, only 1 book shown on the home tile at a time.
+  v.homeCoverTileHeight = 460;
+  v.homeCoverHeight = 460;
+  v.homeRecentBooksCount = 1;
+  return v;
+}();
+}  // namespace Minuta1CoverMetrics
+
+class Minuta1CoverTheme : public LyraTheme {
+ public:
+  void drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
+                           const int selectorIndex, bool& coverRendered, bool& coverBufferStored,
+                           bool& bufferRestored, std::function<bool()> storeCoverBuffer) const override;
+};
