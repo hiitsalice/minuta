@@ -4,9 +4,9 @@
 
 class GfxRenderer;
 
-// Metrics for the 1-cover Minuta home screen: same look as Lyra everywhere
+// Metrics for the Solum (1-cover) home screen: same look as Lyra everywhere
 // else, but the home screen shows one big cover instead of Lyra's list.
-namespace Minuta1CoverMetrics {
+namespace SolumMetrics {
 constexpr ThemeMetrics values = [] {
   ThemeMetrics v = LyraMetrics::values;
   // Big single cover: tall tile, only 1 book shown on the home tile at a time.
@@ -15,9 +15,9 @@ constexpr ThemeMetrics values = [] {
   v.homeRecentBooksCount = 1;
   return v;
 }();
-}  // namespace Minuta1CoverMetrics
+}  // namespace SolumMetrics
 
-class Minuta1CoverTheme : public LyraTheme {
+class SolumTheme : public LyraTheme {
  public:
   void drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
                            const int selectorIndex, bool& coverRendered, bool& coverBufferStored,
