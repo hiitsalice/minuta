@@ -15,6 +15,7 @@
 #include "components/themes/lyra/LyraTheme.h"
 #include "components/themes/roundedraff/RoundedRaffTheme.h"
 #include "components/themes/minuta/solum.h"
+#include "components/themes/minuta/quartum.h"
 
 UITheme UITheme::instance;
 
@@ -51,6 +52,7 @@ void UITheme::setTheme(CrossPointSettings::UI_THEME type) {
       currentMetrics = &Lyra3CoversMetrics::values;
       break;
     case CrossPointSettings::UI_THEME::SOLUM: LOG_DBG("UI", "Using Solum theme"); currentTheme = std::make_unique<SolumTheme>(); currentMetrics = &SolumMetrics::values; break;
+    case CrossPointSettings::UI_THEME::QUARTUM: LOG_DBG("UI", "Using Quartum theme"); currentTheme = std::make_unique<QuartumTheme>(); currentMetrics = &QuartumMetrics::values; break;
   }
   metricsValid = false;
 }
