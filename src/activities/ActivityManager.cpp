@@ -16,6 +16,7 @@
 #include "browser/OpdsBookBrowserActivity.h"
 #include "home/CrashActivity.h"
 #include "home/FileBrowserActivity.h"
+#include "home/BrowseMenuActivity.h"
 #include "home/HomeActivity.h"
 #include "home/RecentBooksActivity.h"
 #include "network/CrossPointWebServerActivity.h"
@@ -247,6 +248,8 @@ void ActivityManager::goToSettings() { replaceActivity(std::make_unique<Settings
 void ActivityManager::goToFileBrowser(std::string path) {
   replaceActivity(std::make_unique<FileBrowserActivity>(renderer, mappedInput, std::move(path)));
 }
+
+void ActivityManager::goToBrowseMenu() { replaceActivity(std::make_unique<BrowseMenuActivity>(renderer, mappedInput)); }
 
 void ActivityManager::goToRecentBooks() {
   replaceActivity(std::make_unique<RecentBooksActivity>(renderer, mappedInput));
