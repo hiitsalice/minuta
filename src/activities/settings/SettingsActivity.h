@@ -24,6 +24,7 @@ enum class SettingAction {
   Language,
   DownloadFonts,
   TextSettings,
+  FileTransfer,
 };
 
 struct SettingInfo {
