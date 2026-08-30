@@ -22,20 +22,20 @@ void SolumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std
                                      bool& bufferRestored, std::function<bool()> storeCoverBuffer) const {
   const bool hasBook = !recentBooks.empty();
 
+  const int tileX = rect.x + hPadding;
+  const int tileY = rect.y;
+  const int tileWidth = rect.width - 2 * hPadding;
+  const int coverHeight = SolumMetrics::values.homeCoverHeight;
+
   if (!hasBook) {
-    // No recent books yet: show the same "No open book / Start reading"
-    // placeholder every other theme uses.
-    drawEmptyRecents(renderer, rect);
+    // No recent books yet: just an empty border where the cover would be,
+    // no fill, no icon, no title text.
+    renderer.drawRect(tileX, tileY, tileWidth, coverHeight, true);
     return;
   }
 
   const int index = std::clamp(selectorIndex, 0, static_cast<int>(recentBooks.size()) - 1);
   const RecentBook& book = recentBooks[index];
-
-  const int tileX = rect.x + hPadding;
-  const int tileY = rect.y;
-  const int tileWidth = rect.width - 2 * hPadding;
-  const int coverHeight = SolumMetrics::values.homeCoverHeight;
 
   if (!coverRendered) {
     bool hasCover = !book.coverBmpPath.empty();
