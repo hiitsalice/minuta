@@ -223,6 +223,26 @@ void HomeActivity::loop() {
     }
   }
 
+    if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM) {
+    // 2x2 grid layout: [0][1] on top, [2][3] on bottom.
+    if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+      selectorIndex = selectorIndex ^ 1;
+      requestUpdate();
+    }
+    if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
+      selectorIndex = selectorIndex ^ 1;
+      requestUpdate();
+    }
+    if (mappedInput.wasReleased(MappedInputManager::Button::Down)) {
+      selectorIndex = selectorIndex ^ 2;
+      requestUpdate();
+    }
+    if (mappedInput.wasReleased(MappedInputManager::Button::Up)) {
+      selectorIndex = selectorIndex ^ 2;
+      requestUpdate();
+    }
+  }
+  
   // Back is otherwise unused on the home menu: open the most recently read
   // book directly (recentBooks is most-recent-first and already pruned of
   // files missing from the SD card).
