@@ -223,22 +223,21 @@ void HomeActivity::loop() {
     }
   }
 
-    if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM) {
-    // 2x2 grid layout: [0][1] on top, [2][3] on bottom.
-    if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
-      selectorIndex = selectorIndex ^ 1;
-      requestUpdate();
+      if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM) {
+    // 2x2 grid layout: [0][1] on top, [2][3] on bottom. Never move onto a
+    // slot with no book in it.
+    const int bookCount = static_cast<int>(recentBooks.size());
+    int newIndex = selectorIndex;
+    if (mappedInput.wasReleased(MappedInputManager::Button::Right) ||
+        mappedInput.wasReleased(MappedInputManager::Button::Left)) {
+      newIndex = selectorIndex ^ 1;
     }
-    if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
-      selectorIndex = selectorIndex ^ 1;
-      requestUpdate();
+    if (mappedInput.wasReleased(MappedInputManager::Button::Down) ||
+        mappedInput.wasReleased(MappedInputManager::Button::Up)) {
+      newIndex = selectorIndex ^ 2;
     }
-    if (mappedInput.wasReleased(MappedInputManager::Button::Down)) {
-      selectorIndex = selectorIndex ^ 2;
-      requestUpdate();
-    }
-    if (mappedInput.wasReleased(MappedInputManager::Button::Up)) {
-      selectorIndex = selectorIndex ^ 2;
+    if (newIndex != selectorIndex && newIndex < bookCount) {
+      selectorIndex = newIndex;
       requestUpdate();
     }
   }
