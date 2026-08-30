@@ -334,6 +334,9 @@ void SettingsActivity::toggleCurrentSetting() {
       case SettingAction::OPDSBrowser:
         startActivityForResult(std::make_unique<OpdsServerListActivity>(renderer, mappedInput), resultHandler);
         break;
+      case SettingAction::FileTransfer:
+        activityManager.goToFileTransfer();
+        break;
       case SettingAction::Network:
         startActivityForResult(std::make_unique<WifiSelectionActivity>(renderer, mappedInput, false), resultHandler);
         break;
