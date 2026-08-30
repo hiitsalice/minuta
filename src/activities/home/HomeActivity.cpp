@@ -242,12 +242,16 @@ void HomeActivity::loop() {
     }
   }
   
-  // Back is otherwise unused on the home menu: open the most recently read
-  // book directly (recentBooks is most-recent-first and already pruned of
-  // files missing from the SD card).
-  if (mappedInput.wasReleased(MappedInputManager::Button::Back) && !recentBooks.empty()) {
-    onSelectBook(recentBooks[0].path);
-    return;
+    if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
+    if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM ||
+        SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM) {
+      activityManager.goToBrowseMenu();
+      return;
+    }
+    if (!recentBooks.empty()) {
+      onSelectBook(recentBooks[0].path);
+      return;
+    }
   }
 
   const int coverColumnCount = std::max(1, metrics.homeRecentBooksCount);
