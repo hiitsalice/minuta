@@ -23,13 +23,9 @@ constexpr int maxTitleLines = 2;
 void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
                                        const int selectorIndex, bool& coverRendered, bool& coverBufferStored,
                                        bool& bufferRestored, std::function<bool()> storeCoverBuffer) const {
-  const bool hasBooks = !recentBooks.empty();
-
-  if (!hasBooks) {
-    drawEmptyRecents(renderer, rect);
-    return;
-  }
-
+  // Always draw all 4 grid slots, whether or not a book fills them. A slot
+  // with no book just gets an empty border - this covers 0, 1, 2, 3, or 4
+  // recent books uniformly, no separate empty-state screen needed.
   const int bookCount = std::min(static_cast<int>(recentBooks.size()), 4);
   const int colWidth = (rect.width - 2 * hPadding) / 2;
   const int coverWidth = colWidth - hPadding;
@@ -44,11 +40,17 @@ void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const s
   const int bottomTitleY = bottomCoverY + coverHeightPx + vGap;
 
   if (!coverRendered) {
-    for (int i = 0; i < bookCount; i++) {
+    for (int i = 0; i < 4; i++) {
       const bool isTopRow = (i < 2);
       const int col = i % 2;
       const int tileX = hPadding + col * colWidth;
       const int coverY = isTopRow ? topCoverY : bottomCoverY;
+
+      if (i >= bookCount) {
+        // No book for this slot: just an empty border, nothing else.
+        renderer.drawRect(tileX, coverY, coverWidth, coverHeightPx, true);
+        continue;
+      }
 
       bool hasCover = !recentBooks[i].coverBmpPath.empty();
       if (hasCover) {
@@ -86,6 +88,7 @@ void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const s
 
   // Titles: top row grows UPWARD (bottom-aligned to sit right above the
   // cover), bottom row grows DOWNWARD (top-aligned to sit right below).
+  // Empty slots (i >= bookCount) get no title text at all.
   for (int i = 0; i < bookCount; i++) {
     const bool isTopRow = (i < 2);
     const int col = i % 2;
