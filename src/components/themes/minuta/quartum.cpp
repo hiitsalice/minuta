@@ -20,7 +20,6 @@ constexpr int titleAreaHeight = 35;
 constexpr int coverWidthPx = 165;
 constexpr int coverHeightPx = 275;
 constexpr int vGap = 0;
-constexpr int maxTitleLines = 2;
 }  // namespace
 
 void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
@@ -32,7 +31,6 @@ void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const s
   const int bookCount = std::min(static_cast<int>(recentBooks.size()), 4);
   const int colWidth = coverWidthPx + columnGap;
   const int coverWidth = coverWidthPx;
-  const int titleLineHeight = renderer.getLineHeight(SMALL_FONT_ID);
 
   const int topTitleY = rect.y;
   const int topCoverY = rect.y + titleAreaHeight;
@@ -82,31 +80,47 @@ void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const s
     coverRendered = coverBufferStored;
   }
 
-  // Titles: top row grows UPWARD (bottom-aligned to sit right above the
-  // cover), bottom row grows DOWNWARD (top-aligned to sit right below).
-  // Empty slots (i >= bookCount) get no title text at all.
-  for (int i = 0; i < bookCount; i++) {
-    const bool isTopRow = (i < 2);
-    const int col = i % 2;
-    const int tileX = rect.x + hPadding + col * colWidth;
+  // Draw one centred title for each occupied slot.
+// Top-row titles sit against the 60px top margin.
+// Bottom-row titles use a baseline at y=710, matching Solum.
+for (int i = 0; i < bookCount; i++) {
+  const bool isTopRow = (i < 2);
+  const int col = i % 2;
+  const int tileX = rect.x + hPadding + col * colWidth;
 
-    auto titleLines = renderer.wrappedText(SMALL_FONT_ID, recentBooks[i].title.c_str(), coverWidth, maxTitleLines);
-    const int blockHeight = static_cast<int>(titleLines.size()) * titleLineHeight;
+  const auto title =
+      renderer.truncatedText(
+          SMALL_FONT_ID,
+          recentBooks[i].title.c_str(),
+          coverWidth,
+          EpdFontFamily::REGULAR
+      );
 
-    int lineY;
-    if (isTopRow) {
-      // Bottom-align the text block against the top of its cover.
-      lineY = topCoverY - vGap - blockHeight;
-    } else {
-      // Top-align the text block against the bottom of its cover.
-      lineY = bottomTitleY;
-    }
+  const int titleWidth =
+      renderer.getTextWidth(
+          SMALL_FONT_ID,
+          title.c_str(),
+          EpdFontFamily::REGULAR
+      );
 
-    for (const auto& line : titleLines) {
-      const int lineWidth = renderer.getTextWidth(SMALL_FONT_ID, line.c_str());
-      const int lineX = tileX + (coverWidth - lineWidth) / 2;  // centered under/over the cover
-      renderer.drawText(SMALL_FONT_ID, lineX, lineY, line.c_str(), true);
-      lineY += titleLineHeight;
-    }
+  const int titleX = tileX + (coverWidth - titleWidth) / 2;
+
+  int titleY;
+
+  if (isTopRow) {
+    titleY = topTitleY;
+  } else {
+    const int titleBaselineY = bottomTitleY + titleAreaHeight;
+    titleY = titleBaselineY - renderer.getFontAscenderSize(SMALL_FONT_ID);
   }
+
+  renderer.drawText(
+      SMALL_FONT_ID,
+      titleX,
+      titleY,
+      title.c_str(),
+      true,
+      EpdFontFamily::REGULAR
+  );
+}
 }
