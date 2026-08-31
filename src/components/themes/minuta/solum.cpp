@@ -13,7 +13,7 @@
 #include "fontIds.h"
 
 namespace {
-constexpr int hPadding = 24;   // left/right padding around the big cover
+constexpr int hPadding = 60; // 60px left/right margin around the cover
 constexpr int titleGap = 12;   // gap between the cover and the title line
 }  // namespace
 
