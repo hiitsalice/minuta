@@ -228,7 +228,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t extraParagraphSpacing = 1;
   uint8_t textAntiAliasing = 1;
   // Short power button click behaviour
-  uint8_t shortPwrBtn = IGNORE;
+  uint8_t shortPwrBtn = FORCE_REFRESH;
   // EPUB reading orientation settings
   // 0 = portrait (default), 1 = landscape clockwise, 2 = inverted, 3 = landscape counter-clockwise
   uint8_t orientation = PORTRAIT;
@@ -272,10 +272,10 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // Hide battery percentage
   uint8_t hideBatteryPercentage = HIDE_NEVER;
   // Long-press page turn button behavior
-  uint8_t longPressButtonBehavior = OFF;
+  uint8_t longPressButtonBehavior = CHAPTER_SKIP;
   // Long-press Confirm function in EPUB reader (cycles through LONG_PRESS_MENU_FUNCTION values).
   // Defaults to Disabled so shortcut-based bookmark toggling remains opt-in.
-  uint8_t longPressMenuFunction = LP_MENU_DISABLED;
+  uint8_t longPressMenuFunction = LP_MENU_DICTIONARY;
   // UI Theme
   uint8_t uiTheme = SOLUM;
   // Sunlight fading compensation
