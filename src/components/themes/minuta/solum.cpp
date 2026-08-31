@@ -13,8 +13,8 @@
 #include "fontIds.h"
 
 namespace {
-constexpr int hPadding = 60; // 60px left/right margin around the cover
-constexpr int titleGap = 12;   // gap between the cover and the title line
+constexpr int hPadding = 60;
+constexpr int titleAreaHeight = 50;
 }  // namespace
 
 void SolumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
@@ -71,10 +71,25 @@ void SolumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std
     coverRendered = coverBufferStored;
   }
 
-  // Title below the cover, single line, ellipsised ("...") if too long to fit.
-  const int titleY = tileY + coverHeight + titleGap;
-  const auto truncatedTitle = renderer.truncatedText(UI_12_FONT_ID, book.title.c_str(), tileWidth, EpdFontFamily::BOLD);
-  const int titleTextWidth = renderer.getTextWidth(UI_12_FONT_ID, truncatedTitle.c_str(), EpdFontFamily::BOLD);
-  const int titleX = tileX + (tileWidth - titleTextWidth) / 2;  // centered under the cover
-  renderer.drawText(UI_12_FONT_ID, titleX, titleY, truncatedTitle.c_str(), true, EpdFontFamily::BOLD);
+  // Centre the title beneath the cover.
+// The normal text baseline sits at y=710, leaving a 90px bottom margin.
+const int titleBaselineY = tileY + coverHeight + titleAreaHeight;
+const int titleY = titleBaselineY - renderer.getFontAscenderSize(UI_12_FONT_ID);
+
+const auto truncatedTitle =
+    renderer.truncatedText(UI_12_FONT_ID, book.title.c_str(), tileWidth, EpdFontFamily::REGULAR);
+
+const int titleTextWidth =
+    renderer.getTextWidth(UI_12_FONT_ID, truncatedTitle.c_str(), EpdFontFamily::REGULAR);
+
+const int titleX = tileX + (tileWidth - titleTextWidth) / 2;
+
+renderer.drawText(
+    UI_12_FONT_ID,
+    titleX,
+    titleY,
+    truncatedTitle.c_str(),
+    true,
+    EpdFontFamily::REGULAR
+);
 }
