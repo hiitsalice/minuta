@@ -8,12 +8,9 @@ class GfxRenderer;
 namespace QuartumMetrics {
 constexpr ThemeMetrics values = [] {
   ThemeMetrics v = LyraMetrics::values;
-  // Each grid cell's cover image height (not the whole tile - title text adds
-  // more height on top of this, handled directly in drawRecentBookCover).
-  v.homeCoverHeight = 180;
-  // homeCoverTileHeight covers BOTH rows plus both title bands - drawRecentBookCover
-  // computes the exact split itself, this is just the total reserved area.
-  v.homeCoverTileHeight = 460;
+  v.homeTopPadding = 60;
+  v.homeCoverHeight = 275;
+  v.homeCoverTileHeight = 650;
   v.homeRecentBooksCount = 4;
   return v;
 }();
