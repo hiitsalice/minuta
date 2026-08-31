@@ -99,7 +99,7 @@ for (int i = 0; i < bookCount; i++) {
 
   const auto title =
       renderer.truncatedText(
-          SMALL_FONT_ID,
+          UI_21_FONT_ID,
           recentBooks[i].title.c_str(),
           coverWidth,
           EpdFontFamily::REGULAR
@@ -107,7 +107,7 @@ for (int i = 0; i < bookCount; i++) {
 
   const int titleWidth =
       renderer.getTextWidth(
-          SMALL_FONT_ID,
+          UI_21_FONT_ID,
           title.c_str(),
           EpdFontFamily::REGULAR
       );
@@ -120,11 +120,11 @@ for (int i = 0; i < bookCount; i++) {
     titleY = topTitleY;
   } else {
     const int titleBaselineY = bottomTitleY + titleAreaHeight;
-    titleY = titleBaselineY - renderer.getFontAscenderSize(SMALL_FONT_ID);
+    titleY = titleBaselineY - renderer.getFontAscenderSize(UI_21_FONT_ID);
   }
 
   renderer.drawText(
-      SMALL_FONT_ID,
+      UI_21_FONT_ID,
       titleX,
       titleY,
       title.c_str(),
