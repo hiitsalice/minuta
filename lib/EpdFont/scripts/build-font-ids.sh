@@ -80,22 +80,47 @@ ruby -rdigest -e 'puts [
 ].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
 ))"
 
+echo "#define SMALL_FONT_ID ($(
+ruby -rdigest -e 'puts [
+  "./steinem_8_regular.h",
+  "./steinem_8_bold.h",
+  "./steinem_8_bolditalic.h",
+  "./steinem_8_italic.h",
+].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
+))"
+
 echo "#define UI_10_FONT_ID ($(
 ruby -rdigest -e 'puts [
-  "./ubuntu_10_medium.h",
-  "./ubuntu_10_bold.h",
+  "./steinem_10_regular.h",
+  "./steinem_10_bold.h",
+  "./steinem_10_bolditalic.h",
+  "./steinem_10_italic.h",
 ].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
 ))"
 
 echo "#define UI_12_FONT_ID ($(
 ruby -rdigest -e 'puts [
-  "./ubuntu_12_medium.h",
-  "./ubuntu_12_bold.h",
+  "./steinem_12_regular.h",
+  "./steinem_12_bold.h",
+  "./steinem_12_bolditalic.h",
+  "./steinem_12_italic.h",
 ].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
 ))"
 
-echo "#define SMALL_FONT_ID ($(
+echo "#define UI_21_FONT_ID ($(
 ruby -rdigest -e 'puts [
-  "./notosans_8_regular.h",
+  "./steinem_21_regular.h",
+  "./steinem_21_bold.h",
+  "./steinem_21_bolditalic.h",
+  "./steinem_21_italic.h",
+].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
+))"
+
+echo "#define UI_32_FONT_ID ($(
+ruby -rdigest -e 'puts [
+  "./steinem_32_regular.h",
+  "./steinem_32_bold.h",
+  "./steinem_32_bolditalic.h",
+  "./steinem_32_italic.h",
 ].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
 ))"
