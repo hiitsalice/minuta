@@ -13,10 +13,13 @@
 #include "fontIds.h"
 
 namespace {
-constexpr int hPadding = 16;      // gap between the two columns and screen edges
-constexpr int vGap = 10;          // gap between title text and its cover
-constexpr int rowGap = 16;        // gap between the top row and bottom row
-constexpr int coverHeightPx = 170;  // height of each cover image
+constexpr int hPadding = 60;
+constexpr int columnGap = 30;
+constexpr int rowGap = 30;
+constexpr int titleAreaHeight = 35;
+constexpr int coverWidthPx = 165;
+constexpr int coverHeightPx = 275;
+constexpr int vGap = 0;
 constexpr int maxTitleLines = 2;
 }  // namespace
 
@@ -27,23 +30,21 @@ void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const s
   // with no book just gets an empty border - this covers 0, 1, 2, 3, or 4
   // recent books uniformly, no separate empty-state screen needed.
   const int bookCount = std::min(static_cast<int>(recentBooks.size()), 4);
-  const int colWidth = (rect.width - 2 * hPadding) / 2;
-  const int coverWidth = colWidth - hPadding;
+  const int colWidth = coverWidthPx + columnGap;
+  const int coverWidth = coverWidthPx;
   const int titleLineHeight = renderer.getLineHeight(SMALL_FONT_ID);
-  const int titleBandHeight = titleLineHeight * maxTitleLines;
 
-  // Top row: title band, then gap, then cover.
   const int topTitleY = rect.y;
-  const int topCoverY = topTitleY + titleBandHeight + vGap;
-  // Bottom row: cover, then gap, then title band.
+  const int topCoverY = rect.y + titleAreaHeight;
+
   const int bottomCoverY = topCoverY + coverHeightPx + rowGap;
-  const int bottomTitleY = bottomCoverY + coverHeightPx + vGap;
+  const int bottomTitleY = bottomCoverY + coverHeightPx;
 
   if (!coverRendered) {
     for (int i = 0; i < 4; i++) {
       const bool isTopRow = (i < 2);
       const int col = i % 2;
-      const int tileX = hPadding + col * colWidth;
+      const int tileX = rect.x + hPadding + col * colWidth;
       const int coverY = isTopRow ? topCoverY : bottomCoverY;
 
       if (i >= bookCount) {
@@ -92,7 +93,7 @@ void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const s
   for (int i = 0; i < bookCount; i++) {
     const bool isTopRow = (i < 2);
     const int col = i % 2;
-    const int tileX = hPadding + col * colWidth;
+    const int tileX = rect.x + hPadding + col * colWidth;
 
     auto titleLines = renderer.wrappedText(SMALL_FONT_ID, recentBooks[i].title.c_str(), coverWidth, maxTitleLines);
     const int blockHeight = static_cast<int>(titleLines.size()) * titleLineHeight;
