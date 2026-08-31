@@ -60,56 +60,56 @@ constexpr unsigned long X4PRO_POWER_CLICK_MAX_HOLD_MS = 300;
 static bool wakePowerReleasePending = false;
 
 // Fonts
-EpdFont notoserif14RegularFont(&youngserif_14_regular);
-EpdFont notoserif14BoldFont(&youngserif_14_bold);
-EpdFont notoserif14ItalicFont(&youngserif_14_italic);
-EpdFont notoserif14BoldItalicFont(&youngserif_14_bolditalic);
-EpdFontFamily notoserif14FontFamily(&notoserif14RegularFont, &notoserif14BoldFont, &notoserif14ItalicFont,
-                                    &notoserif14BoldItalicFont);
+EpdFont youngserif14RegularFont(&youngserif_14_regular);
+EpdFont youngserif14BoldFont(&youngserif_14_bold);
+EpdFont youngserif14ItalicFont(&youngserif_14_italic);
+EpdFont youngserif14BoldItalicFont(&youngserif_14_bolditalic);
+EpdFontFamily youngserif14FontFamily(&youngserif14RegularFont, &youngserif14BoldFont, &youngserif14ItalicFont,
+                                    &youngserif14BoldItalicFont);
 #ifndef OMIT_FONTS
-EpdFont notoserif12RegularFont(&youngserif_12_regular);
-EpdFont notoserif12BoldFont(&youngserif_12_bold);
-EpdFont notoserif12ItalicFont(&youngserif_12_italic);
-EpdFont notoserif12BoldItalicFont(&youngserif_12_bolditalic);
-EpdFontFamily notoserif12FontFamily(&notoserif12RegularFont, &notoserif12BoldFont, &notoserif12ItalicFont,
-                                    &notoserif12BoldItalicFont);
-EpdFont notoserif16RegularFont(&youngserif_16_regular);
-EpdFont notoserif16BoldFont(&youngserif_16_bold);
-EpdFont notoserif16ItalicFont(&youngserif_16_italic);
-EpdFont notoserif16BoldItalicFont(&youngserif_16_bolditalic);
-EpdFontFamily notoserif16FontFamily(&notoserif16RegularFont, &notoserif16BoldFont, &notoserif16ItalicFont,
-                                    &notoserif16BoldItalicFont);
-EpdFont notoserif18RegularFont(&youngserif_18_regular);
-EpdFont notoserif18BoldFont(&youngserif_18_bold);
-EpdFont notoserif18ItalicFont(&youngserif_18_italic);
-EpdFont notoserif18BoldItalicFont(&youngserif_18_bolditalic);
-EpdFontFamily notoserif18FontFamily(&notoserif18RegularFont, &notoserif18BoldFont, &notoserif18ItalicFont,
-                                    &notoserif18BoldItalicFont);
+EpdFont youngserif12RegularFont(&youngserif_12_regular);
+EpdFont youngserif12BoldFont(&youngserif_12_bold);
+EpdFont youngserif12ItalicFont(&youngserif_12_italic);
+EpdFont youngserif12BoldItalicFont(&youngserif_12_bolditalic);
+EpdFontFamily youngserif12FontFamily(&youngserif12RegularFont, &youngserif12BoldFont, &youngserif12ItalicFont,
+                                    &youngserif12BoldItalicFont);
+EpdFont youngserif16RegularFont(&youngserif_16_regular);
+EpdFont youngserif16BoldFont(&youngserif_16_bold);
+EpdFont youngserif16ItalicFont(&youngserif_16_italic);
+EpdFont youngserif16BoldItalicFont(&youngserif_16_bolditalic);
+EpdFontFamily youngserif16FontFamily(&youngserif16RegularFont, &youngserif16BoldFont, &youngserif16ItalicFont,
+                                    &youngserif16BoldItalicFont);
+EpdFont youngserif18RegularFont(&youngserif_18_regular);
+EpdFont youngserif18BoldFont(&youngserif_18_bold);
+EpdFont youngserif18ItalicFont(&youngserif_18_italic);
+EpdFont youngserif18BoldItalicFont(&youngserif_18_bolditalic);
+EpdFontFamily youngserif18FontFamily(&youngserif18RegularFont, &youngserif18BoldFont, &youngserif18ItalicFont,
+                                    &youngserif18BoldItalicFont);
 
-EpdFont notosans12RegularFont(&dmsans_12_regular);
-EpdFont notosans12BoldFont(&dmsans_12_bold);
-EpdFont notosans12ItalicFont(&dmsans_12_italic);
-EpdFont notosans12BoldItalicFont(&dmsans_12_bolditalic);
-EpdFontFamily notosans12FontFamily(&notosans12RegularFont, &notosans12BoldFont, &notosans12ItalicFont,
-                                   &notosans12BoldItalicFont);
-EpdFont notosans14RegularFont(&dmsans_14_regular);
-EpdFont notosans14BoldFont(&dmsans_14_bold);
-EpdFont notosans14ItalicFont(&dmsans_14_italic);
-EpdFont notosans14BoldItalicFont(&dmsans_14_bolditalic);
-EpdFontFamily notosans14FontFamily(&notosans14RegularFont, &notosans14BoldFont, &notosans14ItalicFont,
-                                   &notosans14BoldItalicFont);
-EpdFont notosans16RegularFont(&dmsans_16_regular);
-EpdFont notosans16BoldFont(&dmsans_16_bold);
-EpdFont notosans16ItalicFont(&dmsans_16_italic);
-EpdFont notosans16BoldItalicFont(&dmsans_16_bolditalic);
-EpdFontFamily notosans16FontFamily(&notosans16RegularFont, &notosans16BoldFont, &notosans16ItalicFont,
-                                   &notosans16BoldItalicFont);
-EpdFont notosans18RegularFont(&dmsans_18_regular);
-EpdFont notosans18BoldFont(&dmsans_18_bold);
-EpdFont notosans18ItalicFont(&dmsans_18_italic);
-EpdFont notosans18BoldItalicFont(&dmsans_18_bolditalic);
-EpdFontFamily notosans18FontFamily(&notosans18RegularFont, &notosans18BoldFont, &notosans18ItalicFont,
-                                   &notosans18BoldItalicFont);
+EpdFont dmsans12RegularFont(&dmsans_12_regular);
+EpdFont dmsans12BoldFont(&dmsans_12_bold);
+EpdFont dmsans12ItalicFont(&dmsans_12_italic);
+EpdFont dmsans12BoldItalicFont(&dmsans_12_bolditalic);
+EpdFontFamily dmsans12FontFamily(&dmsans12RegularFont, &dmsans12BoldFont, &dmsans12ItalicFont,
+                                   &dmsans12BoldItalicFont);
+EpdFont dmsans14RegularFont(&dmsans_14_regular);
+EpdFont dmsans14BoldFont(&dmsans_14_bold);
+EpdFont dmsans14ItalicFont(&dmsans_14_italic);
+EpdFont dmsans14BoldItalicFont(&dmsans_14_bolditalic);
+EpdFontFamily dmsans14FontFamily(&dmsans14RegularFont, &dmsans14BoldFont, &dmsans14ItalicFont,
+                                   &dmsans14BoldItalicFont);
+EpdFont dmsans16RegularFont(&dmsans_16_regular);
+EpdFont dmsans16BoldFont(&dmsans_16_bold);
+EpdFont dmsans16ItalicFont(&dmsans_16_italic);
+EpdFont dmsans16BoldItalicFont(&dmsans_16_bolditalic);
+EpdFontFamily dmsans16FontFamily(&dmsans16RegularFont, &dmsans16BoldFont, &dmsans16ItalicFont,
+                                   &dmsans16BoldItalicFont);
+EpdFont dmsans18RegularFont(&dmsans_18_regular);
+EpdFont dmsans18BoldFont(&dmsans_18_bold);
+EpdFont dmsans18ItalicFont(&dmsans_18_italic);
+EpdFont dmsans18BoldItalicFont(&dmsans_18_bolditalic);
+EpdFontFamily dmsans18FontFamily(&dmsans18RegularFont, &dmsans18BoldFont, &dmsans18ItalicFont,
+                                   &dmsans18BoldItalicFont);
 
 #endif  // OMIT_FONTS
 
@@ -319,16 +319,16 @@ void setupDisplayAndFonts(bool seamless = false) {
   }
   fontCacheManager.setFontDecompressor(&fontDecompressor);
   renderer.setFontCacheManager(&fontCacheManager);
-  renderer.insertFont(NOTOSERIF_14_FONT_ID, notoserif14FontFamily);
+  renderer.insertFont(YOUNGSERIF_14_FONT_ID, youngserif14FontFamily);
 #ifndef OMIT_FONTS
-  renderer.insertFont(NOTOSERIF_12_FONT_ID, notoserif12FontFamily);
-  renderer.insertFont(NOTOSERIF_16_FONT_ID, notoserif16FontFamily);
-  renderer.insertFont(NOTOSERIF_18_FONT_ID, notoserif18FontFamily);
+  renderer.insertFont(YOUNGSERIF_12_FONT_ID, youngserif12FontFamily);
+  renderer.insertFont(YOUNGSERIF_16_FONT_ID, youngserif16FontFamily);
+  renderer.insertFont(YOUNGSERIF_18_FONT_ID, youngserif18FontFamily);
 
-  renderer.insertFont(NOTOSANS_12_FONT_ID, notosans12FontFamily);
-  renderer.insertFont(NOTOSANS_14_FONT_ID, notosans14FontFamily);
-  renderer.insertFont(NOTOSANS_16_FONT_ID, notosans16FontFamily);
-  renderer.insertFont(NOTOSANS_18_FONT_ID, notosans18FontFamily);
+  renderer.insertFont(DMSANS_12_FONT_ID, dmsans12FontFamily);
+  renderer.insertFont(DMSANS_14_FONT_ID, dmsans14FontFamily);
+  renderer.insertFont(DMSANS_16_FONT_ID, dmsans16FontFamily);
+  renderer.insertFont(DMSANS_18_FONT_ID, dmsans18FontFamily);
 #endif  // OMIT_FONTS
   renderer.insertFont(UI_10_FONT_ID, ui10FontFamily);
   renderer.insertFont(UI_12_FONT_ID, ui12FontFamily);
