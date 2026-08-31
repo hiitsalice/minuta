@@ -60,12 +60,7 @@ void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const s
         if (Storage.openFileForRead("HOME", coverBmpPath, file)) {
           Bitmap bitmap(file);
           if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-            float bmpHeight = static_cast<float>(bitmap.getHeight());
-            float bmpWidth = static_cast<float>(bitmap.getWidth());
-            float ratio = bmpWidth / bmpHeight;
-            const float tileRatio = static_cast<float>(coverWidth) / static_cast<float>(coverHeightPx);
-            float cropX = 1.0f - (tileRatio / ratio);
-            renderer.drawBitmap(bitmap, tileX, coverY, coverWidth, coverHeightPx, cropX);
+            renderer.drawBitmapStretched(bitmap, tileX, coverY, coverWidth, coverHeightPx);
           } else {
             hasCover = false;
           }
