@@ -173,6 +173,11 @@ void HomeActivity::loop() {
   const auto& metrics = UITheme::getInstance().getMetrics();
 
   auto activateSelection = [this] {
+           const bool isCoverTheme = SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM ||
+                                  SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM;
+       if (isCoverTheme && recentBooks.empty()) {
+         return;
+       }
     if (selectorIndex < recentBooks.size()) {
       onSelectBook(recentBooks[selectorIndex].path);
       return;
