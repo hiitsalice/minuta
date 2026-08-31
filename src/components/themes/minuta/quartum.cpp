@@ -68,8 +68,6 @@ void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const s
         }
       }
 
-      renderer.drawRect(tileX, coverY, coverWidth, coverHeightPx, true);
-
       if (!hasCover) {
         renderer.fillRect(tileX, coverY + coverHeightPx / 3, coverWidth, 2 * coverHeightPx / 3, true);
         renderer.drawIcon(CoverIcon, tileX + coverWidth / 2 - 16, coverY + coverHeightPx / 2 - 16, 32);
@@ -79,6 +77,17 @@ void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const s
     coverBufferStored = storeCoverBuffer();
     coverRendered = coverBufferStored;
   }
+
+  // Draw an outline only around the currently selected book.
+if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
+  const bool isTopRow = (selectorIndex < 2);
+  const int col = selectorIndex % 2;
+
+  const int tileX = rect.x + hPadding + col * colWidth;
+  const int coverY = isTopRow ? topCoverY : bottomCoverY;
+
+  renderer.drawRect(tileX, coverY, coverWidth, coverHeightPx, true);
+}
 
   // Draw one centred title for each occupied slot.
 // Top-row titles sit against the 60px top margin.
