@@ -204,7 +204,8 @@ void HomeActivity::loop() {
     }
   };
 
-    if (SETTINGS.uiTheme != CrossPointSettings::UI_THEME::SOLUM) {
+    if (SETTINGS.uiTheme != CrossPointSettings::UI_THEME::SOLUM &&
+    SETTINGS.uiTheme != CrossPointSettings::UI_THEME::QUARTUM) {
     buttonNavigator.onNext([this, menuCount] {
       selectorIndex = ButtonNavigator::nextIndex(selectorIndex, menuCount);
       requestUpdate();
@@ -229,23 +230,20 @@ void HomeActivity::loop() {
   }
 
       if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM) {
-    // 2x2 grid layout: [0][1] on top, [2][3] on bottom. Never move onto a
-    // slot with no book in it.
-    const int bookCount = static_cast<int>(recentBooks.size());
-    int newIndex = selectorIndex;
-    if (mappedInput.wasReleased(MappedInputManager::Button::Right) ||
-        mappedInput.wasReleased(MappedInputManager::Button::Left)) {
-      newIndex = selectorIndex ^ 1;
-    }
-    if (mappedInput.wasReleased(MappedInputManager::Button::Down) ||
-        mappedInput.wasReleased(MappedInputManager::Button::Up)) {
-      newIndex = selectorIndex ^ 2;
-    }
-    if (newIndex != selectorIndex && newIndex < bookCount) {
-      selectorIndex = newIndex;
+  const int bookCount = static_cast<int>(recentBooks.size());
+
+  if (bookCount > 0) {
+    buttonNavigator.onNext([this, bookCount] {
+      selectorIndex = ButtonNavigator::nextIndex(selectorIndex, bookCount);
       requestUpdate();
-    }
+    });
+
+    buttonNavigator.onPrevious([this, bookCount] {
+      selectorIndex = ButtonNavigator::previousIndex(selectorIndex, bookCount);
+      requestUpdate();
+    });
   }
+}
   
     if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM ||
