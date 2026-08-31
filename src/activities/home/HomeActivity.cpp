@@ -113,6 +113,12 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
 void HomeActivity::onEnter() {
   Activity::onEnter();
 
+  // Home may be entered more than once using the same activity instance.
+  // Start each entry with a clean cover-rendering state.
+  freeCoverBuffer();
+  coverRendered = false;
+  firstRenderDone = false;
+
   hasOpdsServers = OPDS_STORE.hasServers();
 
   const auto& metrics = UITheme::getInstance().getMetrics();
@@ -229,28 +235,80 @@ void HomeActivity::loop() {
     }
   }
 
-      if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM) {
-  const int bookCount = static_cast<int>(recentBooks.size());
+  if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM) {
+    const int bookCount = static_cast<int>(recentBooks.size());
+    const int frontButton = mappedInput.getReleasedFrontButton();
 
-  if (bookCount > 0) {
-    buttonNavigator.onNext([this, bookCount] {
-      selectorIndex = ButtonNavigator::nextIndex(selectorIndex, bookCount);
-      requestUpdate();
-    });
-
-    buttonNavigator.onPrevious([this, bookCount] {
-      selectorIndex = ButtonNavigator::previousIndex(selectorIndex, bookCount);
-      requestUpdate();
-    });
-  }
-}
-  
-    if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-    if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM ||
-        SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM) {
+    // Quartum Home uses fixed physical front buttons:
+    // Browse / Read / Prev / Next.
+    if (frontButton == HalGPIO::BTN_BACK) {
       activityManager.goToBrowseMenu();
       return;
     }
+
+    if (bookCount > 0) {
+      if (frontButton == HalGPIO::BTN_CONFIRM) {
+        activateSelection();
+        return;
+      }
+
+      if (frontButton == HalGPIO::BTN_LEFT) {
+        selectorIndex = (selectorIndex - 1 + bookCount) % bookCount;
+        requestUpdate();
+        return;
+      }
+
+      if (frontButton == HalGPIO::BTN_RIGHT) {
+        selectorIndex = (selectorIndex + 1) % bookCount;
+        requestUpdate();
+        return;
+      }
+
+      // Side Up/Down loop vertically within each column.
+      if (mappedInput.wasReleased(MappedInputManager::Button::Up) ||
+          mappedInput.wasReleased(MappedInputManager::Button::Down)) {
+        const int verticalTarget = selectorIndex < 2 ? selectorIndex + 2 : selectorIndex - 2;
+
+        if (verticalTarget >= 0 && verticalTarget < bookCount) {
+          selectorIndex = verticalTarget;
+          requestUpdate();
+        }
+        return;
+      }
+    }
+
+    // Any other front-button release is intentionally ignored here.
+    if (frontButton != -1) {
+      return;
+    }
+  }
+
+  if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM) {
+    const int frontButton = mappedInput.getReleasedFrontButton();
+
+    // Solum Home uses fixed physical front buttons:
+    // Browse / blank / blank / Read.
+    if (frontButton == HalGPIO::BTN_BACK) {
+      activityManager.goToBrowseMenu();
+      return;
+    }
+
+    if (frontButton == HalGPIO::BTN_RIGHT) {
+      if (!recentBooks.empty()) {
+        onSelectBook(recentBooks[0].path);
+      }
+      return;
+    }
+
+    // Physical buttons 2 and 3 intentionally do nothing.
+    if (frontButton != -1) {
+      return;
+    }
+  }
+
+  if (SETTINGS.uiTheme != CrossPointSettings::UI_THEME::SOLUM &&
+      SETTINGS.uiTheme != CrossPointSettings::UI_THEME::QUARTUM &&
+      mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     if (!recentBooks.empty()) {
       onSelectBook(recentBooks[0].path);
       return;
@@ -303,7 +361,9 @@ void HomeActivity::loop() {
     return;
   }
 
-  if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+  if (SETTINGS.uiTheme != CrossPointSettings::UI_THEME::SOLUM &&
+      SETTINGS.uiTheme != CrossPointSettings::UI_THEME::QUARTUM &&
+      mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     activateSelection();
   }
 }
@@ -363,8 +423,10 @@ void HomeActivity::render(RenderLock&&) {
   }
 
   const bool isQuartum = SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM;
-  const auto labels = mappedInput.mapLabels(tr(STR_HOME_BROWSE), tr(STR_HOME_READ), isQuartum ? "Prev" : "",
-                                             isQuartum ? "Next" : "");
+  const auto labels =
+      isQuartum
+          ? mappedInput.mapLabels(tr(STR_HOME_BROWSE), tr(STR_HOME_READ), "Prev", "Next")
+          : mappedInput.mapLabels(tr(STR_HOME_BROWSE), "", "", tr(STR_HOME_READ));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer(cleanInitialRefresh && !firstRenderDone ? HalDisplay::HALF_REFRESH : HalDisplay::FAST_REFRESH);

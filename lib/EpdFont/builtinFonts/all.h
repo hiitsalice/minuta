@@ -50,10 +50,20 @@
 #include <builtinFonts/steinem_10_bold.h>
 #include <builtinFonts/steinem_10_bolditalic.h>
 
+#include <builtinFonts/steinem_11_regular.h>
+#include <builtinFonts/steinem_11_italic.h>
+#include <builtinFonts/steinem_11_bold.h>
+#include <builtinFonts/steinem_11_bolditalic.h>
+
 #include <builtinFonts/steinem_12_regular.h>
 #include <builtinFonts/steinem_12_italic.h>
 #include <builtinFonts/steinem_12_bold.h>
 #include <builtinFonts/steinem_12_bolditalic.h>
+
+#include <builtinFonts/steinem_18_regular.h>
+#include <builtinFonts/steinem_18_italic.h>
+#include <builtinFonts/steinem_18_bold.h>
+#include <builtinFonts/steinem_18_bolditalic.h>
 
 #include <builtinFonts/steinem_21_regular.h>
 #include <builtinFonts/steinem_21_italic.h>

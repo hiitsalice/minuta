@@ -15,6 +15,29 @@
 namespace {
 constexpr int hPadding = 60;
 constexpr int titleAreaHeight = 50;
+
+std::string truncateTitleAtWord(const GfxRenderer& renderer, const int fontId, const std::string& title,
+                                const int maxWidth) {
+  if (renderer.getTextWidth(fontId, title.c_str(), EpdFontFamily::REGULAR) <= maxWidth) {
+    return title;
+  }
+
+  constexpr const char* ellipsis = "...";
+  std::string shortened = title;
+
+  while (true) {
+    const auto space = shortened.find_last_of(' ');
+    if (space == std::string::npos) {
+      return renderer.truncatedText(fontId, title.c_str(), maxWidth, EpdFontFamily::REGULAR);
+    }
+
+    shortened.erase(space);
+
+    if (renderer.getTextWidth(fontId, (shortened + ellipsis).c_str(), EpdFontFamily::REGULAR) <= maxWidth) {
+      return shortened + ellipsis;
+    }
+  }
+}
 }  // namespace
 
 void SolumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
@@ -55,8 +78,6 @@ void SolumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std
       }
     }
 
-    renderer.drawRect(tileX, tileY, tileWidth, coverHeight, true);
-
     if (!hasCover) {
       renderer.fillRect(tileX, tileY + coverHeight / 3, tileWidth, 2 * coverHeight / 3, true);
       renderer.drawIcon(CoverIcon, tileX + tileWidth / 2 - 16, tileY + coverHeight / 2 - 16, 32);
@@ -69,18 +90,18 @@ void SolumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std
   // Centre the title beneath the cover.
 // The normal text baseline sits at y=710, leaving a 90px bottom margin.
 const int titleBaselineY = tileY + coverHeight + titleAreaHeight;
-const int titleY = titleBaselineY - renderer.getFontAscenderSize(UI_32_FONT_ID);
+const int titleY = titleBaselineY - renderer.getFontAscenderSize(UI_18_FONT_ID);
 
 const auto truncatedTitle =
-    renderer.truncatedText(UI_32_FONT_ID, book.title.c_str(), tileWidth, EpdFontFamily::REGULAR);
+    truncateTitleAtWord(renderer, UI_18_FONT_ID, book.title, tileWidth);
 
 const int titleTextWidth =
-    renderer.getTextWidth(UI_32_FONT_ID, truncatedTitle.c_str(), EpdFontFamily::REGULAR);
+    renderer.getTextWidth(UI_18_FONT_ID, truncatedTitle.c_str(), EpdFontFamily::REGULAR);
 
 const int titleX = tileX + (tileWidth - titleTextWidth) / 2;
 
 renderer.drawText(
-    UI_32_FONT_ID,
+    UI_18_FONT_ID,
     titleX,
     titleY,
     truncatedTitle.c_str(),

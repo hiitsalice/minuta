@@ -127,12 +127,26 @@ EpdFont steinem10BoldItalicFont(&steinem_10_bolditalic);
 EpdFontFamily steinem10FontFamily(&steinem10RegularFont, &steinem10BoldFont, &steinem10ItalicFont,
                                   &steinem10BoldItalicFont);
 
+EpdFont steinem11RegularFont(&steinem_11_regular);
+EpdFont steinem11BoldFont(&steinem_11_bold);
+EpdFont steinem11ItalicFont(&steinem_11_italic);
+EpdFont steinem11BoldItalicFont(&steinem_11_bolditalic);
+EpdFontFamily steinem11FontFamily(&steinem11RegularFont, &steinem11BoldFont, &steinem11ItalicFont,
+                                  &steinem11BoldItalicFont);
+
 EpdFont steinem12RegularFont(&steinem_12_regular);
 EpdFont steinem12BoldFont(&steinem_12_bold);
 EpdFont steinem12ItalicFont(&steinem_12_italic);
 EpdFont steinem12BoldItalicFont(&steinem_12_bolditalic);
 EpdFontFamily steinem12FontFamily(&steinem12RegularFont, &steinem12BoldFont, &steinem12ItalicFont,
                                   &steinem12BoldItalicFont);
+
+EpdFont steinem18RegularFont(&steinem_18_regular);
+EpdFont steinem18BoldFont(&steinem_18_bold);
+EpdFont steinem18ItalicFont(&steinem_18_italic);
+EpdFont steinem18BoldItalicFont(&steinem_18_bolditalic);
+EpdFontFamily steinem18FontFamily(&steinem18RegularFont, &steinem18BoldFont, &steinem18ItalicFont,
+                                  &steinem18BoldItalicFont);
 
 EpdFont steinem21RegularFont(&steinem_21_regular);
 EpdFont steinem21BoldFont(&steinem_21_bold);
@@ -356,7 +370,9 @@ void setupDisplayAndFonts(bool seamless = false) {
 #endif  // OMIT_FONTS
   renderer.insertFont(SMALL_FONT_ID, steinem8FontFamily);
   renderer.insertFont(UI_10_FONT_ID, steinem10FontFamily);
+  renderer.insertFont(UI_11_FONT_ID, steinem11FontFamily);
   renderer.insertFont(UI_12_FONT_ID, steinem12FontFamily);
+  renderer.insertFont(UI_18_FONT_ID, steinem18FontFamily);
   renderer.insertFont(UI_21_FONT_ID, steinem21FontFamily);
   renderer.insertFont(UI_32_FONT_ID, steinem32FontFamily);
 

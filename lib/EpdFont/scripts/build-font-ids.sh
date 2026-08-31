@@ -98,12 +98,30 @@ ruby -rdigest -e 'puts [
 ].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
 ))"
 
+echo "#define UI_11_FONT_ID ($(
+ruby -rdigest -e 'puts [
+  "./steinem_11_regular.h",
+  "./steinem_11_bold.h",
+  "./steinem_11_bolditalic.h",
+  "./steinem_11_italic.h",
+].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
+))"
+
 echo "#define UI_12_FONT_ID ($(
 ruby -rdigest -e 'puts [
   "./steinem_12_regular.h",
   "./steinem_12_bold.h",
   "./steinem_12_bolditalic.h",
   "./steinem_12_italic.h",
+].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
+))"
+
+echo "#define UI_18_FONT_ID ($(
+ruby -rdigest -e 'puts [
+  "./steinem_18_regular.h",
+  "./steinem_18_bold.h",
+  "./steinem_18_bolditalic.h",
+  "./steinem_18_italic.h",
 ].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
 ))"
 

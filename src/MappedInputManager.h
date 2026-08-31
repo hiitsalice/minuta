@@ -110,6 +110,8 @@ class MappedInputManager {
                               const char* up, const char* down) const;
   // Returns the raw front button index that was pressed this frame (or -1 if none).
   int getPressedFrontButton() const;
+  // Returns the raw front button index that was released this frame (or -1 if none).
+  int getReleasedFrontButton() const;
 
   // True when the control axis is flipped relative to the physical buttons: the user opted into
   // orientation-following front buttons AND the screen is *currently rendered* rotated (INVERTED /

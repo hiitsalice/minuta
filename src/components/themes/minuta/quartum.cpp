@@ -20,6 +20,98 @@ constexpr int titleAreaHeight = 35;
 constexpr int coverWidthPx = 165;
 constexpr int coverHeightPx = 275;
 constexpr int vGap = 0;
+
+std::vector<std::string> wrapTitleAtWords(const GfxRenderer& renderer, const int fontId,
+                                          const std::string& title, const int maxWidth) {
+  constexpr auto style = EpdFontFamily::REGULAR;
+  constexpr const char* ellipsis = "...";
+
+  std::vector<std::string> words;
+  size_t pos = 0;
+
+  while (pos < title.size()) {
+    while (pos < title.size() && title[pos] == ' ') {
+      ++pos;
+    }
+    if (pos >= title.size()) {
+      break;
+    }
+
+    const size_t end = title.find(' ', pos);
+    words.push_back(title.substr(pos, end == std::string::npos ? std::string::npos : end - pos));
+
+    if (end == std::string::npos) {
+      break;
+    }
+    pos = end + 1;
+  }
+
+  if (words.empty()) {
+    return {};
+  }
+
+  std::vector<std::string> lines;
+  std::string first;
+  size_t wordIndex = 0;
+
+  while (wordIndex < words.size()) {
+    const std::string candidate = first.empty() ? words[wordIndex] : first + " " + words[wordIndex];
+
+    if (renderer.getTextWidth(fontId, candidate.c_str(), style) > maxWidth) {
+      break;
+    }
+
+    first = candidate;
+    ++wordIndex;
+  }
+
+  if (first.empty()) {
+    first = renderer.truncatedText(fontId, words[0].c_str(), maxWidth, style);
+    wordIndex = 1;
+  }
+
+  lines.push_back(first);
+
+  if (wordIndex >= words.size()) {
+    return lines;
+  }
+
+  std::string remaining;
+  for (size_t i = wordIndex; i < words.size(); ++i) {
+    if (!remaining.empty()) {
+      remaining += " ";
+    }
+    remaining += words[i];
+  }
+
+  if (renderer.getTextWidth(fontId, remaining.c_str(), style) <= maxWidth) {
+    lines.push_back(remaining);
+    return lines;
+  }
+
+  std::string second;
+
+  while (wordIndex < words.size()) {
+    const std::string candidate = second.empty() ? words[wordIndex] : second + " " + words[wordIndex];
+    const bool moreWordsRemain = wordIndex + 1 < words.size();
+    const std::string measured = candidate + (moreWordsRemain ? ellipsis : "");
+
+    if (renderer.getTextWidth(fontId, measured.c_str(), style) > maxWidth) {
+      break;
+    }
+
+    second = candidate;
+    ++wordIndex;
+  }
+
+  if (second.empty()) {
+    lines.push_back(renderer.truncatedText(fontId, remaining.c_str(), maxWidth, style));
+  } else {
+    lines.push_back(second + ellipsis);
+  }
+
+  return lines;
+}
 }  // namespace
 
 void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,
@@ -32,8 +124,10 @@ void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const s
   const int colWidth = coverWidthPx + columnGap;
   const int coverWidth = coverWidthPx;
 
-  const int topTitleY = rect.y;
-  const int topCoverY = rect.y + titleAreaHeight;
+  constexpr int contentYOffset = 9;
+
+  const int topTitleY = rect.y + contentYOffset;
+  const int topCoverY = rect.y + contentYOffset + titleAreaHeight;
 
   const int bottomCoverY = topCoverY + coverHeightPx + rowGap;
   const int bottomTitleY = bottomCoverY + coverHeightPx;
@@ -86,50 +180,57 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
   const int tileX = rect.x + hPadding + col * colWidth;
   const int coverY = isTopRow ? topCoverY : bottomCoverY;
 
-  renderer.drawRect(tileX, coverY, coverWidth, coverHeightPx, true);
+  // Double inset outline so selection remains visible over the cover itself.
+  renderer.drawRect(tileX + 1, coverY + 1, coverWidth - 2, coverHeightPx - 2, true);
+  renderer.drawRect(tileX + 2, coverY + 2, coverWidth - 4, coverHeightPx - 4, true);
 }
 
-  // Draw one centred title for each occupied slot.
-// Top-row titles sit against the 60px top margin.
-// Bottom-row titles use a baseline at y=710, matching Solum.
-for (int i = 0; i < bookCount; i++) {
-  const bool isTopRow = (i < 2);
-  const int col = i % 2;
-  const int tileX = rect.x + hPadding + col * colWidth;
+  // Draw up to two centred title lines for each occupied slot.
+  // One-line titles stay close to the cover; two-line titles expand away from it.
+  constexpr int titleLineGap = 6;
+  constexpr int titleCoverGap = 9;
+  constexpr int titleMaxWidth = 150;
+  const int titleLineHeight = renderer.getTextHeight(UI_11_FONT_ID);
 
-  const auto title =
-      renderer.truncatedText(
-          UI_21_FONT_ID,
-          recentBooks[i].title.c_str(),
-          coverWidth,
+  for (int i = 0; i < bookCount; i++) {
+    const bool isTopRow = (i < 2);
+    const int col = i % 2;
+    const int tileX = rect.x + hPadding + col * colWidth;
+
+    const auto lines =
+        wrapTitleAtWords(renderer, UI_11_FONT_ID, recentBooks[i].title, titleMaxWidth);
+
+    if (lines.empty()) {
+      continue;
+    }
+
+    const int blockHeight =
+        static_cast<int>(lines.size()) * titleLineHeight +
+        (static_cast<int>(lines.size()) - 1) * titleLineGap;
+
+    int titleY;
+
+    if (isTopRow) {
+      titleY = topCoverY - blockHeight - titleCoverGap;
+    } else {
+      titleY = bottomTitleY + titleCoverGap;
+    }
+
+    for (const auto& line : lines) {
+      const int titleWidth =
+          renderer.getTextWidth(UI_11_FONT_ID, line.c_str(), EpdFontFamily::REGULAR);
+      const int titleX = tileX + (coverWidth - titleWidth) / 2;
+
+      renderer.drawText(
+          UI_11_FONT_ID,
+          titleX,
+          titleY,
+          line.c_str(),
+          true,
           EpdFontFamily::REGULAR
       );
 
-  const int titleWidth =
-      renderer.getTextWidth(
-          UI_21_FONT_ID,
-          title.c_str(),
-          EpdFontFamily::REGULAR
-      );
-
-  const int titleX = tileX + (coverWidth - titleWidth) / 2;
-
-  int titleY;
-
-  if (isTopRow) {
-    titleY = topTitleY;
-  } else {
-    const int titleBaselineY = bottomTitleY + titleAreaHeight;
-    titleY = titleBaselineY - renderer.getFontAscenderSize(UI_21_FONT_ID);
+      titleY += titleLineHeight + titleLineGap;
+    }
   }
-
-  renderer.drawText(
-      UI_21_FONT_ID,
-      titleX,
-      titleY,
-      title.c_str(),
-      true,
-      EpdFontFamily::REGULAR
-  );
-}
 }
