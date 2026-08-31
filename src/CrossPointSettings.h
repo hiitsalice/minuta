@@ -206,12 +206,12 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // Sleep screen cover filter
   uint8_t sleepScreenCoverFilter = NO_FILTER;
   // Status bar settings
-  uint8_t statusBarChapterPageCount = 1;
-  uint8_t statusBarBookProgressPercentage = 1;
-  uint8_t statusBarProgressBar = HIDE_PROGRESS;
-  uint8_t statusBarProgressBarThickness = PROGRESS_BAR_NORMAL;
-  uint8_t statusBarTitle = CHAPTER_TITLE;
-  uint8_t statusBarBattery = 1;
+  uint8_t statusBarChapterPageCount = 0;
+  uint8_t statusBarBookProgressPercentage = 0;
+  uint8_t statusBarProgressBar = BOOK_PROGRESS;
+  uint8_t statusBarProgressBarThickness = PROGRESS_BAR_THICK;
+  uint8_t statusBarTitle = HIDE_TITLE;
+  uint8_t statusBarBattery = 0;
   uint8_t xtcStatusBarMode = XTC_STATUS_BAR_HIDE;
   // Clock display in status bar (X3 only, requires DS3231 RTC)
   uint8_t statusBarClock = STATUS_BAR_CLOCK_HIDE;
