@@ -69,18 +69,18 @@ void SolumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std
   // Centre the title beneath the cover.
 // The normal text baseline sits at y=710, leaving a 90px bottom margin.
 const int titleBaselineY = tileY + coverHeight + titleAreaHeight;
-const int titleY = titleBaselineY - renderer.getFontAscenderSize(UI_12_FONT_ID);
+const int titleY = titleBaselineY - renderer.getFontAscenderSize(UI_32_FONT_ID);
 
 const auto truncatedTitle =
-    renderer.truncatedText(UI_12_FONT_ID, book.title.c_str(), tileWidth, EpdFontFamily::REGULAR);
+    renderer.truncatedText(UI_32_FONT_ID, book.title.c_str(), tileWidth, EpdFontFamily::REGULAR);
 
 const int titleTextWidth =
-    renderer.getTextWidth(UI_12_FONT_ID, truncatedTitle.c_str(), EpdFontFamily::REGULAR);
+    renderer.getTextWidth(UI_32_FONT_ID, truncatedTitle.c_str(), EpdFontFamily::REGULAR);
 
 const int titleX = tileX + (tileWidth - titleTextWidth) / 2;
 
 renderer.drawText(
-    UI_12_FONT_ID,
+    UI_32_FONT_ID,
     titleX,
     titleY,
     truncatedTitle.c_str(),
