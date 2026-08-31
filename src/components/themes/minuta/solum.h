@@ -9,10 +9,11 @@ class GfxRenderer;
 namespace SolumMetrics {
 constexpr ThemeMetrics values = [] {
   ThemeMetrics v = LyraMetrics::values;
-  // Big single cover: tall tile, only 1 book shown on the home tile at a time.
-  v.homeCoverTileHeight = 460;
-  v.homeCoverHeight = 460;
-  v.homeRecentBooksCount = 1;
+  // Solum home layout: 60px top margin, 600px cover, 50px title area.
+v.homeTopPadding = 60;
+v.homeCoverTileHeight = 650;
+v.homeCoverHeight = 600;
+v.homeRecentBooksCount = 1;
   return v;
 }();
 }  // namespace SolumMetrics
