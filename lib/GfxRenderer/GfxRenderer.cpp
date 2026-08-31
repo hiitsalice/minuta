@@ -1453,6 +1453,73 @@ void GfxRenderer::drawBitmap(const Bitmap& bitmap, const int x, const int y, con
   preserveImagePolarity(x, y, renderedWidth, renderedHeight);
 }
 
+void GfxRenderer::drawBitmapStretched(const Bitmap& bitmap, const int x, const int y, const int width,
+                                      const int height) const {
+  if (fontCacheManager_ && fontCacheManager_->isScanning()) return;
+
+  const int sourceWidth = bitmap.getWidth();
+  const int sourceHeight = bitmap.getHeight();
+
+  if (width <= 0 || height <= 0 || sourceWidth <= 0 || sourceHeight <= 0) return;
+
+  const int outputRowSize = (sourceWidth + 3) / 4;
+  auto* outputRow = static_cast<uint8_t*>(malloc(outputRowSize));
+  auto* rowBytes = static_cast<uint8_t*>(malloc(bitmap.getRowBytes()));
+
+  if (!outputRow || !rowBytes) {
+    LOG_ERR("GFX", "Failed to allocate stretched bitmap row buffers");
+    free(outputRow);
+    free(rowBytes);
+    return;
+  }
+
+  for (int bmpY = 0; bmpY < sourceHeight; bmpY++) {
+    if (bitmap.readNextRow(outputRow, rowBytes) != BmpReaderError::Ok) {
+      LOG_ERR("GFX", "Failed to read stretched bitmap row %d", bmpY);
+      free(outputRow);
+      free(rowBytes);
+      return;
+    }
+
+    const int sourceY = bitmap.isTopDown() ? bmpY : sourceHeight - 1 - bmpY;
+
+    const int destYStart = sourceY * height / sourceHeight;
+    const int destYEnd = (sourceY + 1) * height / sourceHeight;
+
+    if (destYStart >= destYEnd) continue;
+
+    for (int destX = 0; destX < width; destX++) {
+      const int sourceX = destX * sourceWidth / width;
+
+      const uint8_t val =
+          (outputRow[sourceX / 4] >> (6 - ((sourceX * 2) % 8))) & 0x3;
+
+      for (int destY = destYStart; destY < destYEnd; destY++) {
+        const int screenX = x + destX;
+        const int screenY = y + destY;
+
+        if (screenX < 0 || screenX >= getScreenWidth() ||
+            screenY < 0 || screenY >= getScreenHeight()) {
+          continue;
+        }
+
+        if (renderMode == BW && val < 3) {
+          drawPixel(screenX, screenY);
+        } else if (renderMode == GRAYSCALE_MSB && (val == 1 || val == 2)) {
+          drawPixel(screenX, screenY, false);
+        } else if (renderMode == GRAYSCALE_LSB && val == 1) {
+          drawPixel(screenX, screenY, false);
+        }
+      }
+    }
+  }
+
+  free(outputRow);
+  free(rowBytes);
+
+  preserveImagePolarity(x, y, width, height);
+}
+
 void GfxRenderer::drawBitmap1Bit(const Bitmap& bitmap, const int x, const int y, const int maxWidth,
                                  const int maxHeight) const {
   float scale = 1.0f;
