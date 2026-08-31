@@ -359,7 +359,9 @@ void HomeActivity::render(RenderLock&&) {
         [&menuIcons](int index) { return menuIcons[index]; });
   }
 
-  const auto labels = mappedInput.mapLabels(tr(STR_HOME_BROWSE), tr(STR_HOME_READ), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+  const bool isQuartum = SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM;
+  const auto labels = mappedInput.mapLabels(tr(STR_HOME_BROWSE), tr(STR_HOME_READ), isQuartum ? "Prev" : "",
+                                             isQuartum ? "Next" : "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer(cleanInitialRefresh && !firstRenderDone ? HalDisplay::HALF_REFRESH : HalDisplay::FAST_REFRESH);
