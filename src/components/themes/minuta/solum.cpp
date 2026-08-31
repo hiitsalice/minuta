@@ -45,12 +45,7 @@ void SolumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std
       if (Storage.openFileForRead("HOME", coverBmpPath, file)) {
         Bitmap bitmap(file);
         if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-          float bmpHeight = static_cast<float>(bitmap.getHeight());
-          float bmpWidth = static_cast<float>(bitmap.getWidth());
-          float ratio = bmpWidth / bmpHeight;
-          const float tileRatio = static_cast<float>(tileWidth) / static_cast<float>(coverHeight);
-          float cropX = 1.0f - (tileRatio / ratio);
-          renderer.drawBitmap(bitmap, tileX, tileY, tileWidth, coverHeight, cropX);
+          renderer.drawBitmapStretched(bitmap, tileX, tileY, tileWidth, coverHeight);
         } else {
           hasCover = false;
         }
