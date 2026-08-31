@@ -228,26 +228,30 @@ void SettingsActivity::stepTab(const int direction) {
 }
 
    void SettingsActivity::navigateButtons() {
-     // Same as the base tab-list navigation, except: pressing the front
-     // Prev/Next buttons while ON the tab row switches tabs immediately
-     // (via stepTab), instead of the base class's "hold to switch, tap to
-     // just scroll into row 1" behavior. Row-scrolling elsewhere is unchanged.
-     const int ringSize = listCount() + 1;
-     buttonNavigator.onNextRelease([this, ringSize] {
-       if (ringPos() == 0) {
-         stepTab(1);
-       } else {
-         moveRingTo(ButtonNavigator::nextIndex(ringPos(), ringSize));
-       }
-     });
-     buttonNavigator.onPreviousRelease([this, ringSize] {
-       if (ringPos() == 0) {
-         stepTab(-1);
-       } else {
-         moveRingTo(ButtonNavigator::previousIndex(ringPos(), ringSize));
-       }
-     });
-   }
+  const int ringSize = listCount() + 1;
+
+  // Side buttons: move up/down through the settings list.
+  if (mappedInput.wasReleased(MappedInputManager::Button::Down)) {
+    moveRingTo(ButtonNavigator::nextIndex(ringPos(), ringSize));
+    return;
+  }
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Up)) {
+    moveRingTo(ButtonNavigator::previousIndex(ringPos(), ringSize));
+    return;
+  }
+
+  // Front Left/Right buttons: switch settings tabs.
+  if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+    stepTab(1);
+    return;
+  }
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
+    stepTab(-1);
+    return;
+  }
+}
 
 bool SettingsActivity::handleButtons() {
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
