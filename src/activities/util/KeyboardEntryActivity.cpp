@@ -839,35 +839,35 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   }
 
   if (hintVisible && !text.empty()) {
-    const int hintLh = renderer.getLineHeight(SMALL_FONT_ID);
+    const int hintLh = renderer.getLineHeight(UI_10_FONT_ID);
     const int underlineY = inputStartY + inputHeight + lineHeight + metrics.verticalSpacing;
     const int hintY = underlineY + 4;
     if (cursorMode) {
       int hintLineY = hintY;
       if (inputType == InputType::Password && togglePos) {
         renderer.drawCenteredText(
-            SMALL_FONT_ID, hintLineY,
+            UI_10_FONT_ID, hintLineY,
             passwordVisible ? tr(STR_KB_HINT_TOGGLE_HIDE_PASSWORD) : tr(STR_KB_HINT_TOGGLE_SHOW_PASSWORD), true);
         hintLineY += hintLh;
-        renderer.drawCenteredText(SMALL_FONT_ID, hintLineY, tr(STR_KB_HINT_RETURN_CURSOR), true);
+        renderer.drawCenteredText(UI_10_FONT_ID, hintLineY, tr(STR_KB_HINT_RETURN_CURSOR), true);
       } else {
-        renderer.drawCenteredText(SMALL_FONT_ID, hintLineY, tr(STR_KB_HINT_MOVE_CURSOR), true);
+        renderer.drawCenteredText(UI_10_FONT_ID, hintLineY, tr(STR_KB_HINT_MOVE_CURSOR), true);
         hintLineY += hintLh;
         if (inputType == InputType::Password) {
           const char* passTip = passwordVisible ? tr(STR_KB_HINT_HIDE_PASSWORD) : tr(STR_KB_HINT_SHOW_PASSWORD);
-          renderer.drawCenteredText(SMALL_FONT_ID, hintLineY, passTip, true);
+          renderer.drawCenteredText(UI_10_FONT_ID, hintLineY, passTip, true);
         }
       }
     } else {
-      renderer.drawCenteredText(SMALL_FONT_ID, hintY, tr(STR_KB_HINT_EDIT_ENTRY), true);
+      renderer.drawCenteredText(UI_10_FONT_ID, hintY, tr(STR_KB_HINT_EDIT_ENTRY), true);
     }
   }
 
   const fui::Rect kbRect = keyboardRect();
 
-  const int tipsLh = renderer.getLineHeight(SMALL_FONT_ID);
+  const int tipsLh = renderer.getLineHeight(UI_10_FONT_ID);
   const int underlineBottom = inputStartY + inputHeight + lineHeight + metrics.verticalSpacing + 4;
-  auto drawTip = [&](const char* tip, int y) { renderer.drawCenteredText(SMALL_FONT_ID, y, tip, true); };
+  auto drawTip = [&](const char* tip, int y) { renderer.drawCenteredText(UI_10_FONT_ID, y, tip, true); };
 
   int tipCount = 0;
   if (cursorMode) {
@@ -925,7 +925,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   // half-rebuilt table no matter when it runs relative to this.
   interactions.beginPublishCycle();
   fui::GfxRendererTarget target(renderer);
-  target.setFont(fui::GfxRendererTarget::FONT_SMALL, SMALL_FONT_ID);
+  target.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
   target.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
   const fui::DeviceContext device = target.deviceContext();
   const fui::InputSnapshot noInput{};

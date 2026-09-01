@@ -429,7 +429,7 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   // Full path band at the bottom: separator on top, left-truncated so the
   // deepest directory stays visible.
   {
-    const int pathLineHeight = renderer.getLineHeight(SMALL_FONT_ID);
+    const int pathLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
     const fui::Rect band = screen.takeBottom(static_cast<int16_t>(pathLineHeight + metrics.verticalSpacing));
     screen.target().fill(fui::Rect{band.x, band.y, band.width, 3}, fui::Paint::solid(fui::Color::Black));
     const int pathY =
@@ -438,21 +438,21 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
     const char* pathStr = basepath.c_str();
     const char* pathDisplay = pathStr;
     char leftTruncBuf[256];
-    if (renderer.getTextWidth(SMALL_FONT_ID, pathStr) > pathMaxWidth) {
+    if (renderer.getTextWidth(UI_10_FONT_ID, pathStr) > pathMaxWidth) {
       const char ellipsis[] = "\xe2\x80\xa6";  // UTF-8 ellipsis (…)
-      const int ellipsisWidth = renderer.getTextWidth(SMALL_FONT_ID, ellipsis);
+      const int ellipsisWidth = renderer.getTextWidth(UI_10_FONT_ID, ellipsis);
       const int available = pathMaxWidth - ellipsisWidth;
       // Walk forward from the start until the suffix fits, skipping UTF-8 continuation bytes
       const char* p = pathStr;
       while (*p) {
-        if (renderer.getTextWidth(SMALL_FONT_ID, p) <= available) break;
+        if (renderer.getTextWidth(UI_10_FONT_ID, p) <= available) break;
         ++p;
         while (*p && (static_cast<unsigned char>(*p) & 0xC0) == 0x80) ++p;
       }
       snprintf(leftTruncBuf, sizeof(leftTruncBuf), "%s%s", ellipsis, p);
       pathDisplay = leftTruncBuf;
     }
-    renderer.drawText(SMALL_FONT_ID, band.x + metrics.contentSidePadding, pathY, pathDisplay);
+    renderer.drawText(UI_10_FONT_ID, band.x + metrics.contentSidePadding, pathY, pathDisplay);
   }
 
   if (files.empty()) {

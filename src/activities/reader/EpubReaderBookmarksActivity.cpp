@@ -211,7 +211,7 @@ void EpubReaderBookmarksActivity::buildScreen(UiScreen& screen) {
   // "Hold Open to Delete" names a physical button; on touch boards the row
   // long-press covers deletion, so the hint would be wrong there.
   if (!mappedInput.hasTouch()) {
-    const int helpLineHeight = renderer.getLineHeight(SMALL_FONT_ID);
+    const int helpLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
     const fui::Rect band = screen.takeBottom(static_cast<int16_t>(helpLineHeight + metrics.verticalSpacing));
     GUI.drawHelpText(renderer, Rect{band.x, band.y + metrics.verticalSpacing, band.width, helpLineHeight},
                      tr(STR_HOLD_OPEN_TO_DELETE));

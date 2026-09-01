@@ -1021,7 +1021,7 @@ void WifiSelectionActivity::renderNetworkList(const Rect* screen, const ThemeMet
     // on-screen Retry button from the screen builder instead of this hint.
     const auto height = renderer.getLineHeight(UI_10_FONT_ID);
     const auto top = screen->y + (screen->height - height) / 2;
-    UITheme::drawCenteredText(renderer, *screen, SMALL_FONT_ID, top + height + 10, tr(STR_PRESS_OK_SCAN));
+    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, top + height + 10, tr(STR_PRESS_OK_SCAN));
   }
 
   GUI.drawHelpText(renderer,
