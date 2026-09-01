@@ -198,6 +198,12 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
     const int tileX = rect.x + hPadding + col * colWidth;
     const int coverY = isTopRow ? topCoverY : bottomCoverY;
 
+    // Only the selected recent book shows its metadata.
+    // All cover geometry remains unchanged.
+    if (i != selectorIndex) {
+      continue;
+    }
+
     const auto lines =
         wrapTitleAtWords(renderer, UI_11_FONT_ID, recentBooks[i].title, titleMaxWidth);
 
