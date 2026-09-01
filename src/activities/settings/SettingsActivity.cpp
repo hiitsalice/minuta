@@ -263,13 +263,8 @@ bool SettingsActivity::handleButtons() {
   }
 
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-    if (ringPos() > 0) {
-      activeNav().selected = 0;
-      requestUpdate();
-    } else {
-      SETTINGS.saveToFile();
-      onGoHome();
-    }
+    SETTINGS.saveToFile();
+    onGoHome();
     return true;
   }
 
