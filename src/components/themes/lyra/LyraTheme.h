@@ -6,8 +6,8 @@ class GfxRenderer;
 
 // Lyra theme metrics (zero runtime cost)
 namespace LyraMetrics {
-constexpr ThemeMetrics values = {.batteryWidth = 16,
-                                 .batteryHeight = 12,
+constexpr ThemeMetrics values = {.batteryWidth = 18,
+                                 .batteryHeight = 14,
                                  .topPadding = 5,
                                  .batteryBarHeight = 40,
                                  .headerHeight = 84,

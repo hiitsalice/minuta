@@ -222,6 +222,9 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
     language = static_cast<uint8_t>(I18n::languageFromCode(doc["language"].as<const char*>()));
   }
 
+  // Minuta always shows the main UI battery and percentage.
+  hideBatteryPercentage = HIDE_NEVER;
+
   if (needsResave) {
     LOG_DBG("CPS", "Resaving settings to update format");
     requestResave();
