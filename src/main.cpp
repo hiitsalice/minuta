@@ -148,20 +148,6 @@ EpdFont steinem18BoldItalicFont(&steinem_18_bolditalic);
 EpdFontFamily steinem18FontFamily(&steinem18RegularFont, &steinem18BoldFont, &steinem18ItalicFont,
                                   &steinem18BoldItalicFont);
 
-EpdFont steinem21RegularFont(&steinem_21_regular);
-EpdFont steinem21BoldFont(&steinem_21_bold);
-EpdFont steinem21ItalicFont(&steinem_21_italic);
-EpdFont steinem21BoldItalicFont(&steinem_21_bolditalic);
-EpdFontFamily steinem21FontFamily(&steinem21RegularFont, &steinem21BoldFont, &steinem21ItalicFont,
-                                  &steinem21BoldItalicFont);
-
-EpdFont steinem32RegularFont(&steinem_32_regular);
-EpdFont steinem32BoldFont(&steinem_32_bold);
-EpdFont steinem32ItalicFont(&steinem_32_italic);
-EpdFont steinem32BoldItalicFont(&steinem_32_bolditalic);
-EpdFontFamily steinem32FontFamily(&steinem32RegularFont, &steinem32BoldFont, &steinem32ItalicFont,
-                                  &steinem32BoldItalicFont);
-
 // Definitions for SilentRestart.h. RTC_NOINIT survives ESP.restart() but not power loss.
 RTC_NOINIT_ATTR uint32_t silentRebootMagic;
 RTC_NOINIT_ATTR uint32_t silentRebootTarget;
@@ -373,8 +359,6 @@ void setupDisplayAndFonts(bool seamless = false) {
   renderer.insertFont(UI_11_FONT_ID, steinem11FontFamily);
   renderer.insertFont(UI_12_FONT_ID, steinem12FontFamily);
   renderer.insertFont(UI_18_FONT_ID, steinem18FontFamily);
-  renderer.insertFont(UI_21_FONT_ID, steinem21FontFamily);
-  renderer.insertFont(UI_32_FONT_ID, steinem32FontFamily);
 
   // Discover and load SD card fonts
   sdFontSystem.begin(renderer);

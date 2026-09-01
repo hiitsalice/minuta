@@ -65,12 +65,4 @@
 #include <builtinFonts/steinem_18_bold.h>
 #include <builtinFonts/steinem_18_bolditalic.h>
 
-#include <builtinFonts/steinem_21_regular.h>
-#include <builtinFonts/steinem_21_italic.h>
-#include <builtinFonts/steinem_21_bold.h>
-#include <builtinFonts/steinem_21_bolditalic.h>
 
-#include <builtinFonts/steinem_32_regular.h>
-#include <builtinFonts/steinem_32_italic.h>
-#include <builtinFonts/steinem_32_bold.h>
-#include <builtinFonts/steinem_32_bolditalic.h>

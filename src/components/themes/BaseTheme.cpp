@@ -796,10 +796,29 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
     }
 
     int progressTextWidth = renderer.getTextWidth(UI_10_FONT_ID, progressStr);
-    const int estimateWidth = showEstimate ? renderer.getTextWidth(UI_10_FONT_ID, "~") : 0;
+    const int estimateWidth =
+        showEstimate ? renderer.getTextWidth(UI_10_FONT_ID, "~") : 0;
     constexpr int estimateGap = 2;
     const int estimateSpacing = showEstimate ? estimateGap : 0;
-    const int progressX = rightClusterX - estimateWidth - estimateSpacing - progressTextWidth;
+    const int progressClusterWidth =
+        estimateWidth + estimateSpacing + progressTextWidth;
+
+    // Minuta: when Chapter Page Count is the only visible status text,
+    // centre it. Progress Bar and Thickness live separately and are ignored.
+    const bool onlyChapterPageCount =
+        sb.showChapterPageCount &&
+        !sb.showBookProgressPercent &&
+        !sb.showBattery &&
+        title.empty();
+
+    const int progressX =
+        onlyChapterPageCount
+            ? orientedMarginLeft +
+                  (renderer.getScreenWidth() -
+                   orientedMarginLeft -
+                   orientedMarginRight -
+                   progressClusterWidth) / 2
+            : rightClusterX - progressClusterWidth;
     if (showEstimate) {
       const int estimateY = textY + (renderer.getLineHeight(UI_10_FONT_ID) - renderer.getLineHeight(UI_10_FONT_ID)) / 2;
       renderer.drawText(UI_10_FONT_ID, progressX, estimateY, "~");

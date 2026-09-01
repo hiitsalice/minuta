@@ -3,6 +3,8 @@
 #include <GfxRenderer.h>
 #include <I18n.h>
 
+#include <algorithm>
+
 #include "activities/ActivityManager.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
@@ -29,7 +31,11 @@ BrowseMenuActivity::BrowseMenuActivity(GfxRenderer& renderer, MappedInputManager
 
 int BrowseMenuActivity::listCount() const { return MENU_ITEM_COUNT; }
 
-const char* BrowseMenuActivity::headerTitle() const { return tr(STR_HOME_BROWSE); }
+const char* BrowseMenuActivity::headerTitle() const { return ""; }
+
+void BrowseMenuActivity::drawChrome() {
+  // Minuta Browse menu intentionally has no header.
+}
 
 void BrowseMenuActivity::activateIndex(const int index) {
   app.clearTapFlash();
@@ -44,15 +50,34 @@ void BrowseMenuActivity::activateIndex(const int index) {
 
 void BrowseMenuActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight), 0,
-                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+
+  // Centre Library + Settings as one block in the usable screen area.
+  const int listHeight =
+      MENU_ITEM_COUNT * metrics.listRowHeight +
+      (MENU_ITEM_COUNT - 1) * metrics.listRowGap;
+
+  const int usableHeight =
+      renderer.getScreenHeight() - metrics.buttonHintsHeight;
+
+  const int topInset =
+      std::max(0, (usableHeight - listHeight) / 2);
+
+  screen.setContentMargin(
+      fui::Insets{
+          static_cast<int16_t>(topInset),
+          40,
+          static_cast<int16_t>(metrics.buttonHintsHeight),
+          40});
 
   fui::ListProps props;
   props.items = rowItems_;
   props.count = static_cast<uint16_t>(MENU_ITEM_COUNT);
   props.action = ACTION_ROW;
-  props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
+  props.inputMask = fui::InputTouch;
+
+  props.labelText = screen.theme().bodyText;
+  props.labelText.align = fui::TextAlign::Center;
+
   syncListViewport(screen, props, /*hasSubtitle=*/false);
   screen.list(props);
 }

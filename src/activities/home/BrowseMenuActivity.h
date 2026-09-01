@@ -15,6 +15,7 @@ class BrowseMenuActivity final : public UiListActivity {
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
   const char* headerTitle() const override;
+  void drawChrome() override;
 
   freeink::ui::ListItem rowItems_[MENU_ITEM_COUNT]{};
 };

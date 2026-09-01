@@ -9,9 +9,10 @@ class GfxRenderer;
 namespace SolumMetrics {
 constexpr ThemeMetrics values = [] {
   ThemeMetrics v = LyraMetrics::values;
-  // Solum home layout: 60px top margin, 600px cover, 50px title area.
-v.homeTopPadding = 60;
-v.homeCoverTileHeight = 650;
+  // Solum home layout: cover sits slightly higher, with room below for
+  // a 16pt title and 10pt author line.
+v.homeTopPadding = 51;
+v.homeCoverTileHeight = 675;
 v.homeCoverHeight = 600;
 v.homeRecentBooksCount = 1;
   return v;

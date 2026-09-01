@@ -14,7 +14,9 @@
 
 namespace {
 constexpr int hPadding = 60;
-constexpr int titleAreaHeight = 50;
+constexpr int textAreaWidth = 400;
+constexpr int titleBaselineGap = 46;
+constexpr int authorGap = -4;
 
 std::string truncateTitleAtWord(const GfxRenderer& renderer, const int fontId, const std::string& title,
                                 const int maxWidth) {
@@ -87,25 +89,61 @@ void SolumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std
     coverRendered = coverBufferStored;
   }
 
-  // Centre the title beneath the cover.
-// The normal text baseline sits at y=710, leaving a 90px bottom margin.
-const int titleBaselineY = tileY + coverHeight + titleAreaHeight;
-const int titleY = titleBaselineY - renderer.getFontAscenderSize(UI_18_FONT_ID);
+  // 16pt title centred beneath the cover.
+  const int titleBaselineY = tileY + coverHeight + titleBaselineGap;
+  const int titleY =
+      titleBaselineY - renderer.getFontAscenderSize(UI_18_FONT_ID);
 
-const auto truncatedTitle =
-    truncateTitleAtWord(renderer, UI_18_FONT_ID, book.title, tileWidth);
+  const auto truncatedTitle =
+      truncateTitleAtWord(renderer, UI_18_FONT_ID, book.title, textAreaWidth);
 
-const int titleTextWidth =
-    renderer.getTextWidth(UI_18_FONT_ID, truncatedTitle.c_str(), EpdFontFamily::REGULAR);
+  const int titleTextWidth =
+      renderer.getTextWidth(
+          UI_18_FONT_ID,
+          truncatedTitle.c_str(),
+          EpdFontFamily::REGULAR);
 
-const int titleX = tileX + (tileWidth - titleTextWidth) / 2;
+  const int textAreaX = rect.x + (rect.width - textAreaWidth) / 2;
+  const int titleX = textAreaX + (textAreaWidth - titleTextWidth) / 2;
 
-renderer.drawText(
-    UI_18_FONT_ID,
-    titleX,
-    titleY,
-    truncatedTitle.c_str(),
-    true,
-    EpdFontFamily::REGULAR
-);
+  renderer.drawText(
+      UI_18_FONT_ID,
+      titleX,
+      titleY,
+      truncatedTitle.c_str(),
+      true,
+      EpdFontFamily::REGULAR
+  );
+
+  // 10pt author centred underneath.
+  if (!book.author.empty()) {
+    const auto truncatedAuthor =
+        truncateTitleAtWord(renderer, UI_12_FONT_ID, book.author, textAreaWidth);
+
+    const int authorWidth =
+        renderer.getTextWidth(
+            UI_12_FONT_ID,
+            truncatedAuthor.c_str(),
+            EpdFontFamily::REGULAR);
+
+    const int authorX = textAreaX + (textAreaWidth - authorWidth) / 2;
+
+    const int authorBaselineY =
+        titleBaselineY +
+        renderer.getLineHeight(UI_18_FONT_ID) +
+        authorGap;
+
+    const int authorY =
+        authorBaselineY -
+        renderer.getFontAscenderSize(UI_12_FONT_ID);
+
+    renderer.drawText(
+        UI_12_FONT_ID,
+        authorX,
+        authorY,
+        truncatedAuthor.c_str(),
+        true,
+        EpdFontFamily::REGULAR
+    );
+  }
 }
