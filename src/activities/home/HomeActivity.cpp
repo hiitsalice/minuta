@@ -125,7 +125,20 @@ void HomeActivity::onEnter() {
   loadRecentBooks(metrics.homeRecentBooksCount);
 
   const auto base = static_cast<int>(recentBooks.size());
-  selectorIndex = initialMenuItem == HomeMenuItem::NONE ? 0 : base + menuItemToIndex(initialMenuItem, hasOpdsServers);
+
+  // Solum and Quartum are cover-only home screens. They must always enter
+  // with the first book selected rather than inheriting a menu selection
+  // such as Settings from the screen we returned from.
+  const bool isCoverTheme =
+      SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM ||
+      SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM;
+
+  selectorIndex =
+      isCoverTheme
+          ? 0
+          : (initialMenuItem == HomeMenuItem::NONE
+                 ? 0
+                 : base + menuItemToIndex(initialMenuItem, hasOpdsServers));
 
   // Trigger first update
   requestUpdate();
@@ -248,7 +261,10 @@ void HomeActivity::loop() {
 
     if (bookCount > 0) {
       if (frontButton == HalGPIO::BTN_CONFIRM) {
-        activateSelection();
+        // Quartum's Read button may only open one of the visible books.
+        // Never let an invalid/stale selector fall through to a home menu item.
+        selectorIndex = std::clamp(selectorIndex, 0, bookCount - 1);
+        onSelectBook(recentBooks[selectorIndex].path);
         return;
       }
 
