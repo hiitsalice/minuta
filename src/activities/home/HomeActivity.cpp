@@ -392,11 +392,13 @@ void HomeActivity::render(RenderLock&&) {
   renderer.clearScreen();
   bool bufferRestored = coverBufferStored && restoreCoverBuffer();
 
-  // Band spans topPadding..homeTopPadding: the cover tile starts at the fixed
-  // homeTopPadding, so the height must shrink by topPadding or the band (and a
-  // centered title, e.g. RoundedRaff's book title) sinks into the tile.
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.homeTopPadding - metrics.topPadding},
-                 metrics.homeContinueReadingInMenu && !recentBooks.empty() ? recentBooks[0].title.c_str() : nullptr);
+  GUI.drawHeader(
+      renderer,
+      Rect{0, metrics.topPadding, pageWidth,
+           metrics.homeTopPadding - metrics.topPadding},
+      metrics.homeContinueReadingInMenu && !recentBooks.empty()
+          ? recentBooks[0].title.c_str()
+          : nullptr);
 
   // Record the tile rect so storeCoverBuffer (called from the theme) knows
   // which sub-region of the framebuffer to snapshot. ~16 KB in Portrait
@@ -441,8 +443,8 @@ void HomeActivity::render(RenderLock&&) {
   const bool isQuartum = SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM;
   const auto labels =
       isQuartum
-          ? mappedInput.mapLabels(tr(STR_HOME_BROWSE), tr(STR_HOME_READ), "Prev", "Next")
-          : mappedInput.mapLabels(tr(STR_HOME_BROWSE), "", "", tr(STR_HOME_READ));
+          ? mappedInput.mapLabels("Menu", tr(STR_HOME_READ), "Prev", "Next")
+          : mappedInput.mapLabels("Menu", "", "", tr(STR_HOME_READ));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer(cleanInitialRefresh && !firstRenderDone ? HalDisplay::HALF_REFRESH : HalDisplay::FAST_REFRESH);

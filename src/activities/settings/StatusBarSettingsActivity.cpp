@@ -13,6 +13,7 @@
 #include "MappedInputManager.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
+#include "components/UiAppHelpers.h"
 
 namespace fui = freeink::ui;
 
@@ -235,6 +236,11 @@ std::string StatusBarSettingsActivity::rowValueText(const int index) {
 }
 
 void StatusBarSettingsActivity::buildScreen(UiScreen& screen) {
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_11_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_11_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
+
+  // Match the main Settings menu: Steinem 11 for names and values.
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Reserve the bottom band for the live status-bar preview footer (label +
   // bar) so the list never runs underneath it, plus the button-hints row below.
@@ -243,7 +249,7 @@ void StatusBarSettingsActivity::buildScreen(UiScreen& screen) {
   const int statusBarHeight = UITheme::getInstance().getStatusBarHeight();
   const auto previewFooter =
       static_cast<int16_t>(statusBarHeight + verticalPreviewTextPadding + metrics.verticalSpacing);
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight + previewFooter), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
 
@@ -262,6 +268,7 @@ void StatusBarSettingsActivity::buildScreen(UiScreen& screen) {
   props.action = ACTION_ROW;
   props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
   props.valueInset = 8;               // air between the value and the row edge
+  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight + 4);
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 2;  // also the explicitly-set marker, see SettingsActivity
   syncListViewport(screen, props);
@@ -278,7 +285,7 @@ void StatusBarSettingsActivity::render(RenderLock&&) {
 
   // Header via GUI.drawHeader (already FreeInkUI-themed) for the battery
   // indicator; the list renders through the app; the preview stays raw.
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, tr(STR_CUSTOMISE_STATUS_BAR));
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_CUSTOMISE_STATUS_BAR));
 
   renderUi();
 
@@ -295,7 +302,7 @@ void StatusBarSettingsActivity::render(RenderLock&&) {
   // Anchor the preview as a footer directly above the button hints.
   GUI.drawStatusBar(renderer, 75, 8, 32, title, metrics.buttonHintsHeight, 0, false);
 
-  renderer.drawCenteredText(UI_10_FONT_ID,
+  renderer.drawCenteredText(SMALL_FONT_ID,
                             renderer.getScreenHeight() - UITheme::getInstance().getStatusBarHeight() -
                                 metrics.buttonHintsHeight - verticalPreviewTextPadding,
                             tr(STR_PREVIEW));

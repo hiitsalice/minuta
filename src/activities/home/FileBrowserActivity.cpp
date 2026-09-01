@@ -91,11 +91,9 @@ void FileBrowserActivity::rebuildRowItems() {
   rowItems.reserve(files.size());
   for (size_t i = 0; i < files.size(); i++) {
     rowNames[i] = getFileName(files[i]);
-    rowExtensions[i] = getFileExtension(files[i]);
+    rowExtensions[i].clear();
     fui::ListItem item;
     item.label = rowNames[i].c_str();
-    if (!rowExtensions[i].empty()) item.value = rowExtensions[i].c_str();
-    item.icon = listIconFor(UITheme::getFileIcon(files[i]));
     item.actionValue = static_cast<int16_t>(i);
     rowItems.push_back(item);
   }
@@ -402,9 +400,6 @@ bool FileBrowserActivity::handleButtons() {
 std::string getFileName(std::string filename) {
   if (filename.back() == '/') {
     filename.pop_back();
-    if (!UITheme::getInstance().getTheme().showsFileIcons()) {
-      return "[" + filename + "]";
-    }
     return filename;
   }
   const auto pos = filename.rfind('.');
@@ -420,17 +415,27 @@ std::string getFileExtension(const std::string& filename) {
 }
 
 void FileBrowserActivity::buildScreen(UiScreen& screen) {
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_11_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_11_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
+
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
 
   // Full path band at the bottom: separator on top, left-truncated so the
   // deepest directory stays visible.
   {
-    const int pathLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
-    const fui::Rect band = screen.takeBottom(static_cast<int16_t>(pathLineHeight + metrics.verticalSpacing));
+    const int pathLineHeight = renderer.getLineHeight(SMALL_FONT_ID);
+    const fui::Rect pathBand = screen.takeBottom(static_cast<int16_t>(pathLineHeight + metrics.verticalSpacing));
+    // Lift the entire footer band 3px: separator and path move together.
+    const fui::Rect band{
+        pathBand.x,
+        static_cast<int16_t>(pathBand.y - 6),
+        pathBand.width,
+        pathBand.height};
     screen.target().fill(fui::Rect{band.x, band.y, band.width, 3}, fui::Paint::solid(fui::Color::Black));
     const int pathY =
         band.y + metrics.verticalSpacing / 2 + (band.height - metrics.verticalSpacing / 2 - pathLineHeight) / 2;
@@ -438,22 +443,26 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
     const char* pathStr = basepath.c_str();
     const char* pathDisplay = pathStr;
     char leftTruncBuf[256];
-    if (renderer.getTextWidth(UI_10_FONT_ID, pathStr) > pathMaxWidth) {
+    if (renderer.getTextWidth(SMALL_FONT_ID, pathStr) > pathMaxWidth) {
       const char ellipsis[] = "\xe2\x80\xa6";  // UTF-8 ellipsis (…)
-      const int ellipsisWidth = renderer.getTextWidth(UI_10_FONT_ID, ellipsis);
+      const int ellipsisWidth = renderer.getTextWidth(SMALL_FONT_ID, ellipsis);
       const int available = pathMaxWidth - ellipsisWidth;
       // Walk forward from the start until the suffix fits, skipping UTF-8 continuation bytes
       const char* p = pathStr;
       while (*p) {
-        if (renderer.getTextWidth(UI_10_FONT_ID, p) <= available) break;
+        if (renderer.getTextWidth(SMALL_FONT_ID, p) <= available) break;
         ++p;
         while (*p && (static_cast<unsigned char>(*p) & 0xC0) == 0x80) ++p;
       }
       snprintf(leftTruncBuf, sizeof(leftTruncBuf), "%s%s", ellipsis, p);
       pathDisplay = leftTruncBuf;
     }
-    renderer.drawText(UI_10_FONT_ID, band.x + metrics.contentSidePadding, pathY, pathDisplay);
+    renderer.drawText(SMALL_FONT_ID, band.x + metrics.contentSidePadding, pathY, pathDisplay);
   }
+
+  // Give the file/folder list a little more breathing room below the header.
+  // Footer/path position stays unchanged.
+  screen.spacer(3);
 
   if (files.empty()) {
     screen.centeredText(mode == Mode::PickFirmware ? tr(STR_NO_BIN_FILES) : tr(STR_NO_FILES_FOUND),
@@ -469,13 +478,14 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
     rebuildRowItems();
   }
 
+  // Minuta Library: clean centred Steinem 11 names with no metadata column.
+
   fui::ListProps props;
   props.items = rowItems.data();
   props.count = static_cast<uint16_t>(rowItems.size());
   props.action = ACTION_ROW;
   // Tap opens/navigates; long-press prompts delete (physical buttons stay in loop()).
   props.inputMask = fui::InputTouch | fui::InputLongPress;
-  props.valueInset = 8;  // air between the extension and the row edge
   // File names in the small font, wrapping onto a second line inside the same
   // row height (rowHeight is derived from the small font itself: two of its
   // lines plus 8, so two small lines always fit), so long names show more
@@ -484,6 +494,7 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   // bodyText back (FONT_SLOT_SMALL is 0).
   fui::TextStyle label = screen.theme().smallText;
   label.maxLines = 2;
+  label.align = fui::TextAlign::Center;
   props.labelText = label;
   // The trailing value here is just the short extension: skip the balanced
   // 60%-band wrap cap and let both name lines run the full width before it.
@@ -491,7 +502,7 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   // Wrapped two-line names shrink how many rows fit a page, so the last row
   // of a page can end up in leftover space: draw it as a partial preview so
   // files past the fold are visibly present, not silently absent.
-  props.partialTrailingRow = true;
+  props.partialTrailingRow = false;
   syncListViewport(screen, props);
   screen.list(props);
 }
@@ -506,7 +517,7 @@ void FileBrowserActivity::drawChrome() {
           : ((basepath == "/") ? std::string(tr(STR_SD_CARD)) : basepath.substr(basepath.rfind('/') + 1));
   // Header via GUI.drawHeader (already FreeInkUI-themed) for the battery
   // indicator; the rest of the screen renders through the app.
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, folderName.c_str());
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, folderName.c_str());
 }
 
 void FileBrowserActivity::drawFooter() {

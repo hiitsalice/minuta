@@ -17,6 +17,7 @@
 #include "TextSettingsPreview.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
+#include "components/UiAppHelpers.h"
 
 namespace fui = freeink::ui;
 
@@ -60,7 +61,7 @@ void TextSettingsActivity::onEnter() {
   UiTabListActivity::onEnter();
 
   metrics_ = UITheme::getInstance().getMetrics();
-  afterHeader = metrics_.topPadding + metrics_.headerHeight + metrics_.verticalSpacing;
+  afterHeader = metrics_.topPadding + metrics_.headerHeight - 6 + metrics_.verticalSpacing;
   bottomReserved = metrics_.buttonHintsHeight + metrics_.verticalSpacing;
   usableHeight = renderer.getScreenHeight() - afterHeader - bottomReserved;
   previewHeight = usableHeight * metrics_.previewHeightPercent / 100;
@@ -216,10 +217,15 @@ bool TextSettingsActivity::handleButtons() {
 }
 
 void TextSettingsActivity::buildScreen(UiScreen& screen) {
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_11_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_11_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
+
+  // Match the main Settings menu: Steinem 11 throughout the tab/list UI.
   // Content sits below the preview pane (render() draws header + preview
   // directly) and above the caption band + button hints.
   const int tabTop = afterHeader + previewHeight;
-  const int captionHeight = renderer.getTextHeight(UI_10_FONT_ID) + metrics_.verticalSpacing;
+  const int captionHeight = renderer.getTextHeight(SMALL_FONT_ID) + metrics_.verticalSpacing;
   screen.setContentMargin(
       fui::Insets{static_cast<int16_t>(tabTop), 0, static_cast<int16_t>(bottomReserved + captionHeight), 0});
 
@@ -251,6 +257,7 @@ void TextSettingsActivity::buildScreen(UiScreen& screen) {
   }
 
   fui::ListProps props;
+  props.rowHeight = static_cast<int16_t>(metrics_.listRowHeight + 4);
   props.items = rowItems_.data();
   props.count = static_cast<uint16_t>(rowItems_.size());
   props.action = ACTION_ROW;
@@ -287,7 +294,7 @@ void TextSettingsActivity::render(RenderLock&&) {
 
   const auto pageWidth = renderer.getScreenWidth();
 
-  GUI.drawHeader(renderer, Rect{0, metrics_.topPadding, pageWidth, metrics_.headerHeight}, tr(STR_TEXT_SETTINGS));
+  GUI.drawHeader(renderer, Rect{0, metrics_.topPadding - 6, pageWidth, metrics_.headerHeight}, tr(STR_TEXT_SETTINGS));
 
   const char* familyName = (currentFamilyIndex_ >= 0 && currentFamilyIndex_ < static_cast<int>(fonts_.size()))
                                ? fonts_[currentFamilyIndex_].name.c_str()
@@ -302,9 +309,9 @@ void TextSettingsActivity::render(RenderLock&&) {
   renderUi();
 
   if (focusedRowHasNoPreview()) {
-    const int captionHeight = renderer.getTextHeight(UI_10_FONT_ID) + metrics_.verticalSpacing;
+    const int captionHeight = renderer.getTextHeight(SMALL_FONT_ID) + metrics_.verticalSpacing;
     const int capY = afterHeader + usableHeight - captionHeight + metrics_.verticalSpacing;
-    renderer.drawText(UI_10_FONT_ID, metrics_.previewPadding, capY, tr(STR_NOT_IN_PREVIEW));
+    renderer.drawText(SMALL_FONT_ID, metrics_.previewPadding, capY, tr(STR_NOT_IN_PREVIEW));
   }
 
   const auto labels =

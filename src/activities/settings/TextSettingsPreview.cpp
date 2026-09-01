@@ -65,13 +65,13 @@ void renderPreview(const GfxRenderer& renderer, PreviewLayout& layout, int previ
   const int width = renderer.getScreenWidth() - (previewPadding * 2);
   if (width <= 0 || height <= 0) return;
 
-  const int labelH = renderer.getTextHeight(UI_10_FONT_ID);
+  const int labelH = renderer.getTextHeight(SMALL_FONT_ID);
   const int labelReserved = labelH + labelGap + previewPadding;
 
   char labelBuf[128];
   snprintf(labelBuf, sizeof(labelBuf), "%s \"%s, %s\"", tr(STR_PREVIEW), familyName, sizeName);
   const int labelY = top + height - previewPadding - labelH;
-  renderer.drawText(UI_10_FONT_ID, left, labelY, labelBuf);
+  renderer.drawText(SMALL_FONT_ID, left, labelY, labelBuf);
 
   const int fontId = SETTINGS.getReaderFontId();
   if (fontId == 0) return;

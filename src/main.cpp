@@ -505,32 +505,11 @@ void setup() {
       // panel keeps showing the pre-reboot popup until that first paint lands.
       break;
     case BootResume::SplashlessWake:
-      // One-shot flag: re-arm the splash for the next ordinary boot. Save
-      // before any painting so a hang in the blocking paint path can't strand
-      // us in a splashless-with-no-frame loop on the next boot.
+      // Minuta always shows its boot screen on a normal hardware boot/wake.
+      // Re-arm the flag first so a failed boot cannot leave splash suppressed.
       APP_STATE.showBootScreen = true;
       APP_STATE.saveToFile();
-      if (Storage.exists(SLEEP_FRAME_FILE) && loadSleepFrameBuffer()) {
-        const bool useDifferentialRefresh = gpio.deviceIsX3();
-        if (useDifferentialRefresh) {
-          // begin() clears the X3 controller RAM, so restore the saved frame as
-          // the baseline before replacing the moon with the loading icon.
-          renderer.cleanupGrayscaleWithFrameBuffer();
-        }
-
-        const auto pageHeight = renderer.getScreenHeight();
-        renderer.drawImage(LoadingIcon, 0, pageHeight - LOADINGICON_HEIGHT, LOADINGICON_WIDTH, LOADINGICON_HEIGHT);
-        if (useDifferentialRefresh) {
-          renderer.displayGrayscaleBase(HalDisplay::FAST_REFRESH);
-          allowFastInitialReaderRefresh = true;
-        } else {
-          renderer.displayBuffer(HalDisplay::HALF_REFRESH);
-        }
-      } else {
-        // The first Home/Reader paint is followed by an explicit clean refresh
-        // because the panel still physically shows the sleep image.
-        needsWakeRefresh = true;
-      }
+      activityManager.goToBoot();
       break;
     case BootResume::Splash:
       activityManager.goToBoot();

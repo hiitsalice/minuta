@@ -143,8 +143,19 @@ void UiTabListActivity::buildTabBar(UiScreen& screen) {
     // Unfocused state: no bottom inset, so the pill (and the 2px selected
     // underline drawn along its bottom edge) reaches the band's 1px divider —
     // legacy Lyra drew the underline sitting on that rule, not floating above.
-    tabProps.tabInset = tabsFocused ? fui::Insets{2, 0, 4, 0} : fui::Insets{2, 0, 0, 0};
-    tabProps.contentInset = fui::Insets{2, 8, 2, 8};
+    // Keep the label baseline fixed while giving the focused cursor
+    // equal breathing room above and below. When focus moves into the
+    // list, the tab extends to the band's bottom so its underline can
+    // still sit flush against the bottom edge.
+    if (tabsFocused) {
+      // Slightly slimmer focused pill, while preserving the text's absolute
+      // position inside the tab bar.
+      tabProps.tabInset = fui::Insets{3, 0, 3, 0};
+      tabProps.contentInset = fui::Insets{3, 8, 1, 8};
+    } else {
+      tabProps.tabInset = fui::Insets{2, 0, 0, 0};
+      tabProps.contentInset = fui::Insets{4, 8, 4, 8};
+    }
   }
   const int16_t tabLineHeight = screen.target().lineHeight(tabProps.text.font);
   const int16_t tabBand =
@@ -180,7 +191,9 @@ void UiTabListActivity::buildTabBar(UiScreen& screen) {
   const fui::Rect tabRect = screen.takeTop(tabBand);
   // Focused band wash is the Lyra treatment; legacy RoundedRaff keeps the
   // band plain in both states.
-  if (tabsFocused && !metrics.tabPillFullSlot) {
+  if (!metrics.tabPillFullSlot) {
+    // Keep the tab band's background stable as focus moves into/out of the list.
+    // This also prevents the thin unpainted strip above the tab labels.
     screen.target().fill(tabRect, fui::Paint::dither(fui::Color::LightGray));
   }
   fui::tabBar(screen.frame(), tabRect, tabProps);

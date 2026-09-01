@@ -483,9 +483,14 @@ std::string SettingsActivity::settingValueText(const SettingInfo& setting) {
 }
 
 void SettingsActivity::buildScreen(UiScreen& screen) {
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_11_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_11_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
+
+  // Minuta settings typography: tabs, labels and values all use Steinem 11.
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
 
   buildTabBar(screen);
@@ -506,6 +511,7 @@ void SettingsActivity::buildScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(rowItems_.size());
   props.action = ACTION_ROW;
   props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
+  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight + 4);
   props.valueInset = 8;               // air between the value and the row edge
   // Titles match the value's font size (smallText) so both sides of a row
   // read as one unit; labels that still don't fit wrap onto a second line.
@@ -530,7 +536,7 @@ void SettingsActivity::render(RenderLock&&) {
   // indicator; the rest of the screen renders through the app.
   // Version rides in the header's trailing label slot: the footer position
   // conflicts with button hints on non-touch devices.
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, tr(STR_SETTINGS_TITLE),
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_SETTINGS_TITLE),
                  CROSSPOINT_VERSION);
 
   renderUi();
