@@ -415,15 +415,16 @@ std::string getFileExtension(const std::string& filename) {
 }
 
 void FileBrowserActivity::buildScreen(UiScreen& screen) {
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_11_FONT_ID);
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_11_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints.
   screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  screen.spacer(static_cast<int16_t>(
+      metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   // Full path band at the bottom: separator on top, left-truncated so the
   // deepest directory stays visible.
@@ -462,7 +463,7 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
 
   // Give the file/folder list a little more breathing room below the header.
   // Footer/path position stays unchanged.
-  screen.spacer(3);
+  screen.spacer(10);
 
   if (files.empty()) {
     screen.centeredText(mode == Mode::PickFirmware ? tr(STR_NO_BIN_FILES) : tr(STR_NO_FILES_FOUND),
@@ -514,7 +515,7 @@ void FileBrowserActivity::drawChrome() {
   std::string folderName =
       (mode == Mode::PickFirmware)
           ? std::string(tr(STR_SELECT_FIRMWARE_FILE))
-          : ((basepath == "/") ? std::string(tr(STR_SD_CARD)) : basepath.substr(basepath.rfind('/') + 1));
+          : ((basepath == "/") ? std::string(tr(STR_LIBRARY)) : basepath.substr(basepath.rfind('/') + 1));
   // Header via GUI.drawHeader (already FreeInkUI-themed) for the battery
   // indicator; the rest of the screen renders through the app.
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, folderName.c_str());

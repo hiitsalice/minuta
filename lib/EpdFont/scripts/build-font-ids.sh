@@ -116,6 +116,15 @@ ruby -rdigest -e 'puts [
 ].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
 ))"
 
+echo "#define UI_14_FONT_ID ($(
+ruby -rdigest -e 'puts [
+  "./steinem_14_regular.h",
+  "./steinem_14_bold.h",
+  "./steinem_14_bolditalic.h",
+  "./steinem_14_italic.h",
+].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
+))"
+
 echo "#define UI_18_FONT_ID ($(
 ruby -rdigest -e 'puts [
   "./steinem_18_regular.h",

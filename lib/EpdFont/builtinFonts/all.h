@@ -60,6 +60,11 @@
 #include <builtinFonts/steinem_12_bold.h>
 #include <builtinFonts/steinem_12_bolditalic.h>
 
+#include <builtinFonts/steinem_14_regular.h>
+#include <builtinFonts/steinem_14_italic.h>
+#include <builtinFonts/steinem_14_bold.h>
+#include <builtinFonts/steinem_14_bolditalic.h>
+
 #include <builtinFonts/steinem_18_regular.h>
 #include <builtinFonts/steinem_18_italic.h>
 #include <builtinFonts/steinem_18_bold.h>

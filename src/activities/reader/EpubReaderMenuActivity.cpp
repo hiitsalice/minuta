@@ -8,6 +8,8 @@
 #include "MappedInputManager.h"
 #include "ReaderUtils.h"
 #include "components/UITheme.h"
+#include "components/UiAppHelpers.h"
+#include "fontIds.h"
 
 namespace fui = freeink::ui;
 
@@ -154,10 +156,14 @@ bool EpubReaderMenuActivity::handleButtons() {
 void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
+
+  // Keep the reader-menu list equally inset at its top and bottom.
+  constexpr int16_t menuEdgePadding = 4;
   // Content: the safe area minus the header band GUI.drawHeader paints.
   screen.setContentMargin(fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight),
                                       static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
-                                      static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height)),
+                                      static_cast<int16_t>(
+                                          renderer.getScreenHeight() - (safe.y + safe.height) + menuEdgePadding),
                                       static_cast<int16_t>(safe.x)});
 
   // Progress summary where the old sub-header band sat.
@@ -169,8 +175,23 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   progressLine += std::string(tr(STR_BOOK_PREFIX)) + std::to_string(bookProgressPercent) + "%";
   const fui::Rect band = screen.takeTop(static_cast<int16_t>(metrics.tabBarHeight));
   const int16_t pad = screen.theme().headerSidePadding;
-  screen.target().text(band.inset(fui::Insets{0, pad, 0, pad}), progressLine.c_str(), screen.theme().smallText);
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+
+  // Reader-menu progress summary stays compact at Steinem 10pt.
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  auto progressStyle = screen.theme().smallText;
+  progressStyle.align = fui::TextAlign::Right;
+  screen.target().text(
+      band.inset(fui::Insets{0, pad, 0, pad}),
+      progressLine.c_str(),
+      progressStyle);
+  screen.spacer(static_cast<int16_t>(menuEdgePadding - 2));
+
+  // Minuta reader menu rows use the same 12pt UI size as the outer menus.
+  // Do this after drawing the progress summary above so that line keeps its
+  // existing smaller typography.
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
 
   // menuRowItems's labels/actionValue were set once in the constructor (see
   // buildMenuRowItems()); only rows with live values need refreshing here.
@@ -192,11 +213,14 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(menuItems.size());
   props.action = ACTION_ROW;
   props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
+  props.rowHeight = static_cast<int16_t>(metrics.listRowHeight + 11);
+  props.rowGap = 0;
   props.valueInset = 8;               // air between the value and the row edge
   // Label at the value's font size: both sides of the row read as one unit.
   // maxLines=2 also marks the style caller-owned (see textStyleUnset).
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 2;
+  props.labelText.lineGap = 6;
   syncListViewport(screen, props);
   screen.list(props);
 }

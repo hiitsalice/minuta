@@ -141,6 +141,13 @@ EpdFont steinem12BoldItalicFont(&steinem_12_bolditalic);
 EpdFontFamily steinem12FontFamily(&steinem12RegularFont, &steinem12BoldFont, &steinem12ItalicFont,
                                   &steinem12BoldItalicFont);
 
+EpdFont steinem14RegularFont(&steinem_14_regular);
+EpdFont steinem14BoldFont(&steinem_14_bold);
+EpdFont steinem14ItalicFont(&steinem_14_italic);
+EpdFont steinem14BoldItalicFont(&steinem_14_bolditalic);
+EpdFontFamily steinem14FontFamily(&steinem14RegularFont, &steinem14BoldFont, &steinem14ItalicFont,
+                                  &steinem14BoldItalicFont);
+
 EpdFont steinem18RegularFont(&steinem_18_regular);
 EpdFont steinem18BoldFont(&steinem_18_bold);
 EpdFont steinem18ItalicFont(&steinem_18_italic);
@@ -358,6 +365,7 @@ void setupDisplayAndFonts(bool seamless = false) {
   renderer.insertFont(UI_10_FONT_ID, steinem10FontFamily);
   renderer.insertFont(UI_11_FONT_ID, steinem11FontFamily);
   renderer.insertFont(UI_12_FONT_ID, steinem12FontFamily);
+  renderer.insertFont(UI_14_FONT_ID, steinem14FontFamily);
   renderer.insertFont(UI_18_FONT_ID, steinem18FontFamily);
 
   // Discover and load SD card fonts

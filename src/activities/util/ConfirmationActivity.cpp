@@ -4,6 +4,7 @@
 
 #include "HalDisplay.h"
 #include "components/UITheme.h"
+#include "fontIds.h"
 
 ConfirmationActivity::ConfirmationActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                            const std::string& heading, const std::string& body)
@@ -12,14 +13,14 @@ ConfirmationActivity::ConfirmationActivity(GfxRenderer& renderer, MappedInputMan
 void ConfirmationActivity::onEnter() {
   Activity::onEnter();
 
-  lineHeight = renderer.getLineHeight(fontId);
+  lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
   const int maxWidth = renderer.getScreenWidth() - (margin * 2);
 
   if (!heading.empty()) {
-    safeHeading = renderer.truncatedText(fontId, heading.c_str(), maxWidth, EpdFontFamily::BOLD);
+    safeHeading = renderer.truncatedText(UI_10_FONT_ID, heading.c_str(), maxWidth, EpdFontFamily::BOLD);
   }
   if (!body.empty()) {
-    safeBody = renderer.truncatedText(fontId, body.c_str(), maxWidth, EpdFontFamily::REGULAR);
+    safeBody = renderer.truncatedText(UI_10_FONT_ID, body.c_str(), maxWidth, EpdFontFamily::REGULAR);
   }
 
   // Text sits in the upper part of the screen so the confirmation popup
@@ -44,13 +45,13 @@ void ConfirmationActivity::render(RenderLock&& lock) {
   LOG_DBG("CONF", "currentY: %d", currentY);
   // Draw Heading
   if (!safeHeading.empty()) {
-    renderer.drawCenteredText(fontId, currentY, safeHeading.c_str(), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, currentY, safeHeading.c_str(), true, EpdFontFamily::BOLD);
     currentY += lineHeight + spacing;
   }
 
   // Draw Body
   if (!safeBody.empty()) {
-    renderer.drawCenteredText(fontId, currentY, safeBody.c_str(), true, EpdFontFamily::REGULAR);
+    renderer.drawCenteredText(UI_10_FONT_ID, currentY, safeBody.c_str(), true, EpdFontFamily::REGULAR);
   }
 
   if (confirmPopup.processRender(renderer, mappedInput)) return;

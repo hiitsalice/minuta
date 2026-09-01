@@ -236,8 +236,8 @@ std::string StatusBarSettingsActivity::rowValueText(const int index) {
 }
 
 void StatusBarSettingsActivity::buildScreen(UiScreen& screen) {
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_11_FONT_ID);
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_11_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
   // Match the main Settings menu: Steinem 11 for names and values.
@@ -251,7 +251,8 @@ void StatusBarSettingsActivity::buildScreen(UiScreen& screen) {
       static_cast<int16_t>(statusBarHeight + verticalPreviewTextPadding + metrics.verticalSpacing);
   screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight + previewFooter), 0});
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  screen.spacer(static_cast<int16_t>(
+      metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   // rowItems_'s labels/actionValue were set once in onEnter(); only the live
   // value text needs refreshing here, by assigning into the existing
@@ -268,9 +269,11 @@ void StatusBarSettingsActivity::buildScreen(UiScreen& screen) {
   props.action = ACTION_ROW;
   props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
   props.valueInset = 8;               // air between the value and the row edge
-  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight + 4);
+  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight + 11);
+  props.rowGap = 0;
   props.labelText = screen.theme().smallText;
-  props.labelText.maxLines = 2;  // also the explicitly-set marker, see SettingsActivity
+  props.labelText.maxLines = 2;
+  props.labelText.lineGap = 6;  // also the explicitly-set marker, see SettingsActivity
   syncListViewport(screen, props);
   screen.list(props);
 }

@@ -294,7 +294,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // Show hidden files/directories (starting with '.') in the file browser (0 = hidden, 1 = show)
   uint8_t showHiddenFiles = 0;
   // Remove a book from the Recent Books list when its End-of-Book screen is reached (0 = off, 1 = on)
-  uint8_t removeReadBooksFromRecents = 0;
+  uint8_t removeReadBooksFromRecents = 1;
   // Move epub to /Read/ folder on SD card when finished (0 = disabled, 1 = enabled)
   uint8_t moveFinishedToReadFolder = 0;
   // Short press Back goes to file browser instead of home (0 = disabled, 1 = enabled)

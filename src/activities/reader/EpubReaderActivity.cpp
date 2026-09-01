@@ -179,7 +179,7 @@ bool EpubReaderActivity::loadBook() {
   const bool uncached = !Storage.exists((loadedEpub->getCachePath() + "/book.bin").c_str());
   if (uncached) {
     disableFastInitialRefresh();
-    GUI.drawPopup(renderer, tr(STR_INDEXING));
+    GUI.drawPopup(renderer, tr(STR_INDEXING), true);
   }
 
   bool loaded;
@@ -287,7 +287,7 @@ bool EpubReaderActivity::buildTickHeapGate() {
 
 void EpubReaderActivity::showBuildPopup(GfxRenderer& renderer, int& pagesUntilFullRefresh) {
   if (!buildPopupPending || !renderer.hasFrameBuffer()) return;
-  GUI.drawPopup(renderer, tr(STR_INDEXING));
+  GUI.drawPopup(renderer, tr(STR_INDEXING), true);
   pagesUntilFullRefresh = 1;
   buildPopupPending = false;
 }
@@ -1146,10 +1146,10 @@ void EpubReaderActivity::renderBook() {
 
       const bool needsFullBuild = pendingPercentJump;
       if (needsFullBuild) {
-        GUI.drawPopup(renderer, tr(STR_INDEXING));
+        GUI.drawPopup(renderer, tr(STR_INDEXING), true);
         pagesUntilFullRefresh = 1;
         const auto popupFn = [this]() {
-          if (renderer.hasFrameBuffer()) GUI.drawPopup(renderer, tr(STR_INDEXING));
+          if (renderer.hasFrameBuffer()) GUI.drawPopup(renderer, tr(STR_INDEXING), true);
         };
         GfxRenderer::FrameBufferLoan loan(renderer);
         if (!section->createSectionFile(renderSpec, popupFn)) {
@@ -1182,7 +1182,7 @@ void EpubReaderActivity::renderBook() {
                                              target > BUILD_POPUP_PAGE_THRESHOLD);
           }
           if (showPopup) {
-            GUI.drawPopup(renderer, tr(STR_INDEXING));
+            GUI.drawPopup(renderer, tr(STR_INDEXING), true);
             pagesUntilFullRefresh = 1;
           }
           buildPopupPending = !showPopup;
@@ -1258,7 +1258,7 @@ void EpubReaderActivity::renderBook() {
   }
 
   if (section->isPartial() && section->currentPage >= static_cast<int>(section->pageCount)) {
-    GUI.drawPopup(renderer, tr(STR_INDEXING));
+    GUI.drawPopup(renderer, tr(STR_INDEXING), true);
     pagesUntilFullRefresh = 1;
   }
   while (section->isPartial() && section->currentPage >= static_cast<int>(section->pageCount)) {
@@ -1373,7 +1373,7 @@ void EpubReaderActivity::renderBook() {
   }
 
   if (showDictionaryMessage) {
-    GUI.drawPopup(renderer, tr(STR_DICT_NO_DICT_SET));
+    GUI.drawPopup(renderer, tr(STR_DICT_NO_DICT_SET), true);
   }
 
   // Toolbar menu: overlay the toolbar / panel on top of the freshly rendered page.

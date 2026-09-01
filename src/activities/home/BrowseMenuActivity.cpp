@@ -8,6 +8,7 @@
 #include "activities/ActivityManager.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
+#include "fontIds.h"
 
 namespace fui = freeink::ui;
 
@@ -51,10 +52,17 @@ void BrowseMenuActivity::activateIndex(const int index) {
 void BrowseMenuActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
 
+  // Minuta's two-item Browse menu uses a larger display size.
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_14_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
+
   // Centre Library + Settings as one block in the usable screen area.
+  // Minuta's two-item Browse menu is deliberately spacious.
+  const int browseRowHeight = metrics.listRowHeight + 18;
+  const int browseRowGap = 0;
   const int listHeight =
-      MENU_ITEM_COUNT * metrics.listRowHeight +
-      (MENU_ITEM_COUNT - 1) * metrics.listRowGap;
+      MENU_ITEM_COUNT * browseRowHeight +
+      (MENU_ITEM_COUNT - 1) * browseRowGap;
 
   const int usableHeight =
       renderer.getScreenHeight() - metrics.buttonHintsHeight;
@@ -70,6 +78,8 @@ void BrowseMenuActivity::buildScreen(UiScreen& screen) {
           40});
 
   fui::ListProps props;
+  props.rowHeight = static_cast<int16_t>(browseRowHeight);
+  props.rowGap = static_cast<int16_t>(browseRowGap);
   props.items = rowItems_;
   props.count = static_cast<uint16_t>(MENU_ITEM_COUNT);
   props.action = ACTION_ROW;

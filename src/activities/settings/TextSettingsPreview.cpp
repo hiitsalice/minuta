@@ -111,7 +111,7 @@ void renderPreview(const GfxRenderer& renderer, PreviewLayout& layout, int previ
   }
 
   // Draw the sample twice so the paragraph gap is visible
-  int y = top + previewPadding;
+  int y = top + previewPadding - 6;
   const int textBottomLimit = top + height - labelReserved;
   for (int paragraph = 0; paragraph < 2; paragraph++) {
     for (const auto& line : layout.lines) {

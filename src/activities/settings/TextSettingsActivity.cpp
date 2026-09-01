@@ -217,8 +217,8 @@ bool TextSettingsActivity::handleButtons() {
 }
 
 void TextSettingsActivity::buildScreen(UiScreen& screen) {
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_11_FONT_ID);
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_11_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
   // Match the main Settings menu: Steinem 11 throughout the tab/list UI.
@@ -257,7 +257,8 @@ void TextSettingsActivity::buildScreen(UiScreen& screen) {
   }
 
   fui::ListProps props;
-  props.rowHeight = static_cast<int16_t>(metrics_.listRowHeight + 4);
+  props.rowHeight = static_cast<int16_t>(metrics_.listRowHeight + 11);
+  props.rowGap = 0;
   props.items = rowItems_.data();
   props.count = static_cast<uint16_t>(rowItems_.size());
   props.action = ACTION_ROW;
@@ -268,6 +269,7 @@ void TextSettingsActivity::buildScreen(UiScreen& screen) {
   // maxLines=2 also marks the style explicitly set (see SettingsActivity).
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 2;
+  props.labelText.lineGap = 6;
   syncTabListViewport(screen, props);
   screen.list(props);
 }

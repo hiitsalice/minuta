@@ -73,18 +73,23 @@ void UiTabListActivity::navigateButtons() {
 void UiTabListActivity::syncTabListViewport(UiScreen& screen, fui::ListProps& props, const bool hasSubtitle) {
   const int count = listCount();
   auto& n = activeNav();
-  int16_t rowHeight = screen.theme().rowHeight;
-  if (!mappedInput.hasTouch()) {
-    // Non-touch hardware (X3/X4) keeps the original, denser per-theme row
-    // height instead of FreeInkUI's touch-target-sized default (see
-    // UiListActivity::syncListViewport, the non-tab counterpart of this).
+  // Use the actual menu geometry for viewport and scrolling calculations.
+  int16_t rowHeight =
+      props.rowHeight > 0 ? props.rowHeight : screen.theme().rowHeight;
+
+  if (!mappedInput.hasTouch() && props.rowHeight <= 0) {
     const auto& metrics = UITheme::getInstance().getMetrics();
-    rowHeight = static_cast<int16_t>(hasSubtitle ? metrics.listWithSubtitleRowHeight : metrics.listRowHeight);
-    // Wrapped (maxLines > 1) labels grow only their own row: list() sizes
-    // wrapped items per-row, so the dense height stays for the rest.
+    rowHeight =
+        static_cast<int16_t>(hasSubtitle ? metrics.listWithSubtitleRowHeight
+                                        : metrics.listRowHeight);
     props.rowHeight = rowHeight;
   }
-  const uint16_t rows = fui::listVisibleRows(screen.body(), rowHeight, screen.theme().listRowGap);
+
+  const int16_t rowGap =
+      props.rowGap > 0 ? props.rowGap : screen.theme().listRowGap;
+
+  const uint16_t rows =
+      fui::listVisibleRows(screen.body(), rowHeight, rowGap);
   n.visibleRows = rows > 0 ? rows : 1;
   if (n.followOnBuild) {
     // Screen entry / tab switch: show the tab's remembered selection, or the
@@ -138,8 +143,15 @@ void UiTabListActivity::buildTabBar(UiScreen& screen) {
   } else {
     tabProps.text = screen.theme().smallText;
     tabProps.layout = fui::TabBarLayout::ContentWidth;
-    tabProps.leadingInset = static_cast<int16_t>(metrics.contentSidePadding);
-    tabProps.gap = static_cast<int16_t>(metrics.tabSpacing);
+    // Minuta: give the four tab labels a more generous horizontal rhythm
+    // while keeping the label-hugging pills unchanged.
+    // Minuta tab group: fixed generous spacing, shifted slightly left.
+    // Centre the four labels as one group rather than manually offsetting it.
+    tabProps.leadingInset = 0;
+    static constexpr int16_t minutaTabGaps[] = {18, 15, 15};
+    tabProps.itemGaps = minutaTabGaps;
+    tabProps.itemGapCount = 3;
+    tabProps.centerContent = true;
     // Unfocused state: no bottom inset, so the pill (and the 2px selected
     // underline drawn along its bottom edge) reaches the band's 1px divider —
     // legacy Lyra drew the underline sitting on that rule, not floating above.
@@ -147,19 +159,17 @@ void UiTabListActivity::buildTabBar(UiScreen& screen) {
     // equal breathing room above and below. When focus moves into the
     // list, the tab extends to the band's bottom so its underline can
     // still sit flush against the bottom edge.
-    if (tabsFocused) {
-      // Slightly slimmer focused pill, while preserving the text's absolute
-      // position inside the tab bar.
-      tabProps.tabInset = fui::Insets{3, 0, 3, 0};
-      tabProps.contentInset = fui::Insets{3, 8, 1, 8};
-    } else {
-      tabProps.tabInset = fui::Insets{2, 0, 0, 0};
-      tabProps.contentInset = fui::Insets{4, 8, 4, 8};
-    }
+    // Keep the tab's geometry identical in both focus states.
+    // This makes the label stay vertically centred and prevents the
+    // tab row from jumping when focus moves between tabs and list.
+    tabProps.tabInset = fui::Insets{9, 0, 9, 0};
+    // Shift only the label 2px downward; pill geometry stays unchanged.
+    tabProps.contentInset = fui::Insets{4, 8, 0, 8};
   }
-  const int16_t tabLineHeight = screen.target().lineHeight(tabProps.text.font);
+  // Match the tab row height to Minuta's regular menu-row frame height.
+  // FreeInkUI then centres the label vertically inside the full-height row.
   const int16_t tabBand =
-      static_cast<int16_t>(metrics.tabBarHeight > tabLineHeight + 10 ? metrics.tabBarHeight : tabLineHeight + 10);
+      static_cast<int16_t>(metrics.listRowHeight + 11);
   // Legacy Lyra two-state treatment: with the selection on the tab band, the
   // band fills gray and the active tab is a solid pill; with the selection
   // down in the list, the band is plain and the active tab keeps a gray box
@@ -197,5 +207,6 @@ void UiTabListActivity::buildTabBar(UiScreen& screen) {
     screen.target().fill(tabRect, fui::Paint::dither(fui::Color::LightGray));
   }
   fui::tabBar(screen.frame(), tabRect, tabProps);
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  screen.spacer(static_cast<int16_t>(
+      metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 }

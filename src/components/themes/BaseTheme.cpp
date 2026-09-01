@@ -186,7 +186,7 @@ void BaseTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const c
   constexpr int textYOffset = 9;                                  // Distance from top of button to text baseline
   // Keyed to the portrait panel width: the 528-wide X3 gets more spacing than
   // the 480-wide boards (X4, X4 Pro, and the other 800x480 panels).
-  constexpr int narrowButtonPositions[] = {25, 130, 242, 347};
+  constexpr int narrowButtonPositions[] = {25, 130, 240, 345};
   constexpr int wideButtonPositions[] = {38, 154, 268, 384};
   const int* buttonPositions = renderer.getScreenWidth() >= 528 ? wideButtonPositions : narrowButtonPositions;
   const char* labels[] = {btn1, btn2, btn3, btn4};
@@ -274,7 +274,8 @@ void BaseTheme::drawSideButtonHints(const GfxRenderer& renderer, const char* top
   }
 }
 
-void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* title, const char* subtitle) const {
+void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* title, const char* subtitle,
+                           const bool centerTitle) const {
   // Every activity header renders through the FreeInkUI header + battery
   // indicator components, styled by the active theme's tokens (padding,
   // centering, underline). Non-interactive frame: no hit rects registered.
@@ -292,6 +293,8 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   // small font like the legacy headers; the uiScale small font is for list
   // subtitles.
   ui.target.setFont(fui::GfxRendererTarget::FONT_SMALL, SMALL_FONT_ID);
+  // Minuta menu/header titles use Steinem 14pt.
+  ui.target.setFont(fui::GfxRendererTarget::FONT_TITLE, UI_14_FONT_ID);
   const ThemeMetrics& metrics = UITheme::getInstance().getMetrics();
   const fui::Rect band{static_cast<int16_t>(rect.x), static_cast<int16_t>(rect.y), static_cast<int16_t>(rect.width),
                        static_cast<int16_t>(rect.height)};
@@ -334,7 +337,8 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   }
   props.borderEdges = fui::EdgeBottom;
   props.titleText = tokens.titleText;
-  props.titleText.align = tokens.headerTitleAlign;
+  props.titleText.align =
+      centerTitle ? fui::TextAlign::Center : tokens.headerTitleAlign;
   props.subtitleText = tokens.smallText;
   props.styles = tokens.popup;
   props.sidePadding = tokens.headerSidePadding;
@@ -376,12 +380,12 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   // strip (batteryBarHeight) — the legacy shared-line headers drew the battery
   // at the top edge, and it keeps the lower-right corner free for the manual
   // right label below.
-  const int16_t batteryEdgeInset = batteryDetached ? 18 : tokens.headerSidePadding;
+  const int16_t batteryEdgeInset = batteryDetached ? 14 : tokens.headerSidePadding;
   const int16_t batteryX = batteryLeft ? static_cast<int16_t>(band.x + batteryEdgeInset)
                                        : static_cast<int16_t>(band.right() - batteryEdgeInset - batteryReserve);
   const int16_t batteryH = static_cast<int16_t>(metrics.batteryBarHeight);
   const int16_t batteryBandY =
-      batteryDetached ? static_cast<int16_t>(metrics.topPadding) : band.y;
+      batteryDetached ? static_cast<int16_t>(metrics.topPadding + 2) : band.y;
   if (batteryDetached) {
     const int16_t iconX =
         static_cast<int16_t>(batteryX + batteryReserve - headerBatteryWidth - batteryNubWidth);
@@ -711,7 +715,8 @@ void BaseTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount
   }
 }
 
-Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message) const {
+Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message,
+                          const bool indexingStyle) const {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int marginX = metrics.popupMarginX;
   const int marginY = metrics.popupMarginY;
@@ -719,8 +724,8 @@ Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message) cons
   const EpdFontFamily::Style popupFontFamily = metrics.popupTextBold ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
   // Scale y position proportionally to screen height
   const int y = static_cast<int>(renderer.getScreenHeight() * metrics.popupTopOffsetRatio);
-  const int textWidth = renderer.getTextWidth(UI_12_FONT_ID, message, popupFontFamily);
-  const int textHeight = renderer.getLineHeight(UI_12_FONT_ID);
+  const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, message, popupFontFamily);
+  const int textHeight = renderer.getLineHeight(UI_10_FONT_ID);
   const int w = textWidth + marginX * 2;
   const int h = textHeight + marginY * 2;
   const int x = (renderer.getScreenWidth() - w) / 2;
@@ -735,9 +740,23 @@ Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message) cons
     renderer.fillRect(x, y, w, h, false);
   }
 
-  const int textX = x + (w - textWidth) / 2;
-  const int textY = y + marginY + metrics.popupTextBaselineOffsetY;
-  renderer.drawText(UI_12_FONT_ID, textX, textY, message, metrics.popupTextInverted, popupFontFamily);
+  // Minuta popup/status messages consistently use Steinem 10pt.
+  (void)indexingStyle;
+  const int drawFontId = UI_10_FONT_ID;
+  const int drawTextWidth =
+      renderer.getTextWidth(drawFontId, message, popupFontFamily);
+  const int drawLineHeight = renderer.getLineHeight(drawFontId);
+  const int textX = x + (w - drawTextWidth) / 2;
+
+  // Centre the text in the frame, then lower it slightly for optical balance.
+  const int textY = y + (h - drawLineHeight) / 2 + 3;
+  renderer.drawText(
+      drawFontId,
+      textX,
+      textY,
+      message,
+      metrics.popupTextInverted,
+      popupFontFamily);
   renderer.displayBuffer();
   return Rect{x, y, w, h};
 }
@@ -843,9 +862,14 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
     const int barMarginLeft = fillMargin ? 0 : orientedMarginLeft;
     const int barMarginRight = fillMargin ? 0 : orientedMarginRight;
     const int progressBarMaxWidth = renderer.getScreenWidth() - barMarginLeft - barMarginRight;
+    const int barHeight =
+        sb.progressBarHeightPx + (fillMargin ? orientedMarginBottom - 1 : 0);
+
+    // Anchor the bar directly against the bottom boundary.
+    // paddingBottom still keeps previews above their button-hint area.
     const int progressBarY =
-      (renderer.getScreenHeight() - orientedMarginBottom - sb.progressBarHeightPx -
-                             paddingBottom + 2 + (fillMargin ? 1 : 0)) - 3;
+        renderer.getScreenHeight() - paddingBottom - barHeight;
+
     size_t progress;
     if (sb.progressBarMode == CrossPointSettings::STATUS_BAR_PROGRESS_BAR::BOOK_PROGRESS) {
       progress = static_cast<size_t>(bookProgress);
@@ -854,7 +878,6 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
       progress = (pageCount > 0) ? (static_cast<float>(currentPage) / pageCount) * 100 : 0;
     }
     const int barWidth = progressBarMaxWidth * progress / 100;
-    const int barHeight = sb.progressBarHeightPx + (fillMargin ? orientedMarginBottom - 1 : 0);
     renderer.fillRect(barMarginLeft, progressBarY, barWidth, barHeight, true);
   }
 

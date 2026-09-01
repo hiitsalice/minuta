@@ -88,7 +88,7 @@ void TxtReaderActivity::buildPageIndex(GfxRenderer& renderer) {
 
   LOG_DBG("TRS", "Building page index for %zu bytes...", fileSize);
 
-  GUI.drawPopup(renderer, tr(STR_INDEXING));
+  GUI.drawPopup(renderer, tr(STR_INDEXING), true);
 
   while (offset < fileSize) {
     std::vector<std::string> tempLines;
