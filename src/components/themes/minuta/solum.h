@@ -11,7 +11,7 @@ constexpr ThemeMetrics values = [] {
   ThemeMetrics v = LyraMetrics::values;
   // Solum home layout: cover sits slightly higher, with room below for
   // a 16pt title and 10pt author line.
-v.homeTopPadding = 51;
+v.homeTopPadding = 60;
 v.homeCoverTileHeight = 675;
 v.homeCoverHeight = 600;
 v.homeRecentBooksCount = 1;

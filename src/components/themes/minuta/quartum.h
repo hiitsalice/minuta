@@ -9,7 +9,7 @@ namespace QuartumMetrics {
 constexpr ThemeMetrics values = [] {
   ThemeMetrics v = LyraMetrics::values;
   v.homeTopPadding = 60;
-  v.homeCoverHeight = 275;
+  v.homeCoverHeight = 285;
   v.homeCoverTileHeight = 650;
   v.homeRecentBooksCount = 4;
   return v;

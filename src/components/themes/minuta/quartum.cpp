@@ -14,11 +14,11 @@
 
 namespace {
 constexpr int hPadding = 60;
-constexpr int columnGap = 30;
-constexpr int rowGap = 30;
+constexpr int columnGap = 18;
+constexpr int rowGap = 18;
 constexpr int titleAreaHeight = 35;
-constexpr int coverWidthPx = 165;
-constexpr int coverHeightPx = 275;
+constexpr int coverWidthPx = 171;
+constexpr int coverHeightPx = 285;
 constexpr int vGap = 0;
 
 std::vector<std::string> wrapTitleAtWords(const GfxRenderer& renderer, const int fontId,
@@ -124,7 +124,7 @@ void QuartumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const s
   const int colWidth = coverWidthPx + columnGap;
   const int coverWidth = coverWidthPx;
 
-  constexpr int contentYOffset = 9;
+  constexpr int contentYOffset = 4;
 
   const int topTitleY = rect.y + contentYOffset;
   const int topCoverY = rect.y + contentYOffset + titleAreaHeight;
@@ -189,13 +189,14 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
   // One-line titles stay close to the cover; two-line titles expand away from it.
   constexpr int titleLineGap = 6;
   constexpr int titleCoverGap = 9;
-  constexpr int titleMaxWidth = 150;
+  constexpr int titleMaxWidth = 174;
   const int titleLineHeight = renderer.getTextHeight(UI_11_FONT_ID);
 
   for (int i = 0; i < bookCount; i++) {
     const bool isTopRow = (i < 2);
     const int col = i % 2;
     const int tileX = rect.x + hPadding + col * colWidth;
+    const int coverY = isTopRow ? topCoverY : bottomCoverY;
 
     const auto lines =
         wrapTitleAtWords(renderer, UI_11_FONT_ID, recentBooks[i].title, titleMaxWidth);
@@ -231,6 +232,109 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
       );
 
       titleY += titleLineHeight + titleLineGap;
+    }
+
+    // Author: one italic line running vertically beside the cover.
+    // Left column = 270 degrees on the outside left.
+    // Right column = 90 degrees on the outside right.
+    if (!recentBooks[i].author.empty()) {
+      const auto author =
+          renderer.truncatedText(
+              UI_11_FONT_ID,
+              recentBooks[i].author.c_str(),
+              coverHeightPx,
+              EpdFontFamily::ITALIC);
+
+      // Anchor the end of the vertical author line to the cover's bottom edge.
+      const int authorBottomY = coverY + coverHeightPx - 1;
+
+      if (col == 1) {
+        // Right-hand books: 90 degrees, reading in the opposite direction
+        // from the 270-degree authors on the left.
+        const int authorLeftX =
+            tileX + coverWidth + titleCoverGap;
+
+        const int authorTextWidth =
+            renderer.getTextWidth(
+                UI_11_FONT_ID,
+                author.c_str(),
+                EpdFontFamily::ITALIC);
+
+        const int authorBandWidth =
+            renderer.getTextHeight(UI_11_FONT_ID);
+
+        // Keep the bottom of the author aligned with the bottom of the cover.
+        const int authorTopY =
+            isTopRow
+                ? coverY
+                : authorBottomY - authorTextWidth;
+
+        const auto originalOrientation = renderer.getOrientation();
+        const int portraitWidth = renderer.getScreenWidth();
+
+        // LandscapeCounterClockwise lets ordinary horizontal text appear as
+        // 90-degree vertical text in portrait coordinates.
+        const int rotatedX = authorTopY;
+        const int rotatedY =
+            portraitWidth - authorLeftX - authorBandWidth;
+
+        renderer.setOrientation(
+            GfxRenderer::Orientation::LandscapeCounterClockwise);
+
+        renderer.drawText(
+            UI_11_FONT_ID,
+            rotatedX,
+            rotatedY,
+            author.c_str(),
+            true,
+            EpdFontFamily::ITALIC
+        );
+
+        renderer.setOrientation(originalOrientation);
+      } else {
+        // Left-hand books: 270-degree author.
+        //
+        // GfxRenderer has a 90-degree helper but no matching 270-degree
+        // helper, so draw in LandscapeClockwise coordinates temporarily.
+        const auto originalOrientation = renderer.getOrientation();
+
+        const int portraitHeight = renderer.getScreenHeight();
+        const int authorBandWidth =
+            renderer.getTextHeight(UI_11_FONT_ID);
+
+        // Keep the visible author band the same 9 px away from the cover.
+        const int authorLeftX =
+            tileX - titleCoverGap - authorBandWidth;
+
+        // Convert the desired portrait-space anchor into
+        // LandscapeClockwise coordinates.
+        const int authorAnchorY =
+            isTopRow
+                ? coverY + renderer.getTextWidth(
+                               UI_11_FONT_ID,
+                               author.c_str(),
+                               EpdFontFamily::ITALIC)
+                : authorBottomY;
+
+        const int rotatedX =
+            portraitHeight - 1 - authorAnchorY;
+        const int rotatedY =
+            authorLeftX;
+
+        renderer.setOrientation(
+            GfxRenderer::Orientation::LandscapeClockwise);
+
+        renderer.drawText(
+            UI_11_FONT_ID,
+            rotatedX,
+            rotatedY,
+            author.c_str(),
+            true,
+            EpdFontFamily::ITALIC
+        );
+
+        renderer.setOrientation(originalOrientation);
+      }
     }
   }
 }
