@@ -255,9 +255,7 @@ void SettingsActivity::stepTab(const int direction) {
 
 bool SettingsActivity::handleButtons() {
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
-    if (ringPos() == 0) {
-      stepTab(1);
-    } else {
+    if (ringPos() > 0) {
       toggleCurrentSetting();
       requestUpdate();
     }
@@ -544,7 +542,7 @@ void SettingsActivity::render(RenderLock&&) {
 
   const int ring = ringPos();
   const auto confirmLabel =
-      (ring == 0) ? I18N.get(categoryNames[(selectedCategoryIndex + 1) % categoryCount])
+      (ring == 0) ? ""
                   : (ring > 0 && (*currentSettings)[ring - 1].nameId == StrId::STR_TIME_TO_SLEEP ? tr(STR_SELECT)
                                                                                                  : tr(STR_TOGGLE));
 

@@ -173,6 +173,32 @@ bool TextSettingsActivity::handleCustomInput() {
   return optionPopup_.handleInput(mappedInput, [this] { requestUpdate(); });
 }
 
+void TextSettingsActivity::navigateButtons() {
+  const int ringSize = listCount() + 1;
+
+  // Side buttons move through the tab band and settings rows.
+  if (mappedInput.wasReleased(MappedInputManager::Button::Down)) {
+    moveRingTo(ButtonNavigator::nextIndex(ringPos(), ringSize));
+    return;
+  }
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Up)) {
+    moveRingTo(ButtonNavigator::previousIndex(ringPos(), ringSize));
+    return;
+  }
+
+  // Front Left/Right buttons switch Text Settings tabs.
+  if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+    switchTab(1);
+    return;
+  }
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
+    switchTab(-1);
+    return;
+  }
+}
+
 bool TextSettingsActivity::handleButtons() {
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     finish();
@@ -180,9 +206,7 @@ bool TextSettingsActivity::handleButtons() {
   }
 
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
-    if (ringPos() == 0) {
-      switchTab();
-    } else {
+    if (ringPos() > 0) {
       activateRow(ringPos() - 1);
     }
     return true;
@@ -243,8 +267,7 @@ void TextSettingsActivity::buildScreen(UiScreen& screen) {
 
 const char* TextSettingsActivity::confirmLabelText() const {
   if (ringPos() == 0) {
-    // Confirm on the tab bar advances to the next tab.
-    return I18N.get(TAB_NAME_IDS[(static_cast<int>(tab_) + 1) % static_cast<int>(Tab::Count)]);
+    return "";
   }
   switch (tab_) {
     case Tab::Layout:
@@ -284,7 +307,8 @@ void TextSettingsActivity::render(RenderLock&&) {
     renderer.drawText(UI_10_FONT_ID, metrics_.previewPadding, capY, tr(STR_NOT_IN_PREVIEW));
   }
 
-  const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabelText(), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+  const auto labels =
+      mappedInput.mapLabels(tr(STR_BACK), confirmLabelText(), tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();
