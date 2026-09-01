@@ -13,9 +13,44 @@ void BootActivity::onEnter() {
   const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
-  renderer.drawImage(Logo120, (pageWidth - 120) / 2, (pageHeight - 120) / 2, 120, 120);
-  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 70, tr(STR_CROSSPOINT), true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 95, tr(STR_BOOTING));
+
+  // Centre the logo + Minuta + status text as one vertical group.
+  constexpr int logoSize = 120;
+  constexpr int logoTextGap = -30;
+  constexpr int textLineGap = 8;
+
+  const int titleHeight = renderer.getTextHeight(UI_18_FONT_ID);
+  const int statusHeight = renderer.getTextHeight(UI_10_FONT_ID);
+
+  const int groupHeight =
+      logoSize + logoTextGap + titleHeight + textLineGap + statusHeight;
+  const int groupTop = (pageHeight - groupHeight) / 2;
+
+  const int logoY = groupTop;
+  const int titleY = logoY + logoSize + logoTextGap;
+  const int statusY = titleY + titleHeight + textLineGap;
+
+  renderer.drawImage(
+      Logo120,
+      (pageWidth - logoSize) / 2,
+      logoY,
+      logoSize,
+      logoSize);
+
+  renderer.drawCenteredText(
+      UI_18_FONT_ID,
+      titleY,
+      "Minuta",
+      true,
+      EpdFontFamily::REGULAR);
+
+  renderer.drawCenteredText(
+      UI_10_FONT_ID,
+      statusY,
+      tr(STR_BOOTING),
+      true,
+      EpdFontFamily::ITALIC);
+
   renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 30, CROSSPOINT_VERSION);
   renderer.displayBuffer();
 }
