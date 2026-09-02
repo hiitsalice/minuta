@@ -1,11 +1,13 @@
 #include "ButtonRemapActivity.h"
 
+#include <EpdFontFamily.h>
 #include <GfxRenderer.h>
 #include <I18n.h>
 
 #include "CrossPointSettings.h"
 #include "MappedInputManager.h"
 #include "components/UITheme.h"
+#include "fontIds.h"
 
 namespace fui = freeink::ui;
 
@@ -32,6 +34,8 @@ void ButtonRemapActivity::onEnter() {
   for (uint8_t i = 0; i < kRoleCount; ++i) {
     rowItems[i].label = getRoleName(i);
   }
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
   resetUi();
   app.setScreen(&ButtonRemapActivity::screenTrampoline, this);
   requestUpdate();
@@ -47,21 +51,27 @@ void ButtonRemapActivity::loop() {
   }
 
   // Side buttons:
-  // - Up: reset mapping to defaults and exit.
-  // - Down: cancel without saving.
+  // - Up: restore defaults and restart this remapping sequence.
+  // - Down: cancel and return to Settings.
   if (mappedInput.wasPressed(MappedInputManager::Button::Up)) {
-    // Persist default mapping immediately so the user can recover quickly.
     SETTINGS.frontButtonBack = CrossPointSettings::FRONT_HW_BACK;
     SETTINGS.frontButtonConfirm = CrossPointSettings::FRONT_HW_CONFIRM;
     SETTINGS.frontButtonLeft = CrossPointSettings::FRONT_HW_LEFT;
     SETTINGS.frontButtonRight = CrossPointSettings::FRONT_HW_RIGHT;
     SETTINGS.saveToFile();
-    finish();
+
+    currentStep = 0;
+    for (uint8_t i = 0; i < kRoleCount; ++i) {
+      tempMapping[i] = kUnassigned;
+    }
+    errorMessage.clear();
+    errorUntil = 0;
+    requestUpdate();
     return;
   }
 
   if (mappedInput.wasPressed(MappedInputManager::Button::Down)) {
-    // Exit without changing settings.
+    mappedInput.suppressRelease(MappedInputManager::Button::Down);
     finish();
     return;
   }
@@ -112,36 +122,67 @@ void ButtonRemapActivity::render(RenderLock&&) {
   const auto pageWidth = renderer.getScreenWidth();
   const auto pageHeight = renderer.getScreenHeight();
 
+  const auto drawRemapHelpText =
+      [&](const Rect rect, const char* label, const int fontId,
+          const EpdFontFamily::Style style) {
+        const auto truncated = renderer.truncatedText(
+            fontId, label, rect.width - metrics.contentSidePadding * 2, style);
+        const int width = renderer.getTextWidth(fontId, truncated.c_str(), style);
+        renderer.drawText(fontId, rect.x + (rect.width - width) / 2, rect.y,
+                          truncated.c_str(), true, style);
+      };
+
   renderer.clearScreen();
 
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, tr(STR_REMAP_FRONT_BUTTONS));
-  GUI.drawSubHeader(renderer, Rect{0, metrics.topPadding + metrics.headerHeight, pageWidth, metrics.tabBarHeight},
-                    tr(STR_REMAP_PROMPT));
+  const Rect promptRect{
+      0, metrics.topPadding + metrics.headerHeight,
+      pageWidth, metrics.tabBarHeight};
+  const auto prompt = renderer.truncatedText(
+      UI_10_FONT_ID, tr(STR_REMAP_PROMPT),
+      pageWidth - metrics.contentSidePadding * 2);
+  const int promptY =
+      promptRect.y +
+      (promptRect.height - renderer.getTextHeight(UI_10_FONT_ID)) / 2;
+  renderer.drawText(
+      UI_10_FONT_ID, metrics.contentSidePadding, promptY, prompt.c_str());
+  renderer.drawLine(
+      promptRect.x, promptRect.y + promptRect.height - 1,
+      promptRect.x + promptRect.width - 1,
+      promptRect.y + promptRect.height - 1, true);
 
-  int topOffset = metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight + metrics.verticalSpacing;
   renderUi();
+
+  const int remapRowsBottom =
+      metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight +
+      metrics.verticalSpacing + 8 + 4 * metrics.listRowHeight;
 
   // Temporary warning banner for duplicates.
   if (!errorMessage.empty()) {
-    GUI.drawHelpText(renderer,
-                     Rect{0, pageHeight - metrics.buttonHintsHeight - metrics.contentSidePadding - 15, pageWidth, 20},
-                     errorMessage.c_str());
+    drawRemapHelpText(
+                     Rect{0, remapRowsBottom + 24, pageWidth, 20},
+                     errorMessage.c_str(), UI_10_FONT_ID, EpdFontFamily::REGULAR);
   }
 
-  // Provide side button actions at the bottom of the screen (split across two lines).
-  GUI.drawHelpText(renderer,
-                   Rect{0, topOffset + 4 * metrics.listRowHeight + 4 * metrics.verticalSpacing, pageWidth, 20},
-                   tr(STR_REMAP_RESET_HINT));
-  GUI.drawHelpText(renderer,
-                   Rect{0, topOffset + 4 * metrics.listRowHeight + 5 * metrics.verticalSpacing + 20, pageWidth, 20},
-                   tr(STR_REMAP_CANCEL_HINT));
+  // Keep both instructions near the bottom, above the button hints.
+  const int instructionDownY =
+      pageHeight - metrics.buttonHintsHeight - 24 -
+      renderer.getTextHeight(UI_10_FONT_ID);
+  const int instructionUpY = instructionDownY - 29;
+  drawRemapHelpText(
+                   Rect{0, instructionUpY, pageWidth, 20},
+                   tr(STR_REMAP_RESET_HINT), UI_10_FONT_ID, EpdFontFamily::REGULAR);
+  drawRemapHelpText(
+                   Rect{0, instructionDownY, pageWidth, 20},
+                   tr(STR_REMAP_CANCEL_HINT), UI_10_FONT_ID, EpdFontFamily::REGULAR);
 
   // Live preview of logical labels under front buttons.
   // This mirrors the on-device front button order: Back, Confirm, Left, Right.
   GUI.drawButtonHints(renderer, labelForHardware(CrossPointSettings::FRONT_HW_BACK),
                       labelForHardware(CrossPointSettings::FRONT_HW_CONFIRM),
                       labelForHardware(CrossPointSettings::FRONT_HW_LEFT),
-                      labelForHardware(CrossPointSettings::FRONT_HW_RIGHT));
+                      labelForHardware(CrossPointSettings::FRONT_HW_RIGHT),
+                      UI_10_FONT_ID);
   renderer.displayBuffer();
 }
 
@@ -152,7 +193,7 @@ void ButtonRemapActivity::screenTrampoline(UiScreen& screen, void* user) {
 void ButtonRemapActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
-  const int topOffset = metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight + metrics.verticalSpacing;
+  const int topOffset = metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight + metrics.verticalSpacing + 8;
   screen.setContentMargin(
       fui::Insets{static_cast<int16_t>(safe.y + topOffset),
                   static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width) + metrics.verticalSpacing),

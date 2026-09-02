@@ -196,7 +196,7 @@ void RoundedRaffTheme::drawTextField(const GfxRenderer& renderer, Rect rect, con
 }
 
 void RoundedRaffTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const char* btn2, const char* btn3,
-                                       const char* btn4) const {
+                                       const char* btn4, const int fontId) const {
   if (gpio.hasTouch()) {
     return;
   }
@@ -212,7 +212,8 @@ void RoundedRaffTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, 
   const int hintHeight = RoundedRaffMetrics::values.buttonHintsHeight - 10;  // 30px total guide height
   const int groupWidth = (pageWidth - sidePadding * 2 - groupGap) / 2;
   const int hintY = pageHeight - hintHeight - bottomMargin;
-  const int textY = hintY + (hintHeight - renderer.getLineHeight(kGuideFontId)) / 2;
+  const int guideFontId = fontId > 0 ? fontId : kGuideFontId;
+  const int textY = hintY + (hintHeight - renderer.getLineHeight(guideFontId)) / 2 - 1;
 
   const bool backDisabled = (btn1 == nullptr || btn1[0] == '\0');
   const int leftGroupX = sidePadding;
@@ -228,8 +229,8 @@ void RoundedRaffTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, 
   renderer.fillRect(rightGroupX, hintY, groupWidth, hintHeight, false);
 
   renderer.drawRoundedRect(leftGroupX, hintY, groupWidth, hintHeight, 2, kBottomRadius, true);
-  const int selectWidth = renderer.getTextWidth(kGuideFontId, selectText.c_str(), EpdFontFamily::REGULAR);
-  const int downWidth = renderer.getTextWidth(kGuideFontId, downText.c_str(), EpdFontFamily::REGULAR);
+  const int selectWidth = renderer.getTextWidth(guideFontId, selectText.c_str(), EpdFontFamily::REGULAR);
+  const int downWidth = renderer.getTextWidth(guideFontId, downText.c_str(), EpdFontFamily::REGULAR);
   constexpr int innerEdgePadding = 16;
 
   const int backX = leftGroupX + innerEdgePadding;
@@ -238,14 +239,14 @@ void RoundedRaffTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, 
   const int downX = rightGroupX + groupWidth - innerEdgePadding - downWidth;
 
   if (!backDisabled) {
-    renderer.drawText(kGuideFontId, backX, textY, backLabel.c_str(), true, EpdFontFamily::REGULAR);
+    renderer.drawText(guideFontId, backX, textY, backLabel.c_str(), true, EpdFontFamily::REGULAR);
   }
-  renderer.drawText(kGuideFontId, selectX, textY, selectText.c_str(), true, EpdFontFamily::REGULAR);
+  renderer.drawText(guideFontId, selectX, textY, selectText.c_str(), true, EpdFontFamily::REGULAR);
 
   renderer.drawRoundedRect(rightGroupX, hintY, groupWidth, hintHeight, 2, kBottomRadius, true);
 
-  renderer.drawText(kGuideFontId, upX, textY, upText.c_str(), true, EpdFontFamily::REGULAR);
-  renderer.drawText(kGuideFontId, downX, textY, downText.c_str(), true, EpdFontFamily::REGULAR);
+  renderer.drawText(guideFontId, upX, textY, upText.c_str(), true, EpdFontFamily::REGULAR);
+  renderer.drawText(guideFontId, downX, textY, downText.c_str(), true, EpdFontFamily::REGULAR);
 
   renderer.setOrientation(origOrientation);
 }

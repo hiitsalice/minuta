@@ -844,11 +844,27 @@ void WifiSelectionActivity::render(RenderLock&&) {
   // so 32 truncated it. See ClockSyncActivity for the same class of bug.
   char countStr[64];
   snprintf(countStr, sizeof(countStr), tr(STR_NETWORKS_FOUND), realNetworkCount);
-  GUI.drawHeader(renderer, Rect{screen.x, screen.y + metrics.topPadding, screen.width, metrics.headerHeight},
-                 tr(STR_WIFI_NETWORKS), countStr);
+  const Rect headerRect{
+      screen.x, screen.y + metrics.topPadding,
+      screen.width, metrics.headerHeight};
+  GUI.drawHeader(renderer, headerRect, tr(STR_WIFI_NETWORKS), nullptr);
+
+  const int countWidth = renderer.getTextWidth(UI_10_FONT_ID, countStr);
+  const int countY =
+      headerRect.y + headerRect.height -
+      renderer.getTextHeight(UI_10_FONT_ID) - 17;
+  renderer.drawText(
+      UI_10_FONT_ID,
+      headerRect.x + headerRect.width -
+          metrics.headerSidePadding - countWidth,
+      countY, countStr);
+
+  // Lower only the MAC text; retain the subheader's bottom separator.
   GUI.drawSubHeader(
       renderer,
-      Rect{screen.x, screen.y + metrics.topPadding + metrics.headerHeight, screen.width, metrics.tabBarHeight},
+      Rect{screen.x,
+           screen.y + metrics.topPadding + metrics.headerHeight + 6,
+           screen.width, metrics.tabBarHeight - 6},
       cachedMacAddress.c_str());
 
   switch (state) {
@@ -942,18 +958,16 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   // just the short status glyphs, so skip the balanced 60%-band wrap cap.
   props.labelText = screen.theme().bodyText;
   props.labelText.maxLines = 2;
+  props.labelYOffset = 1;
   props.balanceWrappedLabelWithValue = false;
   listNav.selected = static_cast<int>(selectedNetworkIndex);
-  int16_t rowHeight = screen.theme().rowHeight;
+  int16_t rowHeight =
+      static_cast<int16_t>(screen.theme().rowHeight + 4);
   if (!mappedInput.hasTouch()) {
-    // Non-touch hardware (X3/X4) keeps the original, denser row height
-    // instead of FreeInkUI's touch-target-sized default (see
-    // UiListActivity::syncListViewport; this screen predates that base and
-    // syncs its own viewport directly). A long SSID that wraps grows only
-    // its own row: list() sizes wrapped items per-row.
-    rowHeight = static_cast<int16_t>(metrics.listRowHeight);
-    props.rowHeight = rowHeight;
+    // Give X3/X4 Wi-Fi rows 2px more padding above and below.
+    rowHeight = static_cast<int16_t>(metrics.listRowHeight + 4);
   }
+  props.rowHeight = rowHeight;
   listNav.syncToProps(screen.body(), rowHeight, screen.theme().listRowGap, static_cast<int>(networks.size()), props);
   screen.list(props);
 }

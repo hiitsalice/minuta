@@ -103,7 +103,7 @@ void LyraTheme::drawSubHeader(const GfxRenderer& renderer, Rect rect, const char
 }
 
 void LyraTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const char* btn2, const char* btn3,
-                                const char* btn4) const {
+                                const char* btn4, const int fontId) const {
   if (gpio.hasTouch()) {
     return;
   }
@@ -122,6 +122,7 @@ void LyraTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const c
   constexpr int wideButtonPositions[] = {60, 162, 276, 378};
   const int* buttonPositions = renderer.getScreenWidth() >= 528 ? wideButtonPositions : narrowButtonPositions;
   const char* labels[] = {btn1, btn2, btn3, btn4};
+  const int labelFontId = fontId > 0 ? fontId : UI_10_FONT_ID;
 
   for (int i = 0; i < 4; i++) {
     const int x = buttonPositions[i];
@@ -130,7 +131,7 @@ void LyraTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const c
       renderer.fillRoundedRect(x, pageHeight - buttonY, buttonWidth, buttonHeight, cornerRadius, Color::White);
       renderer.drawRoundedRect(x, pageHeight - buttonY, buttonWidth, buttonHeight, 1, cornerRadius, true, true, false,
                                false, true);
-      drawHintLabel(renderer, UI_10_FONT_ID, labels[i], x, buttonWidth, pageHeight - buttonY, buttonHeight,
+      drawHintLabel(renderer, labelFontId, labels[i], x, buttonWidth, pageHeight - buttonY, buttonHeight,
                     textYOffset);
     } else {
       // Draw the filled background and border for a SMALL-sized button

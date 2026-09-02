@@ -335,6 +335,10 @@ void MappedInputManager::suppressNextRelease(const Button button) const {
   suppressedReleaseButtons |= 1u << static_cast<uint8_t>(button);
 }
 
+void MappedInputManager::suppressRelease(const Button button) const {
+  suppressNextRelease(button);
+}
+
 bool MappedInputManager::consumeSuppressedRelease() const {
   uint16_t released = 0;
   for (uint8_t value = 0; value <= static_cast<uint8_t>(Button::ScreenDown); ++value) {

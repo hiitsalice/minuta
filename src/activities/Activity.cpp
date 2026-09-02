@@ -21,4 +21,10 @@ void Activity::startActivityForResult(std::unique_ptr<Activity>&& activity, Acti
 
 void Activity::setResult(ActivityResult&& result) { this->result = std::move(result); }
 
-void Activity::finish() { activityManager.popActivity(); }
+void Activity::finish() {
+  if (mappedInput.isPressed(MappedInputManager::Button::Back) ||
+      mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+    mappedInput.suppressRelease(MappedInputManager::Button::Back);
+  }
+  activityManager.popActivity();
+}

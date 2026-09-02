@@ -14,8 +14,8 @@ namespace fui = freeink::ui;
 
 namespace {
 constexpr StrId menuItems[BrowseMenuActivity::MENU_ITEM_COUNT] = {
-    StrId::STR_LIBRARY,
     StrId::STR_SETTINGS_TITLE,
+    StrId::STR_LIBRARY,
 };
 }  // namespace
 
@@ -43,9 +43,9 @@ void BrowseMenuActivity::activateIndex(const int index) {
   nav.selected = index;
 
   if (index == 0) {
-    activityManager.goToFileBrowser();
-  } else {
     activityManager.goToSettings();
+  } else {
+    activityManager.goToFileBrowser();
   }
 }
 
@@ -56,7 +56,7 @@ void BrowseMenuActivity::buildScreen(UiScreen& screen) {
   uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_14_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
-  // Centre Library + Settings as one block in the usable screen area.
+  // Centre Settings + Library as one block in the usable screen area.
   // Minuta's two-item Browse menu is deliberately spacious.
   const int browseRowHeight = metrics.listRowHeight + 18;
   const int browseRowGap = 0;

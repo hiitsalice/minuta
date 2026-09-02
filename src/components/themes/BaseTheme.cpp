@@ -150,7 +150,7 @@ void BaseTheme::drawHintLabel(GfxRenderer& renderer, const int fontId, const cha
   const int textWidth = renderer.getTextWidth(fontId, label);
   if (textWidth <= maxTextWidth) {
     const int textHeight = renderer.getTextHeight(fontId);
-    const int textY = boxTop + std::max(1, (boxHeight - textHeight) / 2);
+    const int textY = boxTop + std::max(1, (boxHeight - textHeight) / 2) - 1;
     renderer.drawText(fontId, x + (boxWidth - 1 - textWidth) / 2, textY, label);
     return;
   }
@@ -162,7 +162,7 @@ void BaseTheme::drawHintLabel(GfxRenderer& renderer, const int fontId, const cha
   const int step = renderer.getTextHeight(fontId) + lineGap;
   const auto lines = renderer.wrappedText(fontId, label, maxTextWidth, 2);
   const int block = static_cast<int>(lines.size()) * step - lineGap;
-  int lineY = boxTop + std::max(1, (boxHeight - block) / 2);
+  int lineY = boxTop + std::max(1, (boxHeight - block) / 2) - 1;
   for (const auto& line : lines) {
     const int lineWidth = renderer.getTextWidth(fontId, line.c_str());
     renderer.drawText(fontId, x + (boxWidth - 1 - lineWidth) / 2, lineY, line.c_str());
@@ -171,7 +171,7 @@ void BaseTheme::drawHintLabel(GfxRenderer& renderer, const int fontId, const cha
 }
 
 void BaseTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const char* btn2, const char* btn3,
-                                const char* btn4) const {
+                                const char* btn4, const int fontId) const {
   if (gpio.hasTouch()) {
     return;
   }
@@ -190,6 +190,7 @@ void BaseTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const c
   constexpr int wideButtonPositions[] = {38, 154, 268, 384};
   const int* buttonPositions = renderer.getScreenWidth() >= 528 ? wideButtonPositions : narrowButtonPositions;
   const char* labels[] = {btn1, btn2, btn3, btn4};
+  const int labelFontId = fontId > 0 ? fontId : UI_10_FONT_ID;
 
   for (int i = 0; i < 4; i++) {
     // Only draw if the label is non-empty
@@ -197,7 +198,7 @@ void BaseTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const c
       const int x = buttonPositions[i];
       renderer.fillRect(x, pageHeight - buttonY, buttonWidth, buttonHeight, false);
       renderer.drawRect(x, pageHeight - buttonY, buttonWidth, buttonHeight);
-      drawHintLabel(renderer, UI_10_FONT_ID, labels[i], x, buttonWidth, pageHeight - buttonY, buttonHeight,
+      drawHintLabel(renderer, labelFontId, labels[i], x, buttonWidth, pageHeight - buttonY, buttonHeight,
                     textYOffset);
     }
   }
@@ -722,13 +723,12 @@ Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message,
   const int marginY = metrics.popupMarginY;
   const int frameThickness = metrics.popupFrameThickness;
   const EpdFontFamily::Style popupFontFamily = metrics.popupTextBold ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
-  // Scale y position proportionally to screen height
-  const int y = static_cast<int>(renderer.getScreenHeight() * metrics.popupTopOffsetRatio);
-  const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, message, popupFontFamily);
-  const int textHeight = renderer.getLineHeight(UI_10_FONT_ID);
+  const int textWidth = renderer.getTextWidth(UI_12_FONT_ID, message, popupFontFamily);
+  const int textHeight = renderer.getLineHeight(UI_12_FONT_ID);
   const int w = textWidth + marginX * 2;
   const int h = textHeight + marginY * 2;
   const int x = (renderer.getScreenWidth() - w) / 2;
+  const int y = (renderer.getScreenHeight() - h) / 2;
 
   const bool useRoundedPopup = metrics.popupCornerRadius > 0;
   if (useRoundedPopup) {
@@ -740,16 +740,16 @@ Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message,
     renderer.fillRect(x, y, w, h, false);
   }
 
-  // Minuta popup/status messages consistently use Steinem 10pt.
+  // Minuta popup/status messages consistently use Steinem 12pt.
   (void)indexingStyle;
-  const int drawFontId = UI_10_FONT_ID;
+  const int drawFontId = UI_12_FONT_ID;
   const int drawTextWidth =
       renderer.getTextWidth(drawFontId, message, popupFontFamily);
   const int drawLineHeight = renderer.getLineHeight(drawFontId);
   const int textX = x + (w - drawTextWidth) / 2;
 
-  // Centre the text in the frame, then lower it slightly for optical balance.
-  const int textY = y + (h - drawLineHeight) / 2 + 3;
+  // Centre the text exactly within the popup frame.
+  const int textY = y + (h - drawLineHeight) / 2 + 2;
   renderer.drawText(
       drawFontId,
       textX,

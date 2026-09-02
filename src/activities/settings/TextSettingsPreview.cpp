@@ -59,19 +59,11 @@ void relayout(PreviewLayout& layout, const GfxRenderer& renderer, int fontId, in
 
 }  // namespace
 
-void renderPreview(const GfxRenderer& renderer, PreviewLayout& layout, int previewPadding, int labelGap, int top,
-                   int height, const char* familyName, const char* sizeName) {
+void renderPreview(const GfxRenderer& renderer, PreviewLayout& layout, int previewPadding, int top,
+                   int height) {
   const int left = previewPadding;
   const int width = renderer.getScreenWidth() - (previewPadding * 2);
   if (width <= 0 || height <= 0) return;
-
-  const int labelH = renderer.getTextHeight(SMALL_FONT_ID);
-  const int labelReserved = labelH + labelGap + previewPadding;
-
-  char labelBuf[128];
-  snprintf(labelBuf, sizeof(labelBuf), "%s \"%s, %s\"", tr(STR_PREVIEW), familyName, sizeName);
-  const int labelY = top + height - previewPadding - labelH;
-  renderer.drawText(SMALL_FONT_ID, left, labelY, labelBuf);
 
   const int fontId = SETTINGS.getReaderFontId();
   if (fontId == 0) return;
@@ -110,16 +102,22 @@ void renderPreview(const GfxRenderer& renderer, PreviewLayout& layout, int previ
     layout.key = key;
   }
 
-  // Draw the sample twice so the paragraph gap is visible
-  int y = top + previewPadding - 6;
-  const int textBottomLimit = top + height - labelReserved;
+  // Draw the sample twice so paragraph spacing remains visible. Centre the
+  // complete sample vertically within the pane between the header and menu.
+  if (layout.lines.empty()) return;
+  const int lineCount = static_cast<int>(layout.lines.size());
+  const int totalTextHeight =
+      (lineCount * 2 - 1) * lineAdvance + paragraphGap + lineH;
+  int y = top + std::max(0, (height - totalTextHeight) / 2) - 5;
+  const int textBottomLimit = top + height;
+
   for (int paragraph = 0; paragraph < 2; paragraph++) {
     for (const auto& line : layout.lines) {
       if (y + lineH > textBottomLimit) return;
       line->render(renderer, fontId, textLeft, y);
       y += lineAdvance;
     }
-    y += paragraphGap;
+    if (paragraph == 0) y += paragraphGap;
   }
 }
 

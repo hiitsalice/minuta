@@ -541,8 +541,21 @@ void SettingsActivity::render(RenderLock&&) {
   // indicator; the rest of the screen renders through the app.
   // Version rides in the header's trailing label slot: the footer position
   // conflicts with button hints on non-touch devices.
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_SETTINGS_TITLE),
-                 CROSSPOINT_VERSION);
+  const Rect headerRect{
+      0, metrics.topPadding - 6, pageWidth, metrics.headerHeight};
+  GUI.drawHeader(
+      renderer, headerRect, tr(STR_SETTINGS_TITLE), nullptr);
+
+  const int versionWidth =
+      renderer.getTextWidth(UI_10_FONT_ID, CROSSPOINT_VERSION);
+  const int versionY =
+      headerRect.y + headerRect.height -
+      renderer.getTextHeight(UI_10_FONT_ID) - 17;
+  renderer.drawText(
+      UI_10_FONT_ID,
+      headerRect.x + headerRect.width -
+          metrics.headerSidePadding - versionWidth,
+      versionY, CROSSPOINT_VERSION);
 
   renderUi();
 

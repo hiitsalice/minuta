@@ -43,7 +43,7 @@ NetworkModeSelectionActivity::NetworkModeSelectionActivity(GfxRenderer& renderer
     fui::ListItem item;
     item.label = I18N.get(menuItems[i]);
     item.subtitle = I18N.get(menuDescs[i]);
-    item.icon = listIconFor(menuIcons[i], 32);  // subtitle rows carry the larger icon
+    item.icon = listIconFor(menuIcons[i], 36);  // subtitle rows carry the larger icon
     item.actionValue = static_cast<int16_t>(i);
     rowItems_[i] = item;
   }
@@ -67,7 +67,8 @@ void NetworkModeSelectionActivity::buildScreen(UiScreen& screen) {
   // Content below the GUI.drawHeader band, above the button hints.
   screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  screen.spacer(
+      static_cast<int16_t>(metrics.verticalSpacing - 2));
 
   // rowItems_ was built once in the constructor and is reused here on every
   // repaint.
@@ -78,6 +79,15 @@ void NetworkModeSelectionActivity::buildScreen(UiScreen& screen) {
   props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
   props.subtitleText = screen.theme().smallText;
   props.subtitleText.maxLines = 2;
+  props.subtitleGap = 3;
+  props.textGap = 21;
+  props.sidePadding =
+      static_cast<int16_t>(screen.theme().listSidePadding + 16);
+  // File Transfer rows contain both a title and description, so give them
+  // additional breathing room without enlarging lists elsewhere.
+  props.rowHeight = static_cast<int16_t>(
+      metrics.listWithSubtitleRowHeight +
+      metrics.verticalSpacing * 2 - 6);
   syncListViewport(screen, props, /*hasSubtitle=*/true);
   screen.list(props);
 }

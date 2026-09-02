@@ -298,14 +298,13 @@ void TextSettingsActivity::render(RenderLock&&) {
 
   GUI.drawHeader(renderer, Rect{0, metrics_.topPadding - 6, pageWidth, metrics_.headerHeight}, tr(STR_TEXT_SETTINGS));
 
-  const char* familyName = (currentFamilyIndex_ >= 0 && currentFamilyIndex_ < static_cast<int>(fonts_.size()))
-                               ? fonts_[currentFamilyIndex_].name.c_str()
-                               : "";
-  const char* sizeName = (currentSizeIndex_ >= 0 && currentSizeIndex_ < static_cast<int>(sizes_.size()))
-                             ? sizes_[currentSizeIndex_].name.c_str()
-                             : "";
-  textsettings::renderPreview(renderer, previewLayout_, metrics_.previewPadding, metrics_.verticalSpacing, afterHeader,
-                              previewHeight, familyName, sizeName);
+  // Centre the sample between the header's bold bottom line and the tab bar.
+  const int previewTop =
+      metrics_.topPadding - 6 + metrics_.headerHeight;
+  const int previewBottom = afterHeader + previewHeight;
+  textsettings::renderPreview(
+      renderer, previewLayout_, metrics_.previewPadding, previewTop,
+      previewBottom - previewTop);
 
   // Tab bar + active tab's list draw inside the screen builder.
   renderUi();
