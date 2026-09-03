@@ -15,8 +15,6 @@ class EpubReaderMenuActivity final : public UiListActivity {
     SELECT_CHAPTER,
     FOOTNOTES,
     TEXT_SETTINGS,
-    NIGHT_MODE,
-    FRONTLIGHT,
     GO_TO_PERCENT,
     AUTO_PAGE_TURN,
     ROTATE_SCREEN,

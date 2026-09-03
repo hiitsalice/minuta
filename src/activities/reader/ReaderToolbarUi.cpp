@@ -104,8 +104,8 @@ void ReaderToolbarUi::buildToolRow(UiScreen& screen, const fui::LayoutAnchor anc
                                             fui::bitmapFromIcon(icon_reader_more_24)};
   const fui::Rect row = screen.take(anchor, kToolRowH);
   const int16_t slotW = static_cast<int16_t>(row.width / kToolCount);
-  // Theme radius as-is (the frontlight panel pattern); the fill clamps to
-  // the shape's own height so round themes cannot overshoot.
+  // Use the theme radius as-is; the fill clamps to the shape's own height
+  // so round themes cannot overshoot.
   const uint8_t pillRadius = tokens.controlRadius;
   for (int i = 0; i < kToolCount; ++i) {
     const fui::Rect slot{static_cast<int16_t>(row.x + slotW * i), row.y, slotW, row.height};
@@ -132,9 +132,8 @@ void ReaderToolbarUi::buildToolbar(UiScreen& screen) {
   fui::SheetProps sheetProps;
   sheetProps.anchor = fui::SheetEdge::Bottom;
   sheetProps.dismissAction = ACTION_DISMISS;
-  // Grabber air matches the frontlight panel's card language (spaceLg around
-  // the grabber, spaceMd more toward the free edge) so the two sheets read as
-  // the same family.
+  // Keep generous space around the grabber and slightly more towards the
+  // free edge so the sheet remains visually balanced.
   sheetProps.grabberMargin = tokens.spaceLg;
   sheetProps.grabberInset = static_cast<int16_t>(tokens.spaceLg + tokens.spaceMd);
   const int16_t grabberBand =
@@ -210,7 +209,7 @@ void ReaderToolbarUi::buildPanel(UiScreen& screen) {
   fui::SheetProps sheetProps;
   sheetProps.anchor = fui::SheetEdge::Bottom;
   sheetProps.dismissAction = ACTION_DISMISS;  // tap the page above the sheet = back to the toolbar
-  // Same grabber air as the toolbar sheet / frontlight panel.
+  // Use the same grabber spacing as the toolbar sheet.
   sheetProps.grabberMargin = tokens.spaceLg;
   sheetProps.grabberInset = static_cast<int16_t>(tokens.spaceLg + tokens.spaceMd);
 

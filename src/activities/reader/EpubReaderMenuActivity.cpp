@@ -1,7 +1,6 @@
 #include "EpubReaderMenuActivity.h"
 
 #include <GfxRenderer.h>
-#include <HalFrontlight.h>
 #include <I18n.h>
 
 #include "CrossPointSettings.h"
@@ -33,10 +32,7 @@ EpubReaderMenuActivity::EpubReaderMenuActivity(GfxRenderer& renderer, MappedInpu
 void EpubReaderMenuActivity::buildMenuRowItems() {
   for (size_t i = 0; i < menuItems.size() && i < MAX_MENU_ITEMS; i++) {
     fui::ListItem item;
-    item.label =
-        menuItems[i].action == MenuAction::DICTIONARY
-            ? "Dictionary"
-            : I18N.get(menuItems[i].labelId);
+    item.label = menuItems[i].action == MenuAction::DICTIONARY ? "Dictionary" : I18N.get(menuItems[i].labelId);
     item.actionValue = static_cast<int16_t>(i);
     menuRowItems[i] = item;
   }
@@ -55,10 +51,6 @@ void EpubReaderMenuActivity::buildMenuItems(std::vector<MenuItem>& items, bool h
   }
   items.push_back({MenuAction::TOGGLE_BOOKMARK, StrId::STR_TOGGLE_BOOKMARK});
   items.push_back({MenuAction::TEXT_SETTINGS, StrId::STR_TEXT_SETTINGS});
-  items.push_back({MenuAction::NIGHT_MODE, StrId::STR_NIGHT_MODE});
-  if (Frontlight.present()) {
-    items.push_back({MenuAction::FRONTLIGHT, StrId::STR_FRONTLIGHT});
-  }
   items.push_back({MenuAction::ROTATE_SCREEN, StrId::STR_ORIENTATION});
   items.push_back({MenuAction::AUTO_PAGE_TURN, StrId::STR_AUTO_TURN_PAGES_PER_MIN});
   items.push_back({MenuAction::GO_TO_PERCENT, StrId::STR_GO_TO_PERCENT});
@@ -115,22 +107,6 @@ void EpubReaderMenuActivity::activateIndex(const int index) {
     return;
   }
 
-  if (selectedAction == MenuAction::NIGHT_MODE) {
-    SETTINGS.screenInverted = SETTINGS.screenInverted == 0 ? 1 : 0;
-    SETTINGS.saveToFile();
-    requestUpdate();
-    return;
-  }
-
-  if (selectedAction == MenuAction::FRONTLIGHT) {
-    const bool lightOn = !Frontlight.isOn();
-    Frontlight.setOn(lightOn);
-    SETTINGS.frontlightOn = lightOn ? 1 : 0;
-    SETTINGS.saveToFile();
-    requestUpdate();
-    return;
-  }
-
   setResult(MenuResult{static_cast<int>(selectedAction), pendingOrientation, selectedPageTurnOption});
   finish();
 }
@@ -157,14 +133,15 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
 
-  // Keep the reader-menu list equally inset at its top and bottom.
   constexpr int16_t menuEdgePadding = 4;
-  // Content: the safe area minus the header band GUI.drawHeader paints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight),
-                                      static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
-                                      static_cast<int16_t>(
-                                          renderer.getScreenHeight() - (safe.y + safe.height) + menuEdgePadding),
-                                      static_cast<int16_t>(safe.x)});
+  constexpr int16_t menuVerticalOffset = 1;
+  // Shift the complete menu content upward without changing its height.
+  screen.setContentMargin(
+      fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - menuVerticalOffset),
+                  static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
+                  static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + menuEdgePadding +
+                                       menuVerticalOffset),
+                  static_cast<int16_t>(safe.x)});
 
   // Progress summary where the old sub-header band sat.
   std::string progressLine;
@@ -180,10 +157,7 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
   auto progressStyle = screen.theme().smallText;
   progressStyle.align = fui::TextAlign::Right;
-  screen.target().text(
-      band.inset(fui::Insets{0, pad, 0, pad}),
-      progressLine.c_str(),
-      progressStyle);
+  screen.target().text(band.inset(fui::Insets{0, pad, 0, pad}), progressLine.c_str(), progressStyle);
   screen.spacer(static_cast<int16_t>(menuEdgePadding - 2));
 
   // Minuta reader menu rows use the same 12pt UI size as the outer menus.
@@ -201,10 +175,6 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
       menuRowItems[i].value = I18N.get(orientationLabels[pendingOrientation]);
     } else if (action == MenuAction::AUTO_PAGE_TURN) {
       menuRowItems[i].value = pageTurnLabels[selectedPageTurnOption];
-    } else if (action == MenuAction::NIGHT_MODE) {
-      menuRowItems[i].value = I18N.get(SETTINGS.screenInverted ? StrId::STR_STATE_ON : StrId::STR_STATE_OFF);
-    } else if (action == MenuAction::FRONTLIGHT) {
-      menuRowItems[i].value = I18N.get(Frontlight.isOn() ? StrId::STR_STATE_ON : StrId::STR_STATE_OFF);
     }
   }
 
@@ -215,7 +185,7 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight + 11);
   props.rowGap = 0;
-  props.valueInset = 8;               // air between the value and the row edge
+  props.valueInset = 8;  // air between the value and the row edge
   // Label at the value's font size: both sides of the row read as one unit.
   // maxLines=2 also marks the style caller-owned (see textStyleUnset).
   props.labelText = screen.theme().smallText;

@@ -42,31 +42,21 @@ class HalGPIO {
   bool wasAnyReleased() const;
   unsigned long getHeldTime() const;
   unsigned long getPowerButtonHeldTime() const;
-  bool hasTouch() const;
-  // Capacitive Home key reported by the touch controller. The tap
-  // event fires on release and excludes a long hold.
-  bool hasHomeKey() const;
-  bool wasHomeKeyTapped() const;
-  bool wasHomeKeyLongPressed() const;
-  bool wasTouchTap(float& nx, float& ny) const;
-  bool wasTouchDown(float& nx, float& ny) const;
-  // Raw release edge, reported even when the contact was not a tap (swipe end,
-  // drag-off). Snapshot builders forward it so interaction routing can clear
-  // pressed state.
-  bool wasTouchReleased() const;
-  bool isTouchTapCandidate(float& nx, float& ny, unsigned long& heldMs) const;
-  bool isTouchHeldAt(float& nx, float& ny) const;
-  // One-shot long-press, fired by the SDK classifier while the finger is still
-  // down (stationary contact held past its threshold). Position = touch-down
-  // point. Callers that act on it should suppressTouchContact() so the lift
-  // cannot also tap.
-  bool wasTouchLongPress(float& nx, float& ny) const;
-  // Ignore the remainder of the current contact (its continued hold and its
-  // release edge). Self-clears once the contact ends.
-  void suppressTouchContact();
-  unsigned long lastTouchHeldMs() const;
-  bool wasSwipe(float& nxStart, float& nyStart, float& nxEnd, float& nyEnd) const;
-  bool wasTouchActivity() const;
+  // The ordinary XTEINK X4 has no touchscreen or capacitive Home key.
+  constexpr bool hasTouch() const { return false; }
+  constexpr bool hasHomeKey() const { return false; }
+  constexpr bool wasHomeKeyTapped() const { return false; }
+  constexpr bool wasHomeKeyLongPressed() const { return false; }
+  constexpr bool wasTouchTap(float&, float&) const { return false; }
+  constexpr bool wasTouchDown(float&, float&) const { return false; }
+  constexpr bool wasTouchReleased() const { return false; }
+  constexpr bool isTouchTapCandidate(float&, float&, unsigned long&) const { return false; }
+  constexpr bool isTouchHeldAt(float&, float&) const { return false; }
+  constexpr bool wasTouchLongPress(float&, float&) const { return false; }
+  constexpr void suppressTouchContact() {}
+  constexpr unsigned long lastTouchHeldMs() const { return 0; }
+  constexpr bool wasSwipe(float&, float&, float&, float&) const { return false; }
+  constexpr bool wasTouchActivity() const { return false; }
   void setSharedConfirmPowerShortPressEmitsPower(bool enabled);
 
   // Verify that the physical power button remains held through input debounce.

@@ -169,18 +169,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // painted over the page.
   enum READER_MENU_STYLE { READER_MENU_LIST = 0, READER_MENU_TOOLBAR = 1, READER_MENU_STYLE_COUNT };
 
-  enum TOUCH_READER_CONTROLS {
-    TOUCH_READER_OFF = 0,
-    TOUCH_READER_ON = 1,
-    TOUCH_READER_SWIPE = 2,
-    TOUCH_READER_INVERTED_TAP = 3,
-    TOUCH_READER_CONTROLS_COUNT
-  };
-
-  // How the reader menu opens on touch boards. Persisted under the legacy
-  // "tapForReaderMenu" key: 0/1 keep their old Off/Tap meaning.
-  enum SHOW_READER_MENU { READER_MENU_OFF = 0, READER_MENU_TAP = 1, READER_MENU_SWIPE_UP = 2, SHOW_READER_MENU_COUNT };
-
   enum QUICK_RESUME_SLEEP_SCREEN {
     QUICK_RESUME_NEVER = 0,
     QUICK_RESUME_AFTER_TIMEOUT = 1,
@@ -189,9 +177,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
 
   // Sleep screen settings
   uint8_t sleepScreen = LIGHT;
-  // Night mode: inverted output polarity, applied to every activity per
-  // render by ActivityManager. The sleep screen opts out itself.
-  uint8_t screenInverted = 0;
   // Sleep screen cover mode settings
   uint8_t sleepScreenCoverMode = FIT;
   // Sleep screen cover filter
@@ -281,20 +266,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t backShortToFileBrowser = 0;
   // Image rendering mode in EPUB reader
   uint8_t imageRendering = IMAGES_DISPLAY;
-  // Touch screen reader zones/gestures on boards with a touch controller.
-  uint8_t touchReaderControls = TOUCH_READER_SWIPE;
-  // Reader menu open gesture (SHOW_READER_MENU: off / center tap / bottom-edge
-  // up-swipe). Only surfaced on home-key boards, where Home is the capacitive
-  // key and the bottom edge is free; elsewhere it stays at the Tap default.
-  uint8_t showReaderMenu = READER_MENU_TAP;
-  // Frontlight quick-panel state. Category-less SettingsList entries persist
-  // these without adding them to the regular Settings screen.
-  uint8_t frontlightBrightness = 60;
-  uint8_t frontlightWarmth = 50;  // 0 = cool .. 100 = warm
-  uint8_t frontlightOn = 0;
-  // Restore the saved on/off state after a normal boot or wake. Brightness and
-  // warmth are always remembered even when this is disabled.
-  uint8_t frontlightRestoreOnWake = 1;
   // Language setting (Language enum index, default 0 = EN)
   uint8_t language = 0;
   // Quick Resume: keep current content visible with moon icon instead of showing a static sleep screen.
