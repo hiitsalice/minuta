@@ -3,11 +3,8 @@
 #include <cstddef>
 #include <cstdint>
 
-// Board-identity tag embedded in every CrossPoint image, plus a streaming
-// scanner the firmware update paths use to reject an image built for a
-// different board before it can boot and drive another device's pins. All the
-// S3 boards (x4pro, papermono, ...) share a chip_id, so the existing
-// esp_image_header chip check cannot tell them apart.
+// X4 identity tag embedded in every Minuta image, plus a streaming scanner
+// used to reject firmware tagged for a different device.
 //
 // The tag is "CROSSPOINT-BOARD-V1:<board>;" stored once in .rodata — the
 // scanner's needle references the same array, so a CrossPoint image contains

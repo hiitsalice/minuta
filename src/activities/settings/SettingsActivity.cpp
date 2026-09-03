@@ -55,11 +55,6 @@ void SettingsActivity::rebuildSettingsLists() {
   for (auto& setting : getSettingsList(&sdFontSystem.registry(), &dictionaries)) {
     if (setting.category == StrId::STR_NONE_OPT) continue;
     if (setting.category == StrId::STR_CAT_DISPLAY) {
-      // The sunlight fading fix is a grayscale-waveform compensation that does
-      // not apply on the X4 Pro (plain OTP waveform, no custom grayscale LUT).
-      if (setting.valuePtr == &CrossPointSettings::fadingFix && BoardConfig::isX4Pro()) {
-        continue;
-      }
       displaySettings.push_back(setting);
     } else if (setting.category == StrId::STR_CAT_READER) {
       // Settings merged into "Text Settings"
@@ -226,7 +221,7 @@ void SettingsActivity::stepTab(const int direction) {
   requestUpdate();
 }
 
-   void SettingsActivity::navigateButtons() {
+void SettingsActivity::navigateButtons() {
   const int ringSize = listCount() + 1;
 
   // Side buttons: move up/down through the settings list.
@@ -505,7 +500,7 @@ void SettingsActivity::buildScreen(UiScreen& screen) {
   props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
   props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight + 11);
   props.rowGap = 0;
-  props.valueInset = 8;               // air between the value and the row edge
+  props.valueInset = 8;  // air between the value and the row edge
   // Titles match the value's font size (smallText) so both sides of a row
   // read as one unit; labels that still don't fit wrap onto a second line.
   // maxLines=2 also marks the style explicitly set (an all-default smallText
@@ -530,21 +525,13 @@ void SettingsActivity::render(RenderLock&&) {
   // indicator; the rest of the screen renders through the app.
   // Version rides in the header's trailing label slot: the footer position
   // conflicts with button hints on non-touch devices.
-  const Rect headerRect{
-      0, metrics.topPadding - 6, pageWidth, metrics.headerHeight};
-  GUI.drawHeader(
-      renderer, headerRect, tr(STR_SETTINGS_TITLE), nullptr);
+  const Rect headerRect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight};
+  GUI.drawHeader(renderer, headerRect, tr(STR_SETTINGS_TITLE), nullptr);
 
-  const int versionWidth =
-      renderer.getTextWidth(UI_10_FONT_ID, CROSSPOINT_VERSION);
-  const int versionY =
-      headerRect.y + headerRect.height -
-      renderer.getTextHeight(UI_10_FONT_ID) - 17;
-  renderer.drawText(
-      UI_10_FONT_ID,
-      headerRect.x + headerRect.width -
-          metrics.headerSidePadding - versionWidth,
-      versionY, CROSSPOINT_VERSION);
+  const int versionWidth = renderer.getTextWidth(UI_10_FONT_ID, CROSSPOINT_VERSION);
+  const int versionY = headerRect.y + headerRect.height - renderer.getTextHeight(UI_10_FONT_ID) - 17;
+  renderer.drawText(UI_10_FONT_ID, headerRect.x + headerRect.width - metrics.headerSidePadding - versionWidth, versionY,
+                    CROSSPOINT_VERSION);
 
   renderUi();
 

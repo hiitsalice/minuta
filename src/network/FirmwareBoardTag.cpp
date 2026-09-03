@@ -1,30 +1,6 @@
 #include "FirmwareBoardTag.h"
 
-#include <BoardConfig.h>
-
 #include <cstring>
-
-// The board name derives from the FREEINK_DEVICE_* build flags so each
-// firmware environment is tagged automatically. Plain firmware.bin is X4.
-#if FREEINK_DEVICE_X4PRO
-#define CROSSPOINT_BOARD_NAME "x4pro"
-#elif FREEINK_DEVICE_X4
-#define CROSSPOINT_BOARD_NAME "x4"
-#elif FREEINK_DEVICE_PAPERMONO
-#define CROSSPOINT_BOARD_NAME "papermono"
-#elif FREEINK_DEVICE_M5PAPER
-#define CROSSPOINT_BOARD_NAME "m5paper"
-#elif FREEINK_DEVICE_LILYGO
-#define CROSSPOINT_BOARD_NAME "lilygo"
-#elif FREEINK_DEVICE_M5
-#define CROSSPOINT_BOARD_NAME "m5"
-#elif FREEINK_DEVICE_MURPHY
-#define CROSSPOINT_BOARD_NAME "murphy"
-#elif FREEINK_DEVICE_DELINK
-#define CROSSPOINT_BOARD_NAME "delink"
-#else
-#error "FirmwareBoardTag: no FREEINK_DEVICE_* flag set; cannot derive board name"
-#endif
 
 namespace board_tag {
 
@@ -34,7 +10,7 @@ namespace {
 constexpr size_t MAGIC_LEN = sizeof("CROSSPOINT-BOARD-V1:") - 1;
 }  // namespace
 
-const char TAG[] = "CROSSPOINT-BOARD-V1:" CROSSPOINT_BOARD_NAME ";";
+const char TAG[] = "CROSSPOINT-BOARD-V1:x4;";
 
 const char* boardName() { return TAG + MAGIC_LEN; }
 size_t boardNameLen() { return sizeof(TAG) - 1 - MAGIC_LEN - 1; }  // strip magic and ';'

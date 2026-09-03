@@ -11,15 +11,9 @@
 
 #include "HalGPIO.h"
 
-#if FREEINK_DEVICE_PAPERMONO
-#include <M5Pm1.h>
-#endif
-
 HalPowerManager powerManager;  // Singleton instance
 
-// GPIO13 controls the X4 battery latch and the X3 SD power rail on the C3
-// Xteink boards. Other boards use it for unrelated signals, including the
-// X4 Pro display chip select.
+// GPIO13 controls the X4 battery power latch.
 static constexpr gpio_num_t XTEINK_C3_GPIO13 = GPIO_NUM_13;
 
 void HalPowerManager::begin() {
@@ -89,16 +83,7 @@ void HalPowerManager::startDeepSleep(HalGPIO& gpio) const {
   }
 #endif
 
-  // Hold every configured power-latch pin HIGH through deep sleep. These are
-  // keep-alive enables (the X4 Pro's master peripheral rail on GPIO1, the
-  // a latched power-hold circuit): deepSleep() isolates all pads
-  // (esp_sleep_config_gpio_isolate), so a latch without an armed hold loses its
-  // output driver and floats — on the X4 Pro the latch drops as soon as
-  // external power leaves (serial/pogo adapter unplugged), and the next power-
-  // button press cold-boots instead of fast-waking. holdPowerRails() asserted
-  // the latches at boot but arms no sleep hold; arm it here instead. Skips
-  // XTEINK_C3_GPIO13: it IS power.latch0 on the C3 Xteink boards, where the
-  // block above drives it LOW on purpose (battery power-off).
+  // Preserve any additional configured power-latch pins during deep sleep.
   for (const int8_t pin : {BoardConfig::ACTIVE.power.latch0, BoardConfig::ACTIVE.power.latch1}) {
     if (pin < 0 || static_cast<gpio_num_t>(pin) == XTEINK_C3_GPIO13) continue;
     const auto g = static_cast<gpio_num_t>(pin);
@@ -113,20 +98,11 @@ void HalPowerManager::startDeepSleep(HalGPIO& gpio) const {
   // Cut the gated peripheral rails (touch/SD/EPD on boards with switched peripheral power) and
   // hold the enables off through deep sleep — otherwise the GT911 and SD card
   // stay powered all through "off" and drain the battery. No-op on boards with
-  // no switched rails (X4/X3). Trade-off: no touch-to-wake; wake is the power
+  // no switched rails (X4). Trade-off: no touch-to-wake; wake is the power
   // button. Must run after display.deepSleep() so the panel controller gets its
   // deep-sleep command while its rail is still up (enterDeepSleep() in main.cpp
   // guarantees that ordering).
   freeink::PowerManager::powerDownRailsForSleep();
-
-#if FREEINK_DEVICE_PAPERMONO
-  // Its power button is behind the M5PM1 PMIC rather than an ESP GPIO, so
-  // normal GPIO deep sleep would have no wake source. Ask the PMIC to shut the
-  // device down; a button click then restarts it through a cold boot.
-  if (freeink::m5pm1::requestShutdown()) {
-    delay(1000);  // allow the PMIC firmware time to drop power
-  }
-#endif
 
   // Waits for the power button to be physically released (so holding it doesn't
   // immediately wake the device again), then arms the wake source and sleeps.

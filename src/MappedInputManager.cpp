@@ -299,9 +299,6 @@ bool MappedInputManager::wasLightPanelGesture() const {
 #if FREEINK_CAP_TOUCH
 bool MappedInputManager::wasPowerConfirmClick() const {
   if (!gpio.hasTouch() || SETTINGS.shortPwrBtn != CrossPointSettings::SHORT_PWRBTN::PWR_CONFIRM) return false;
-  // Wait out the X4 Pro's frontlight double-click window before treating its
-  // first release as Confirm. Other touch boards can use the release directly.
-  if (BoardConfig::isX4Pro()) return powerConfirmClickFrame;
   return gpio.wasReleased(HalGPIO::BTN_POWER) && gpio.getPowerButtonHeldTime() <= SETTINGS.getPowerButtonDuration();
 }
 #endif
@@ -335,9 +332,7 @@ void MappedInputManager::suppressNextRelease(const Button button) const {
   suppressedReleaseButtons |= 1u << static_cast<uint8_t>(button);
 }
 
-void MappedInputManager::suppressRelease(const Button button) const {
-  suppressNextRelease(button);
-}
+void MappedInputManager::suppressRelease(const Button button) const { suppressNextRelease(button); }
 
 bool MappedInputManager::consumeSuppressedRelease() const {
   uint16_t released = 0;

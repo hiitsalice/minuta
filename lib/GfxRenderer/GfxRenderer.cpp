@@ -1491,15 +1491,13 @@ void GfxRenderer::drawBitmapStretched(const Bitmap& bitmap, const int x, const i
     for (int destX = 0; destX < width; destX++) {
       const int sourceX = destX * sourceWidth / width;
 
-      const uint8_t val =
-          (outputRow[sourceX / 4] >> (6 - ((sourceX * 2) % 8))) & 0x3;
+      const uint8_t val = (outputRow[sourceX / 4] >> (6 - ((sourceX * 2) % 8))) & 0x3;
 
       for (int destY = destYStart; destY < destYEnd; destY++) {
         const int screenX = x + destX;
         const int screenY = y + destY;
 
-        if (screenX < 0 || screenX >= getScreenWidth() ||
-            screenY < 0 || screenY >= getScreenHeight()) {
+        if (screenX < 0 || screenX >= getScreenWidth() || screenY < 0 || screenY >= getScreenHeight()) {
           continue;
         }
 
@@ -2304,8 +2302,6 @@ void GfxRenderer::writeGrayscalePlaneStrip(bool lsbPlane, const uint8_t* scratch
 }
 
 bool GfxRenderer::supportsStripGrayscale() const { return display.supportsStripGrayscale(); }
-
-bool GfxRenderer::combinesGrayscaleBase() const { return display.combinesGrayscaleBase(); }
 
 void GfxRenderer::freeBwBufferChunks() {
   for (auto& bwBufferChunk : bwBufferChunks) {

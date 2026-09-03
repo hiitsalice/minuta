@@ -15,8 +15,7 @@ class ReleaseJsonParser {
   void reset();
   void feed(const char* data, size_t len);
 
-  // Release-asset filename to match (default "firmware.bin"). Boards with
-  // their own release binaries pass e.g. "firmware-papermono.bin". Survives
+  // Release-asset filename to match (default "firmware.bin"). Survives
   // reset(); truncated silently if longer than the internal buffer.
   void setFirmwareAssetName(const char* name);
 

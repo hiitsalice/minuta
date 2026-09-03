@@ -336,9 +336,6 @@ class GfxRenderer {
   // numRows)), bypassing the framebuffer. supportsStripGrayscale() gates use.
   void writeGrayscalePlaneStrip(bool lsbPlane, const uint8_t* scratch, int yStart, int numRows) const;
   bool supportsStripGrayscale() const;
-  // Paper Mono: the base activation is deferred so base + gray planes go out
-  // as one waveform. Route the base through displayGrayscaleBase() when true.
-  bool combinesGrayscaleBase() const;
   bool storeBwBuffer();  // Returns true if buffer was stored successfully
   // Restore and free the stored buffer. resyncPanelBaseline rewrites the
   // controller's differential baseline to the restored frame — correct after

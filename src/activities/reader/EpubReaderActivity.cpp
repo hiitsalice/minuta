@@ -46,11 +46,8 @@
 #include "util/ScreenshotUtil.h"
 
 namespace {
-// The X4 Pro carries the X4's panel but sits outside isXteinkDevice() (that
-// helper also gates power management). Overlay refresh choices are per-panel:
-// this family runs the grayscale anti-aliasing pass, so chrome painted over a
-// fresh page needs the HALF ghost-cleanup and closing re-renders the page.
-bool xteinkClassPanel() { return gpio.isXteinkDevice() || BoardConfig::isX4Pro(); }
+// X4 overlays require a half refresh after grayscale page rendering.
+bool xteinkClassPanel() { return gpio.isXteinkDevice(); }
 
 constexpr int PAGE_TURN_RATES[] = {1, 1, 3, 6, 12};
 constexpr size_t initialBookmarkCacheCapacity = 16;
@@ -1479,11 +1476,6 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
   const bool needsTextGrayscale = SETTINGS.textAntiAliasing;
   const bool needsAnyGrayscale = needsTextGrayscale || pageHasImages;
   const bool tiledGrayscale = needsAnyGrayscale && renderer.supportsStripGrayscale();
-  // Paper Mono only (no other panel combines): defer the B/W base activation so
-  // the gray planes join it in a single waveform. Displaying the base
-  // separately makes the gray pass re-drive the whole text body — a visible
-  // flash on every AA page.
-  const bool combinedGrayscaleBase = tiledGrayscale && !pageHasImages && renderer.combinesGrayscaleBase();
   const bool overlapRefresh = tiledGrayscale && renderer.supportsAsyncRefresh() && !pageHasImages;
   auto renderGrayscalePass = [&]() {
     if (needsTextGrayscale) {
@@ -1510,10 +1502,6 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
     // the scheduled/manual HALF refresh.
     renderer.displayBuffer(cleanImageBasePending ? HalDisplay::HALF_REFRESH : HalDisplay::FAST_REFRESH);
     pagesUntilFullRefresh = 1;
-  } else if (combinedGrayscaleBase) {
-    // Stash the base without activating; displayGrayBuffer() below commits
-    // base + grays as one waveform.
-    ReaderUtils::displayBaseWithRefreshCycle(renderer, pagesUntilFullRefresh);
   } else {
     ReaderUtils::displayWithRefreshCycle(renderer, pagesUntilFullRefresh, overlapRefresh);
   }
@@ -1579,13 +1567,9 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
       renderer.waitRefreshComplete();
       if (!scratch) {
         LOG_ERR("ERS", "OOM: grayscale strip scratch (%d bytes); skipping AA this page", gwBytes * STRIP_ROWS);
-        if (overlapRefresh || combinedGrayscaleBase) {
-          // The BW refresh ran the shadow-free async path, so controller RAM's
-          // differential baseline was never rebuilt. Even with AA skipped it must
-          // be re-synced from the intact BW framebuffer, or the next differential
-          // update diffs against stale contents. On the combined-base path the
-          // base activation is still deferred; this cleanup commits it so the
-          // page reaches the panel even without its grays.
+        if (overlapRefresh) {
+          // The asynchronous B/W refresh does not rebuild the controller's
+          // differential baseline. Re-sync it from the intact framebuffer.
           renderer.cleanupGrayscaleWithFrameBuffer();
         }
       } else {

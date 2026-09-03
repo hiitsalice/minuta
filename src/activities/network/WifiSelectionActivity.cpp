@@ -116,7 +116,7 @@ void WifiSelectionActivity::onEnter() {
 
   // Read the hardware-derived station MAC directly. WiFi.macAddress() depends
   // on the STA netif already existing, but this screen is entered while WiFi
-  // is often still off (notably after an X4 Pro WiFi session).
+  // may still be off after a Wi-Fi session.
   uint8_t mac[6] = {};
   char macStr[64];
   const esp_err_t macResult = esp_read_mac(mac, ESP_MAC_WIFI_STA);

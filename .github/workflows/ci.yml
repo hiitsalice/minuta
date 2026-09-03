@@ -77,16 +77,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Artifact names match the release asset names OtaUpdater requests:
-        # Plain firmware.bin is the X4 build; other boards use
-        # firmware-<board>.bin.
+        # Minuta targets the XTEINK X4 and releases firmware.bin.
         include:
           - env: default
             asset: firmware.bin
-          - env: x4pro
-            asset: firmware-x4pro.bin
-          - env: papermono
-            asset: firmware-papermono.bin
     steps:
       - uses: actions/checkout@v6
         with:

@@ -1,9 +1,6 @@
 name: Compile Release
 
-# Builds every board's release firmware on tag push, with the .bin named
-# exactly as OtaUpdater requests it from the GitHub release: plain
-# firmware.bin for the X4 binary, firmware-<board>.bin for every other
-# board. Attach the artifacts' .bin files to the release as-is.
+# Builds the XTEINK X4 release firmware as firmware.bin.
 
 on:
   push:
@@ -22,10 +19,6 @@ jobs:
         include:
           - pio_env: gh_release
             asset: firmware.bin
-          - pio_env: x4pro-gh_release
-            asset: firmware-x4pro.bin
-          - pio_env: papermono-gh_release
-            asset: firmware-papermono.bin
     steps:
       - uses: actions/checkout@v6
         with:

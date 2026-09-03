@@ -82,8 +82,6 @@ void HalGPIO::setSharedConfirmPowerShortPressEmitsPower(const bool enabled) {
   InputManager::setSharedConfirmPowerShortPressEmitsPower(enabled);
 }
 
-bool HalGPIO::hasEdgeSideButtons() const { return BoardConfig::ACTIVE.board == BoardConfig::Board::XteinkX4Pro; }
-
 bool HalGPIO::isXteinkDevice() const { return BoardConfig::ACTIVE.board == BoardConfig::Board::XteinkX4; }
 
 bool HalGPIO::verifyPowerButtonWakeup() {
@@ -91,7 +89,7 @@ bool HalGPIO::verifyPowerButtonWakeup() {
   // wheel click, so a click wake is always released before this samples and
   // verification would re-sleep on every wake. Its wheel has hard external
   // pull-ups, so the ghost-wake debounce this implements is not needed.
-  if (BoardConfig::isPaperMono() || BoardConfig::isM5PaperV11() || BoardConfig::ACTIVE.input.power < 0) {
+  if (BoardConfig::isM5PaperV11() || BoardConfig::ACTIVE.input.power < 0) {
     return true;
   }
 
@@ -128,7 +126,7 @@ bool HalGPIO::coldBootImpliesPowerButton() const {
   // post-flash boots as battery button boots, and STAT-only boards like the
   // EEGO A4 misread them the same way once the charger terminates at 100%
   // (STAT inactive reads as "no USB").
-  return isXteinkDevice() || BoardConfig::isPaperMono();
+  return isXteinkDevice();
 }
 
 HalGPIO::WakeupReason HalGPIO::getWakeupReason() const {
