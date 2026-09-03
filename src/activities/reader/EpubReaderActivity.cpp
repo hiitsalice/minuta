@@ -1101,16 +1101,16 @@ void EpubReaderActivity::renderBook() {
   orientedMarginLeft += SETTINGS.screenMargin;
   orientedMarginRight += SETTINGS.screenMargin;
 
+  const auto statusBar = SETTINGS.statusBarSpec();
   const uint8_t statusBarHeight = UITheme::getInstance().getStatusBarHeight();
+  const int statusPadding =
+      ((statusBar.textLaneVisible(true) || automaticPageTurnActive) ? 11 : 0) +
+      statusBar.progressBarHeightPx;
 
-  if (automaticPageTurnActive &&
-      (statusBarHeight == 0 || statusBarHeight == UITheme::getInstance().getProgressBarHeight())) {
-    orientedMarginBottom +=
-        std::max(SETTINGS.screenMargin,
-                 static_cast<uint8_t>(statusBarHeight + UITheme::getInstance().getMetrics().statusBarVerticalMargin));
-  } else {
-    orientedMarginBottom += std::max(SETTINGS.screenMargin, statusBarHeight);
-  }
+  // Preserve the configured screen margin, then add clearance matching the
+  // visible status text and progress-bar thickness.
+  orientedMarginBottom +=
+      std::max(SETTINGS.screenMargin, statusBarHeight) + statusPadding;
 
   const uint16_t viewportWidth = renderer.getScreenWidth() - orientedMarginLeft - orientedMarginRight;
   const uint16_t viewportHeight = renderer.getScreenHeight() - orientedMarginTop - orientedMarginBottom;

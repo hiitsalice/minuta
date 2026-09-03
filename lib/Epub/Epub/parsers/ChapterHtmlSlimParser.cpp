@@ -352,6 +352,12 @@ void ChapterHtmlSlimParser::flushPartWordBuffer() {
 // start a new text block if needed
 void ChapterHtmlSlimParser::startNewTextBlock(const BlockStyle& blockStyle) {
   nextWordContinues = false;  // New block = new paragraph, no continuation
+  const auto withBlockGap = [this](BlockStyle style) {
+    if (blockGap > 0 && hasCompletedTextBlock) {
+      style.marginTop = std::max(style.marginTop, blockGap);
+    }
+    return style;
+  };
   if (currentTextBlock) {
     // already have a text block running and it is empty - just reuse it
     if (currentTextBlock->isEmpty()) {
@@ -361,7 +367,7 @@ void ChapterHtmlSlimParser::startNewTextBlock(const BlockStyle& blockStyle) {
       // open. Merge those into the new style so the first child in a container inherits
       // the container's vertical spacing.
       const auto style = currentTextBlock->getBlockStyle();
-      BlockStyle incoming = blockStyle;
+      BlockStyle incoming = withBlockGap(blockStyle);
       if (style.fromBrElement) {
         // The empty block was created by a <br> section separator. Inject a full line of
         // blank space before the following paragraph so the scene/section break is visible.
@@ -388,11 +394,14 @@ void ChapterHtmlSlimParser::startNewTextBlock(const BlockStyle& blockStyle) {
     }
 
     makePages();
+    hasCompletedTextBlock = true;
   }
   // If the pending anchor is a TOC chapter boundary, force a page break after the previous
   // block is flushed so the chapter starts on a fresh page.
   flushPendingAnchor();
-  currentTextBlock.reset(new ParsedText(extraParagraphSpacing, hyphenationEnabled, focusReadingEnabled, blockStyle));
+  const BlockStyle incoming = withBlockGap(blockStyle);
+  currentTextBlock.reset(new ParsedText(extraParagraphSpacing, hyphenationEnabled,
+                                        focusReadingEnabled, incoming));
   wordsExtractedInBlock = 0;
   listItemBulletOnly = false;
 }
@@ -1359,8 +1368,9 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
       self->startNewTextBlock(accumulated.withoutBottom());
       self->updateEffectiveInlineStyle();
 
-      if (strcmp(name, "li") == 0) {
-        self->currentTextBlock->addWord("\xe2\x80\xa2", EpdFontFamily::REGULAR, false, false, self->visibleTextOffset);
+      if (strcmp(name, "li") == 0 && !self->suppressListMarkers) {
+        self->currentTextBlock->addWord("\xe2\x80\xa2", EpdFontFamily::REGULAR,
+                                        false, false, self->visibleTextOffset);
         self->listItemBulletOnly = true;
       }
     }

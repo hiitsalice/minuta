@@ -7,8 +7,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 
-#include "CrossPointSettings.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "util/DictHtmlPages.h"
@@ -30,10 +30,39 @@ constexpr int SIDE_PADDING = 20;
 // path, which holds no per-page copies.
 constexpr size_t MAX_STYLED_HTML_BYTES = 16 * 1024;
 
+bool isDictionaryHeading(const char* text) {
+  static constexpr const char* HEADINGS[] = {
+      "Noun", "Verb", "Adjective", "Adverb", "Pronoun",
+      "Preposition", "Conjunction", "Interjection", "Determiner",
+      "Article", "Numeral", "Particle", "Prefix", "Suffix",
+      "Phrase", "Proverb", "Idiom", "Synonym", "Synonyms",
+      "Antonym", "Antonyms", "Etymology", "Usage Note",
+      "Usage Notes", "Alternative Forms", "Derived Terms",
+      "Related Terms",
+  };
+  return std::any_of(
+      std::begin(HEADINGS), std::end(HEADINGS),
+      [text](const char* heading) { return strcmp(text, heading) == 0; });
+}
+
 }  // namespace
 
 void DictionaryDefinitionActivity::onEnter() {
   Activity::onEnter();
+
+  size_t pronunciationEnd = definition.find_first_of("\r\n");
+  if (pronunciationEnd == std::string::npos) {
+    pronunciationEnd = definition.size();
+  }
+  while (pronunciationEnd > 0 &&
+         definition[pronunciationEnd - 1] == '\r') {
+    pronunciationEnd--;
+  }
+  hasPronunciation =
+      pronunciationEnd >= 2 &&
+      definition.front() == '/' &&
+      definition[pronunciationEnd - 1] == '/';
+
   // Normalize StarDict multi-type separators so the wrap loop and the
   // C-string font APIs below both see the whole definition.
   std::replace(definition.begin(), definition.end(), '\0', '\n');
@@ -51,7 +80,11 @@ DictionaryDefinitionActivity::BodyArea DictionaryDefinitionActivity::bodyArea() 
                            orientation == GfxRenderer::Orientation::LandscapeCounterClockwise;
   const bool isInverted = orientation == GfxRenderer::Orientation::PortraitInverted;
   const int hintGutterWidth = isLandscape ? metrics.sideButtonHintsWidth : 0;
-  const int topArea = (isInverted ? metrics.buttonHintsHeight : 0) + metrics.topPadding + metrics.headerHeight;
+  const int headwordAreaHeight =
+      10 + renderer.getLineHeight(DICTIONARY_HEADWORD_FONT_ID) +
+      (hasPronunciation ? 0 : renderer.getLineHeight(DICTIONARY_FONT_ID));
+  const int topArea = (isInverted ? metrics.buttonHintsHeight : 0) +
+                      metrics.topPadding + headwordAreaHeight;
   const int bottomArea = metrics.buttonHintsHeight + metrics.verticalSpacing;
   return {renderer.getScreenWidth() - hintGutterWidth - 2 * SIDE_PADDING,
           renderer.getScreenHeight() - topArea - bottomArea};
@@ -63,7 +96,8 @@ DictionaryDefinitionActivity::BodyArea DictionaryDefinitionActivity::bodyArea() 
 bool DictionaryDefinitionActivity::layoutHtmlPages() {
   const BodyArea body = bodyArea();
   if (body.width <= 0 || body.height <= 0) return false;
-  if (!buildDictionaryHtmlPages(renderer, definition, static_cast<uint16_t>(body.width),
+  if (!buildDictionaryHtmlPages(renderer, DICTIONARY_FONT_ID, definition,
+                                static_cast<uint16_t>(body.width),
                                 static_cast<uint16_t>(body.height), pages)) {
     return false;
   }
@@ -90,12 +124,7 @@ void DictionaryDefinitionActivity::wrapText() {
   lines.clear();
   lines.reserve(definition.size() / 32 + 8);
 
-  const int fontId = SETTINGS.getReaderFontId();
-  // SD-card fonts: merge every definition codepoint into the persistent
-  // advance table up front. Otherwise each unseen codepoint measured below
-  // falls back to an on-demand glyph load from SD (8-slot overflow ring).
-  renderer.ensureSdCardFontReady(fontId, definition.c_str(), 0x01 /* REGULAR */);
-
+  const int fontId = DICTIONARY_FONT_ID;
   const BodyArea body = bodyArea();
   const int maxWidth = body.width;
   const int spaceWidth = renderer.getSpaceWidth(fontId, EpdFontFamily::REGULAR);
@@ -246,7 +275,17 @@ void DictionaryDefinitionActivity::drawBody(const int fontId, const int x, const
     const size_t len = std::min(static_cast<size_t>(lines[i].len), MAX_LINE_BYTES);
     memcpy(buf, definition.c_str() + lines[i].start, len);
     buf[len] = '\0';
-    renderer.drawText(fontId, x, startY + (i - firstLine) * lineHeight, buf);
+    const bool pronunciation =
+        i == 0 && len >= 2 && buf[0] == '/' && buf[len - 1] == '/';
+    const auto family =
+        pronunciation
+            ? EpdFontFamily::ITALIC
+            : (isDictionaryHeading(buf)
+                   ? static_cast<EpdFontFamily::Style>(
+                         EpdFontFamily::BOLD | EpdFontFamily::ITALIC)
+                   : EpdFontFamily::REGULAR);
+    renderer.drawText(fontId, x, startY + (i - firstLine) * lineHeight,
+                      buf, true, family);
   }
 }
 
@@ -265,7 +304,9 @@ void DictionaryDefinitionActivity::render(RenderLock&&) {
 
   // Header: matched headword left, page counter right.
   const int headerY = contentY + metrics.topPadding + 10;
-  renderer.drawText(UI_12_FONT_ID, contentX + SIDE_PADDING, headerY, headword.c_str(), true, EpdFontFamily::BOLD);
+  renderer.drawText(DICTIONARY_HEADWORD_FONT_ID,
+                    contentX + SIDE_PADDING, headerY,
+                    headword.c_str(), true, EpdFontFamily::BOLD);
   if (totalPages > 1) {
     char counter[16];
     snprintf(counter, sizeof(counter), "%d/%d", currentPage + 1, totalPages);
@@ -276,8 +317,10 @@ void DictionaryDefinitionActivity::render(RenderLock&&) {
   // Body: two-pass draw inside a prewarm scope (same pattern as the reader's
   // renderContents) so SD-card font glyphs load from SD in one batch instead
   // of one on-demand overflow read per character on every page turn.
-  const int fontId = SETTINGS.getReaderFontId();
-  const int bodyStartY = contentY + metrics.topPadding + metrics.headerHeight;
+  const int fontId = DICTIONARY_FONT_ID;
+  const int bodyStartY =
+      headerY + renderer.getLineHeight(DICTIONARY_HEADWORD_FONT_ID) +
+      (hasPronunciation ? 0 : renderer.getLineHeight(DICTIONARY_FONT_ID));
   auto* fcm = renderer.getFontCacheManager();
   auto scope = fcm->createPrewarmScope();
   drawBody(fontId, contentX + SIDE_PADDING, bodyStartY);  // scan pass: records codepoints only

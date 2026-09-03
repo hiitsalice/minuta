@@ -280,15 +280,32 @@ void HomeActivity::loop() {
         return;
       }
 
-      // Side Up/Down loop vertically within each column.
-      if (mappedInput.wasReleased(MappedInputManager::Button::Up) ||
-          mappedInput.wasReleased(MappedInputManager::Button::Down)) {
-        const int verticalTarget = selectorIndex < 2 ? selectorIndex + 2 : selectorIndex - 2;
+      // Side Up/Down follow the visible Quartum layout.
+      const bool upReleased =
+          mappedInput.wasReleased(MappedInputManager::Button::Up);
+      const bool downReleased =
+          mappedInput.wasReleased(MappedInputManager::Button::Down);
 
-        if (verticalTarget >= 0 && verticalTarget < bookCount) {
-          selectorIndex = verticalTarget;
-          requestUpdate();
+      if (upReleased || downReleased) {
+        if (bookCount == 2) {
+          // One incomplete row: vertical movement behaves horizontally.
+          selectorIndex = 1 - selectorIndex;
+        } else if (bookCount == 3) {
+          // Books 1 and 3 remain a column. From book 2, Up selects
+          // book 1 and Down selects book 3 instead of targeting empty slot 4.
+          if (selectorIndex == 1) {
+            selectorIndex = upReleased ? 0 : 2;
+          } else {
+            selectorIndex = selectorIndex == 0 ? 2 : 0;
+          }
+        } else if (bookCount == 4) {
+          // Complete 2x2 grid: retain the existing column movement.
+          selectorIndex = selectorIndex < 2
+                              ? selectorIndex + 2
+                              : selectorIndex - 2;
         }
+
+        requestUpdate();
         return;
       }
     }

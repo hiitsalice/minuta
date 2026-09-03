@@ -113,6 +113,20 @@ EpdFontFamily dmsans18FontFamily(&dmsans18RegularFont, &dmsans18BoldFont, &dmsan
 
 #endif  // OMIT_FONTS
 
+// Dedicated dictionary families with full IPA coverage.
+EpdFont andika12RegularFont(&andika_12_regular);
+EpdFont andika12BoldFont(&andika_12_bold);
+EpdFont andika12ItalicFont(&andika_12_italic);
+EpdFont andika14BoldFont(&andika_14_bold);
+EpdFontFamily andika12FontFamily(
+    &andika12RegularFont, &andika12BoldFont,
+    &andika12ItalicFont, &andika14BoldFont);
+
+EpdFont andika16BoldFont(&andika_16_bold);
+EpdFontFamily andika16HeadwordFontFamily(
+    &andika16BoldFont, &andika16BoldFont,
+    &andika16BoldFont, &andika16BoldFont);
+
 EpdFont steinem8RegularFont(&steinem_8_regular);
 EpdFont steinem8BoldFont(&steinem_8_bold);
 EpdFont steinem8ItalicFont(&steinem_8_italic);
@@ -361,6 +375,9 @@ void setupDisplayAndFonts(bool seamless = false) {
   renderer.insertFont(DMSANS_16_FONT_ID, dmsans16FontFamily);
   renderer.insertFont(DMSANS_18_FONT_ID, dmsans18FontFamily);
 #endif  // OMIT_FONTS
+  renderer.insertFont(DICTIONARY_FONT_ID, andika12FontFamily);
+  renderer.insertFont(DICTIONARY_HEADWORD_FONT_ID,
+                      andika16HeadwordFontFamily);
   renderer.insertFont(SMALL_FONT_ID, steinem8FontFamily);
   renderer.insertFont(UI_10_FONT_ID, steinem10FontFamily);
   renderer.insertFont(UI_11_FONT_ID, steinem11FontFamily);

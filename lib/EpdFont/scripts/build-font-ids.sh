@@ -80,6 +80,21 @@ ruby -rdigest -e 'puts [
 ].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
 ))"
 
+echo "#define DICTIONARY_FONT_ID ($(
+ruby -rdigest -e 'puts [
+  "./andika_12_regular.h",
+  "./andika_12_bold.h",
+  "./andika_14_bold.h",
+  "./andika_12_italic.h",
+].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
+))"
+
+echo "#define DICTIONARY_HEADWORD_FONT_ID ($(
+ruby -rdigest -e 'puts Digest::SHA256.hexdigest(
+  File.read("./andika_16_bold.h")
+).to_i(16) % (2 ** 32) - (2 ** 31)'
+))"
+
 echo "#define SMALL_FONT_ID ($(
 ruby -rdigest -e 'puts [
   "./steinem_8_regular.h",
@@ -131,23 +146,5 @@ ruby -rdigest -e 'puts [
   "./steinem_18_bold.h",
   "./steinem_18_bolditalic.h",
   "./steinem_18_italic.h",
-].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
-))"
-
-echo "#define UI_21_FONT_ID ($(
-ruby -rdigest -e 'puts [
-  "./steinem_21_regular.h",
-  "./steinem_21_bold.h",
-  "./steinem_21_bolditalic.h",
-  "./steinem_21_italic.h",
-].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
-))"
-
-echo "#define UI_32_FONT_ID ($(
-ruby -rdigest -e 'puts [
-  "./steinem_32_regular.h",
-  "./steinem_32_bold.h",
-  "./steinem_32_bolditalic.h",
-  "./steinem_32_italic.h",
 ].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
 ))"

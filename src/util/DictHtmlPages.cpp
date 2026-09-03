@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <Epub/parsers/ChapterHtmlSlimParser.h>
+#include <GfxRenderer.h>
 #include <HalStorage.h>
 #include <Logging.h>
 #include <Memory.h>
@@ -128,7 +129,66 @@ bool writeNormalizedXhtml(const std::string& html, HalFile& file) {
 
   const size_t n = html.size();
   size_t i = 0;
+  size_t headingClose = std::string::npos;
+  bool trimListLeadingWhitespace = false;
+
+  // reader.dict places the IPA pronunciation as an untagged leading line.
+  // Give it semantic emphasis before the EPUB-style layout parses the HTML.
+  if (n > 2 && html[0] == '/') {
+    const size_t lineEnd = html.find('\n');
+    size_t pronunciationEnd = lineEnd;
+    if (pronunciationEnd != std::string::npos &&
+        pronunciationEnd > 0 &&
+        html[pronunciationEnd - 1] == '\r') {
+      pronunciationEnd--;
+    }
+    if (pronunciationEnd != std::string::npos &&
+        pronunciationEnd > 1 &&
+        html[pronunciationEnd - 1] == '/') {
+      if (!out.append("<i>") ||
+          !out.append(html.data(), pronunciationEnd) ||
+          !out.append("</i>")) {
+        return false;
+      }
+      i = lineEnd + 1;
+    }
+  }
+
   while (i < n) {
+    // <li> already supplies its own bullet-to-text gap. Remove indentation
+    // and newlines carried in by the source HTML before its first word.
+    if (trimListLeadingWhitespace &&
+        std::isspace(static_cast<unsigned char>(html[i]))) {
+      i++;
+      continue;
+    }
+    if (trimListLeadingWhitespace && html[i] != '<') {
+      trimListLeadingWhitespace = false;
+    }
+
+    // A short standalone bold paragraph is a dictionary section heading:
+    // <p><b>Adjective</b></p>. Add the italic style bit as an internal
+    // signal; the dictionary font maps bold-italic to upright 14pt bold.
+    if (headingClose == std::string::npos &&
+        html.compare(i, 6, "<p><b>") == 0) {
+      const size_t close = html.find("</b></p>", i + 6);
+      if (close != std::string::npos &&
+          close > i + 6 &&
+          close - (i + 6) <= 48 &&
+          html.find('<', i + 6) == close) {
+        if (!out.append("<p><b><i>")) return false;
+        headingClose = close;
+        i += 6;
+        continue;
+      }
+    }
+    if (i == headingClose) {
+      if (!out.append("</i></b></p>")) return false;
+      i += 8;
+      headingClose = std::string::npos;
+      continue;
+    }
+
     const char c = html[i];
     if (c == '<' && i + 1 < n && (html[i + 1] == '!' || html[i + 1] == '?')) {
       // Comment, doctype or processing instruction: drop it entirely.
@@ -180,6 +240,10 @@ bool writeNormalizedXhtml(const std::string& html, HalFile& file) {
       if (!out.append(html.data() + nameEnd, j - nameEnd)) return false;  // attributes verbatim
       if (!closing && isVoid && html[j - 1] != '/' && !out.append('/')) return false;
       if (!out.append('>')) return false;
+      if (!closing && nameLen == 2 &&
+          nameBuf[0] == 'l' && nameBuf[1] == 'i') {
+        trimListLeadingWhitespace = true;
+      }
       i = j + 1;
       continue;
     }
@@ -208,8 +272,9 @@ bool writeNormalizedXhtml(const std::string& html, HalFile& file) {
 
 }  // namespace
 
-bool buildDictionaryHtmlPages(GfxRenderer& renderer, const std::string& definition, const uint16_t viewportWidth,
-                              const uint16_t viewportHeight, std::vector<std::unique_ptr<Page>>& pagesOut) {
+bool buildDictionaryHtmlPages(GfxRenderer& renderer, const int fontId, const std::string& definition,
+                              const uint16_t viewportWidth, const uint16_t viewportHeight,
+                              std::vector<std::unique_ptr<Page>>& pagesOut) {
   if (ESP.getFreeHeap() < MIN_STYLED_FREE_HEAP || ESP.getMaxAllocHeap() < MIN_STYLED_MAX_ALLOC) {
     LOG_ERR("DHTML", "Low heap for styled definition (%u free, %u max block)", ESP.getFreeHeap(),
             ESP.getMaxAllocHeap());
@@ -242,8 +307,9 @@ bool buildDictionaryHtmlPages(GfxRenderer& renderer, const std::string& definiti
     // a stack local. Null epub is safe: imageRendering=2 suppresses <img>
     // handling, the only path that dereferences it.
     auto parser = makeUniqueNoThrow<ChapterHtmlSlimParser>(
-        nullptr, tmpPath, renderer, SETTINGS.getReaderFontId(), SETTINGS.getReaderLineCompression(),
-        SETTINGS.extraParagraphSpacing, SETTINGS.paragraphAlignment, viewportWidth, viewportHeight,
+        nullptr, tmpPath, renderer, fontId, SETTINGS.getReaderLineCompression(),
+        true, static_cast<uint8_t>(CssTextAlign::Left),
+        viewportWidth, viewportHeight,
         SETTINGS.hyphenationEnabled, SETTINGS.focusReadingEnabled,
         [&pagesOut, &resourceLimitHit, &retainedElements, &limitReason](std::unique_ptr<Page> page, uint16_t, uint16_t,
                                                                         uint32_t) {
@@ -271,7 +337,12 @@ bool buildDictionaryHtmlPages(GfxRenderer& renderer, const std::string& definiti
           retainedElements += pageElements;
           pagesOut.push_back(std::move(page));
         },
-        /*embeddedStyle=*/false, /*contentBase=*/"", /*imageBasePath=*/"", /*imageRendering=*/2);
+        /*embeddedStyle=*/false, /*contentBase=*/"", /*imageBasePath=*/"",
+        /*imageRendering=*/2,
+        /*tocAnchors=*/std::vector<std::string>{},
+        /*popupFn=*/nullptr, /*cssParser=*/nullptr,
+        /*blockGap=*/renderer.getLineHeight(fontId),
+        /*suppressListMarkers=*/true);
     if (!parser) {
       LOG_ERR("DHTML", "OOM: ChapterHtmlSlimParser");
     } else {

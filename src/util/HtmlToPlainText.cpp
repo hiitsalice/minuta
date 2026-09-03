@@ -95,8 +95,18 @@ void appendBreak(std::string& output, size_t count = 1) {
   while (!output.empty() && output.back() == ' ') output.pop_back();
   if (output.empty()) return;
   size_t existing = 0;
-  while (existing < output.size() && output[output.size() - existing - 1] == '\n') existing++;
-  while (existing++ < count) output.push_back('\n');
+  while (existing < output.size() &&
+         output[output.size() - existing - 1] == '\n') {
+    existing++;
+  }
+  while (existing > count) {
+    output.pop_back();
+    existing--;
+  }
+  while (existing < count) {
+    output.push_back('\n');
+    existing++;
+  }
 }
 
 }  // namespace
@@ -113,10 +123,10 @@ std::string htmlToPlainText(const std::string& html) {
         continue;
       }
       const TagBreak separator = tagBreak(html, i + 1, close);
-      if (separator == TagBreak::Line)
-        appendBreak(output);
-      else if (separator == TagBreak::Paragraph)
+      if (separator == TagBreak::Line ||
+          separator == TagBreak::Paragraph) {
         appendBreak(output, 2);
+      }
       i = close + 1;
       continue;
     }
@@ -142,7 +152,7 @@ std::string htmlToPlainText(const std::string& html) {
     if (c == '\r' || c == '\t') {
       if (!output.empty() && output.back() != ' ' && output.back() != '\n') output.push_back(' ');
     } else if (c == '\n') {
-      appendBreak(output);
+      appendBreak(output, 2);
     } else {
       output.push_back(static_cast<char>(c));
     }

@@ -40,6 +40,12 @@
 #include <builtinFonts/dmsans_18_italic.h>
 #include <builtinFonts/dmsans_18_regular.h>
 
+#include <builtinFonts/andika_12_regular.h>
+#include <builtinFonts/andika_12_bold.h>
+#include <builtinFonts/andika_12_italic.h>
+#include <builtinFonts/andika_14_bold.h>
+#include <builtinFonts/andika_16_bold.h>
+
 #include <builtinFonts/steinem_8_regular.h>
 #include <builtinFonts/steinem_8_italic.h>
 #include <builtinFonts/steinem_8_bold.h>
