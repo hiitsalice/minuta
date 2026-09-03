@@ -54,13 +54,9 @@ void TxtReaderActivity::initializeReader(GfxRenderer& renderer) {
   cachedOrientedMarginLeft += cachedScreenMargin;
   cachedOrientedMarginRight += cachedScreenMargin;
   const auto statusBar = SETTINGS.statusBarSpec();
-  const int statusPadding =
-      (statusBar.textLaneVisible(true) ? 11 : 0) +
-      statusBar.progressBarHeightPx;
+  const int statusPadding = (statusBar.textLaneVisible() ? 11 : 0) + statusBar.progressBarHeightPx;
   cachedOrientedMarginBottom +=
-      std::max(cachedScreenMargin,
-               static_cast<uint8_t>(UITheme::getInstance().getStatusBarHeight())) +
-      statusPadding;
+      std::max(cachedScreenMargin, static_cast<uint8_t>(UITheme::getInstance().getStatusBarHeight())) + statusPadding;
 
   viewportWidth = renderer.getScreenWidth() - cachedOrientedMarginLeft - cachedOrientedMarginRight;
   const int viewportHeight = renderer.getScreenHeight() - cachedOrientedMarginTop - cachedOrientedMarginBottom;

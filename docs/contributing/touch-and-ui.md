@@ -1,6 +1,6 @@
 # Touch and UI Development
 
-CrossPoint runs on touch devices (Seeed Sticky, M5Paper, M5Stack PaperMono, LilyGo T5, Xteink X4 Pro) alongside the button-only Xteink X3/X4. Every screen must work with both input styles.
+Minuta primarily targets the button-only Xteink X4. Shared UI components should remain compatible with existing touch-capable environments.
 
 **There is one supported way to build a new screen: FreeInkUI, hosted through the firmware base classes below.** Touch hit-testing, tap highlighting, long-press, swipe scrolling, and button focus navigation all come from the shared stack; you never hand-roll coordinate math.
 
@@ -136,7 +136,7 @@ As with all input: never call the SDK `InputManager` or read GPIO directly. The 
 
 ## Building and testing on non-Xteink devices
 
-Each MCU family is its own binary: X3/X4 are ESP32-C3, Sticky and LilyGo T5 are ESP32-S3, M5Paper v1.1 is a classic ESP32. The Sticky env ships in `platformio.ini` (`pio run -e sticky`). Envs for other devices go in **`platformio.local.ini`**, a gitignored file that PlatformIO merges over `platformio.ini` (see `extra_configs`). Create it next to `platformio.ini`; personal envs, ports, and debug flags live there and never get committed.
+The default Minuta firmware targets Xteink X4 on ESP32-C3. Additional maintained environments are declared explicitly in `platformio.ini`; personal environments belong in the gitignored `platformio.local.ini`.
 
 Both envs below extend the repo's `[base]`, so they build against the `freeink-sdk` submodule with all the normal deps and scripts.
 

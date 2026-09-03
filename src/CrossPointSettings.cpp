@@ -104,6 +104,9 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   // Minuta contains only English, but the stored code remains for settings-file
   // compatibility with existing installations.
   doc["language"] = (language < getLanguageCount()) ? LANGUAGE_CODES[language] : "EN";
+
+  // Version 1 places Light before Dark while preserving their stored meaning.
+  doc["sleepScreenOrder"] = 1;
 }
 
 bool CrossPointSettings::fromJson(JsonVariantConst doc) {
@@ -170,6 +173,19 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
           v = info.valueRange.max;
       }
       s.*(info.valuePtr) = v;
+    }
+  }
+
+  // Older settings stored Dark as 0 and Light as 1. Preserve that choice
+  // after changing the menu order to Light first.
+  if (doc["sleepScreenOrder"].isNull() && !doc["sleepScreen"].isNull()) {
+    const uint8_t legacySleepScreen = doc["sleepScreen"] | (uint8_t)SLEEP_SCREEN_MODE_COUNT;
+    if (legacySleepScreen == 0) {
+      sleepScreen = DARK;
+      needsResave = true;
+    } else if (legacySleepScreen == 1) {
+      sleepScreen = LIGHT;
+      needsResave = true;
     }
   }
 
@@ -242,9 +258,6 @@ CrossPointSettings::StatusBarSpec CrossPointSettings::statusBarSpec() const {
   spec.titleMode = statusBarTitle;
   spec.showBattery = statusBarBattery != 0;
   spec.showBatteryPercent = hideBatteryPercentage == HIDE_NEVER;
-  spec.clockMode = statusBarClock;
-  spec.clock12h = clockFormat == 1;
-  spec.clockUtcOffsetQ = clockUtcOffsetQ;
   spec.progressBarMode = statusBarProgressBar;
   spec.progressBarHeightPx =
       statusBarProgressBar != HIDE_PROGRESS ? static_cast<uint8_t>((statusBarProgressBarThickness + 1) * 2) : 0;

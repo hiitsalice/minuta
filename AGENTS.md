@@ -48,7 +48,7 @@ Never invoke or probe `clang-format` directly. The repository wrapper is the onl
 
 ### Hardware Specs
 
-* MCUs: ESP32-C3 (single-core RISC-V @ 160MHz) and ESP32-S3 (`sticky`, dual-core Xtensa LX7)
+* Primary MCU: ESP32-C3 (single-core RISC-V @ 160MHz) for Xteink X4.
 * RAM: ~380KB usable on ESP32-C3 (VERY LIMITED - primary project constraint)
   * **NO PSRAM on C3**.
   * **Single Buffer Mode**: Only ONE 48KB framebuffer (not double-buffered)

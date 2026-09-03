@@ -17,27 +17,6 @@
 
 #define UART0_RXD 20  // Used for USB connection detection
 
-// Xteink X3 Hardware
-#define X3_I2C_SDA 20
-#define X3_I2C_SCL 0
-#define X3_I2C_FREQ 400000
-
-// TI BQ27220 Fuel gauge I2C
-#define I2C_ADDR_BQ27220 0x55  // Fuel gauge I2C address
-#define BQ27220_SOC_REG 0x2C   // StateOfCharge() command code (%)
-#define BQ27220_CUR_REG 0x0C   // Current() command code (signed mA)
-#define BQ27220_VOLT_REG 0x08  // Voltage() command code (mV)
-
-// Analog DS3231 RTC I2C
-#define I2C_ADDR_DS3231 0x68  // RTC I2C address
-#define DS3231_SEC_REG 0x00   // Seconds command code (BCD)
-
-// QST QMI8658 IMU I2C
-#define I2C_ADDR_QMI8658 0x6B        // IMU I2C address
-#define I2C_ADDR_QMI8658_ALT 0x6A    // IMU I2C fallback address
-#define QMI8658_WHO_AM_I_REG 0x00    // WHO_AM_I command code
-#define QMI8658_WHO_AM_I_VALUE 0x05  // WHO_AM_I expected value
-
 class HalGPIO {
 #if CROSSPOINT_EMULATED == 0
   InputManager inputMgr;
@@ -47,21 +26,12 @@ class HalGPIO {
   bool usbStateChanged = false;
 
  public:
-  enum class DeviceType : uint8_t { X4, X3 };
-
- private:
-  DeviceType _deviceType = DeviceType::X4;
-
- public:
   HalGPIO() = default;
 
-  // Inline device type helpers for cleaner downstream checks
-  inline bool deviceIsX3() const { return _deviceType == DeviceType::X3; }
-  inline bool deviceIsX4() const { return _deviceType == DeviceType::X4; }
   bool isXteinkDevice() const;
 
   // True when the board's page buttons sit on the left/right screen edges
-  // (X3, X4 Pro) rather than an off-screen vertical rocker. Drives side-hint
+  // (X4 Pro) rather than an off-screen vertical rocker. Drives side-hint
   // placement and the flipped large-step direction in selection activities.
   // Keyed off the active BoardConfig profile, not the X3/X4 runtime detection.
   bool hasEdgeSideButtons() const;

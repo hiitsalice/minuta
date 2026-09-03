@@ -109,9 +109,7 @@ const fui::KeyboardLayout URL_LAYOUT{URL_ROWS, 5};
 const fui::KeyboardLayout URL_SHIFT_LAYOUT{URL_SHIFT_ROWS, 5};
 const fui::KeyboardLayout URL_SNIPPET_LAYOUT{URL_SNIP_ROWS, 4};
 
-fui::KeyboardLayoutId layoutForLanguage(const Language) {
-  return fui::KeyboardLayoutId::QwertyEn;
-}
+fui::KeyboardLayoutId layoutForLanguage(const Language) { return fui::KeyboardLayoutId::QwertyEn; }
 
 }  // namespace
 
@@ -401,10 +399,7 @@ bool KeyboardEntryActivity::cursorPositionFromPoint(const int x, const int y, si
   const int inputStartY = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing +
                           metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset;
 
-  int availableWidth = pageWidth;
-  if (gpio.deviceIsX3()) {
-    availableWidth -= 2 * metrics.sideButtonHintsWidth;
-  }
+  const int availableWidth = pageWidth;
   const int effectiveMargin = (pageWidth - availableWidth * metrics.keyboardTextFieldWidthPercent / 100) / 2;
   const int toggleGap = inputType == InputType::Password ? 4 : 0;
   const int toggleReserve = inputType == InputType::Password ? std::max(renderer.getTextWidth(UI_12_FONT_ID, "[abc]"),
@@ -702,10 +697,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   std::string displayText = displayTextForCurrentState();
 
   const bool isPassword = (inputType == InputType::Password);
-  int availableWidth = pageWidth;
-  if (gpio.deviceIsX3()) {
-    availableWidth -= 2 * metrics.sideButtonHintsWidth;
-  }
+  const int availableWidth = pageWidth;
   const int effectiveMargin = (pageWidth - availableWidth * metrics.keyboardTextFieldWidthPercent / 100) / 2;
   const int toggleGap = isPassword ? 4 : 0;
   const int toggleReserve = isPassword ? std::max(renderer.getTextWidth(UI_12_FONT_ID, "[abc]"),

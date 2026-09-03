@@ -606,34 +606,18 @@ void SleepActivity::renderDefaultSleepScreen() const {
   const int titleHeight = renderer.getTextHeight(UI_18_FONT_ID);
   const int statusHeight = renderer.getTextHeight(UI_10_FONT_ID);
 
-  const int groupHeight =
-      logoSize + logoTextGap + titleHeight + textLineGap + statusHeight;
+  const int groupHeight = logoSize + logoTextGap + titleHeight + textLineGap + statusHeight;
   const int groupTop = (pageHeight - groupHeight) / 2;
 
   const int logoY = groupTop;
   const int titleY = logoY + logoSize + logoTextGap;
   const int statusY = titleY + titleHeight + textLineGap;
 
-  renderer.drawImage(
-      Logo120,
-      (pageWidth - logoSize) / 2,
-      logoY,
-      logoSize,
-      logoSize);
+  renderer.drawImage(Logo120, (pageWidth - logoSize) / 2, logoY, logoSize, logoSize);
 
-  renderer.drawCenteredText(
-      UI_18_FONT_ID,
-      titleY,
-      "Minuta",
-      true,
-      EpdFontFamily::REGULAR);
+  renderer.drawCenteredText(UI_18_FONT_ID, titleY, "Minuta", true, EpdFontFamily::REGULAR);
 
-  renderer.drawCenteredText(
-      UI_10_FONT_ID,
-      statusY,
-      tr(STR_SLEEPING),
-      true,
-      EpdFontFamily::ITALIC);
+  renderer.drawCenteredText(UI_10_FONT_ID, statusY, tr(STR_SLEEPING), true, EpdFontFamily::ITALIC);
 
   // Make sleep screen dark unless light is selected in settings
   if (SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::LIGHT) {
@@ -863,13 +847,7 @@ void SleepActivity::renderCoverSleepScreen() const {
 void SleepActivity::renderLastScreenSleepScreen() const {
   const auto pageHeight = renderer.getScreenHeight();
   renderer.drawImage(MoonIcon, 0, pageHeight - MOONICON_HEIGHT, MOONICON_WIDTH, MOONICON_HEIGHT);
-  if (gpio.deviceIsX3()) {
-    // The controller still holds the displayed page, so its differential base
-    // waveform can add the moon without a full-screen flash.
-    renderer.displayGrayscaleBase(HalDisplay::FAST_REFRESH);
-  } else {
-    renderer.displayBuffer(HalDisplay::HALF_REFRESH);
-  }
+  renderer.displayBuffer(HalDisplay::HALF_REFRESH);
 }
 
 void SleepActivity::renderBlankSleepScreen() const {

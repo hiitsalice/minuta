@@ -1,8 +1,6 @@
 #pragma once
 
 #include <BoardConfig.h>
-#include <HalClock.h>
-#include <HalTiltSensor.h>
 #include <I18n.h>
 #include <SdCardFontRegistry.h>
 
@@ -201,19 +199,14 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
     // Enum settings are persisted as numeric values. Assign these labels by enum
     // value so a reordered menu or enum cannot silently swap their behavior.
     std::vector<StrId> sleepScreenValues(CrossPointSettings::SLEEP_SCREEN_MODE_COUNT);
-    sleepScreenValues[CrossPointSettings::DARK] = StrId::STR_DARK;
     sleepScreenValues[CrossPointSettings::LIGHT] = StrId::STR_LIGHT;
+    sleepScreenValues[CrossPointSettings::DARK] = StrId::STR_DARK;
     sleepScreenValues[CrossPointSettings::CUSTOM] = StrId::STR_CUSTOM;
     sleepScreenValues[CrossPointSettings::COVER] = StrId::STR_COVER;
     sleepScreenValues[CrossPointSettings::COVER_CUSTOM] = StrId::STR_COVER_CUSTOM;
     sleepScreenValues[CrossPointSettings::BLANK] = StrId::STR_NONE_OPT;
     sleepScreenValues[CrossPointSettings::QUICK_RESUME] = StrId::STR_QUICK_RESUME;
     sleepScreenValues[CrossPointSettings::TRANSPARENT_CUSTOM] = StrId::STR_TRANSPARENT;
-
-    std::vector<StrId> statusBarClockValues(CrossPointSettings::STATUS_BAR_CLOCK_MODE_COUNT);
-    statusBarClockValues[CrossPointSettings::STATUS_BAR_CLOCK_HIDE] = StrId::STR_HIDE;
-    statusBarClockValues[CrossPointSettings::STATUS_BAR_CLOCK_RIGHT] = StrId::STR_DIR_RIGHT;
-    statusBarClockValues[CrossPointSettings::STATUS_BAR_CLOCK_LEFT] = StrId::STR_DIR_LEFT;
 
     std::vector<SettingInfo> v = {
         // --- Display ---
@@ -232,8 +225,7 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
                            StrId::STR_PAGES_30, StrId::STR_NEVER},
                           "refreshFrequency", StrId::STR_CAT_DISPLAY),
         SettingInfo::Enum(StrId::STR_UI_THEME, &CrossPointSettings::uiTheme,
-                          {StrId::STR_THEME_SOLUM, StrId::STR_THEME_QUARTUM},
-                          "uiTheme", StrId::STR_CAT_DISPLAY),
+                          {StrId::STR_THEME_SOLUM, StrId::STR_THEME_QUARTUM}, "uiTheme", StrId::STR_CAT_DISPLAY),
         SettingInfo::Toggle(StrId::STR_SUNLIGHT_FADING_FIX, &CrossPointSettings::fadingFix, "fadingFix",
                             StrId::STR_CAT_DISPLAY),
 #if FREEINK_CAP_FRONTLIGHT
@@ -414,32 +406,7 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
         SettingInfo::Enum(StrId::STR_XTC_STATUS_BAR, &CrossPointSettings::xtcStatusBarMode,
                           {StrId::STR_HIDE, StrId::STR_BOTTOM, StrId::STR_TOP}, "xtcStatusBarMode",
                           StrId::STR_CUSTOMISE_STATUS_BAR),
-        // Clock entries (web settings only; device UI uses ClockOffsetActivity for the offset).
-        // Range 0..104 = quarter-hour steps from UTC-12:00 to UTC+14:00, biased by 48.
-        SettingInfo::Enum(StrId::STR_CLOCK, &CrossPointSettings::statusBarClock, std::move(statusBarClockValues),
-                          "statusBarClock", StrId::STR_CUSTOMISE_STATUS_BAR),
-        SettingInfo::Value(StrId::STR_CLOCK_UTC_OFFSET, &CrossPointSettings::clockUtcOffsetQ, {0, 104, 1},
-                           "clockUtcOffsetQ", StrId::STR_CUSTOMISE_STATUS_BAR),
-        SettingInfo::Enum(StrId::STR_CLOCK_FORMAT, &CrossPointSettings::clockFormat,
-                          {StrId::STR_CLOCK_FORMAT_24H, StrId::STR_CLOCK_FORMAT_12H}, "clockFormat",
-                          StrId::STR_CUSTOMISE_STATUS_BAR),
-        // Persistence flag for NTP debounce. Resetting from the web UI forces a re-sync
-        // on next WiFi connect, which is useful when crossing time zones.
-        SettingInfo::Toggle(StrId::STR_CLOCK_SYNCED, &CrossPointSettings::clockHasBeenSynced, "clockHasBeenSynced",
-                            StrId::STR_CUSTOMISE_STATUS_BAR),
     };
-    // Only show tilt page turn setting when the QMI8658 IMU is present (X3)
-    if (halTiltSensor.isAvailable()) {
-      // Insert after the short power button setting (end of Controls section)
-      for (auto it = v.begin(); it != v.end(); ++it) {
-        if (it->nameId == StrId::STR_SHORT_PWR_BTN) {
-          v.insert(it + 1, SettingInfo::Enum(StrId::STR_TILT_PAGE_TURN, &CrossPointSettings::tiltPageTurn,
-                                             {StrId::STR_STATE_OFF, StrId::STR_NORMAL, StrId::STR_INVERTED},
-                                             "tiltPageTurn", StrId::STR_CAT_CONTROLS));
-          break;
-        }
-      }
-    }
     return v;
   }();
 

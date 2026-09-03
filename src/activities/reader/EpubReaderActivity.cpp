@@ -576,7 +576,7 @@ void EpubReaderActivity::loop() {
     return;
   }
 
-  auto [prevTriggered, nextTriggered, fromTilt] = ReaderUtils::detectPageTurn(mappedInput);
+  auto [prevTriggered, nextTriggered] = ReaderUtils::detectPageTurn(mappedInput);
   prevTriggered = prevTriggered || touch.prev;
   nextTriggered = nextTriggered || touch.next;
   if (!prevTriggered && !nextTriggered) {
@@ -593,7 +593,7 @@ void EpubReaderActivity::loop() {
   }
 
   const unsigned long heldMs = (touch.prev || touch.next) ? touch.heldMs : mappedInput.getHeldTime();
-  const bool longPress = !fromTilt && heldMs >= ReaderUtils::SKIP_HOLD_MS;
+  const bool longPress = heldMs >= ReaderUtils::SKIP_HOLD_MS;
   if (longPress && SETTINGS.longPressButtonBehavior == SETTINGS.CHAPTER_SKIP) {
     skipPages(nextTriggered ? 1 : -1);
     requestUpdate();
@@ -1104,13 +1104,11 @@ void EpubReaderActivity::renderBook() {
   const auto statusBar = SETTINGS.statusBarSpec();
   const uint8_t statusBarHeight = UITheme::getInstance().getStatusBarHeight();
   const int statusPadding =
-      ((statusBar.textLaneVisible(true) || automaticPageTurnActive) ? 11 : 0) +
-      statusBar.progressBarHeightPx;
+      ((statusBar.textLaneVisible() || automaticPageTurnActive) ? 11 : 0) + statusBar.progressBarHeightPx;
 
   // Preserve the configured screen margin, then add clearance matching the
   // visible status text and progress-bar thickness.
-  orientedMarginBottom +=
-      std::max(SETTINGS.screenMargin, statusBarHeight) + statusPadding;
+  orientedMarginBottom += std::max(SETTINGS.screenMargin, statusBarHeight) + statusPadding;
 
   const uint16_t viewportWidth = renderer.getScreenWidth() - orientedMarginLeft - orientedMarginRight;
   const uint16_t viewportHeight = renderer.getScreenHeight() - orientedMarginTop - orientedMarginBottom;

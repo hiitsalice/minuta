@@ -78,13 +78,11 @@ jobs:
       fail-fast: false
       matrix:
         # Artifact names match the release asset names OtaUpdater requests:
-        # plain firmware.bin for the C3 X4/X3 binary, firmware-<board>.bin for
-        # the S3 boards.
+        # Plain firmware.bin is the X4 build; other boards use
+        # firmware-<board>.bin.
         include:
           - env: default
             asset: firmware.bin
-          - env: sticky
-            asset: firmware-sticky.bin
           - env: x4pro
             asset: firmware-x4pro.bin
           - env: papermono

@@ -2,7 +2,6 @@
 
 #include <FreeInkUIGfxRenderer.h>
 #include <GfxRenderer.h>
-#include <HalClock.h>
 #include <HalGPIO.h>
 #include <HalPowerManager.h>
 #include <HalStorage.h>
@@ -198,8 +197,7 @@ void BaseTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const c
       const int x = buttonPositions[i];
       renderer.fillRect(x, pageHeight - buttonY, buttonWidth, buttonHeight, false);
       renderer.drawRect(x, pageHeight - buttonY, buttonWidth, buttonHeight);
-      drawHintLabel(renderer, labelFontId, labels[i], x, buttonWidth, pageHeight - buttonY, buttonHeight,
-                    textYOffset);
+      drawHintLabel(renderer, labelFontId, labels[i], x, buttonWidth, pageHeight - buttonY, buttonHeight, textYOffset);
     }
   }
 
@@ -307,12 +305,10 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   // The icon glyph extends 2px past glyphWidth (terminal nub); reserve it or
   // the percent label's rect comes up short and the text truncates.
   constexpr int16_t batteryNubWidth = 2;
-  const int16_t headerBatteryWidth =
-      static_cast<int16_t>(metrics.batteryWidth);
+  const int16_t headerBatteryWidth = static_cast<int16_t>(metrics.batteryWidth);
   const int16_t headerBatteryHeight =
       static_cast<int16_t>(metrics.batteryHeight + (metrics.headerBatteryDetached ? 3 : 0));
-  const int16_t headerBatteryGap =
-      static_cast<int16_t>(metrics.headerBatteryDetached ? 5 : batteryPercentSpacing);
+  const int16_t headerBatteryGap = static_cast<int16_t>(metrics.headerBatteryDetached ? 5 : batteryPercentSpacing);
 
   int16_t batteryReserve = static_cast<int16_t>(headerBatteryWidth + batteryNubWidth);
   if (showBatteryPercentage) {
@@ -338,8 +334,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   }
   props.borderEdges = fui::EdgeBottom;
   props.titleText = tokens.titleText;
-  props.titleText.align =
-      centerTitle ? fui::TextAlign::Center : tokens.headerTitleAlign;
+  props.titleText.align = centerTitle ? fui::TextAlign::Center : tokens.headerTitleAlign;
   props.subtitleText = tokens.smallText;
   props.styles = tokens.popup;
   props.sidePadding = tokens.headerSidePadding;
@@ -385,44 +380,28 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   const int16_t batteryX = batteryLeft ? static_cast<int16_t>(band.x + batteryEdgeInset)
                                        : static_cast<int16_t>(band.right() - batteryEdgeInset - batteryReserve);
   const int16_t batteryH = static_cast<int16_t>(metrics.batteryBarHeight);
-  const int16_t batteryBandY =
-      batteryDetached ? static_cast<int16_t>(metrics.topPadding + 2) : band.y;
+  const int16_t batteryBandY = batteryDetached ? static_cast<int16_t>(metrics.topPadding + 2) : band.y;
   if (batteryDetached) {
-    const int16_t iconX =
-        static_cast<int16_t>(batteryX + batteryReserve - headerBatteryWidth - batteryNubWidth);
+    const int16_t iconX = static_cast<int16_t>(batteryX + batteryReserve - headerBatteryWidth - batteryNubWidth);
 
     if (showBatteryPercentage) {
       fui::TextStyle labelStyle = battery.text;
       labelStyle.align = fui::TextAlign::Right;
-      const int16_t labelWidth =
-          static_cast<int16_t>(iconX - headerBatteryGap - batteryX);
+      const int16_t labelWidth = static_cast<int16_t>(iconX - headerBatteryGap - batteryX);
 
-      ui.target.text(
-          fui::Rect{
-              batteryX,
-              static_cast<int16_t>(batteryBandY - 1),
-              labelWidth,
-              batteryH},
-          percentText,
-          labelStyle);
+      ui.target.text(fui::Rect{batteryX, static_cast<int16_t>(batteryBandY - 1), labelWidth, batteryH}, percentText,
+                     labelStyle);
     }
 
     fui::BatteryIndicatorProps iconOnly = battery;
     iconOnly.label = nullptr;
 
-    fui::batteryIndicator(
-        ui.frame,
-        fui::Rect{
-            iconX,
-            static_cast<int16_t>(batteryBandY + 8),
-            static_cast<int16_t>(headerBatteryWidth + batteryNubWidth),
-            headerBatteryHeight},
-        iconOnly);
+    fui::batteryIndicator(ui.frame,
+                          fui::Rect{iconX, static_cast<int16_t>(batteryBandY + 8),
+                                    static_cast<int16_t>(headerBatteryWidth + batteryNubWidth), headerBatteryHeight},
+                          iconOnly);
   } else {
-    fui::batteryIndicator(
-        ui.frame,
-        fui::Rect{batteryX, band.y, batteryReserve, batteryH},
-        battery);
+    fui::batteryIndicator(ui.frame, fui::Rect{batteryX, band.y, batteryReserve, batteryH}, battery);
   }
 
   if (manualRightLabel) {
@@ -716,8 +695,7 @@ void BaseTheme::drawButtonMenu(GfxRenderer& renderer, Rect rect, int buttonCount
   }
 }
 
-Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message,
-                          const bool indexingStyle) const {
+Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message, const bool indexingStyle) const {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int marginX = metrics.popupMarginX;
   const int marginY = metrics.popupMarginY;
@@ -743,20 +721,13 @@ Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message,
   // Minuta popup/status messages consistently use Steinem 12pt.
   (void)indexingStyle;
   const int drawFontId = UI_12_FONT_ID;
-  const int drawTextWidth =
-      renderer.getTextWidth(drawFontId, message, popupFontFamily);
+  const int drawTextWidth = renderer.getTextWidth(drawFontId, message, popupFontFamily);
   const int drawLineHeight = renderer.getLineHeight(drawFontId);
   const int textX = x + (w - drawTextWidth) / 2;
 
   // Centre the text exactly within the popup frame.
   const int textY = y + (h - drawLineHeight) / 2 + 2;
-  renderer.drawText(
-      drawFontId,
-      textX,
-      textY,
-      message,
-      metrics.popupTextInverted,
-      popupFontFamily);
+  renderer.drawText(drawFontId, textX, textY, message, metrics.popupTextInverted, popupFontFamily);
   renderer.displayBuffer();
   return Rect{x, y, w, h};
 }
@@ -795,7 +766,7 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
   renderer.getOrientedViewableTRBL(&orientedMarginTop, &orientedMarginRight, &orientedMarginBottom,
                                    &orientedMarginLeft);
   const auto sb = SETTINGS.statusBarSpec();
-  const bool showStatusBarTextLane = sb.textLaneVisible(halClock.isAvailable());
+  const bool showStatusBarTextLane = sb.textLaneVisible();
 
   // Draw Progress Text
   const auto screenHeight = renderer.getScreenHeight();
@@ -825,31 +796,24 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
     }
 
     int progressTextWidth = renderer.getTextWidth(SMALL_FONT_ID, progressStr);
-    const int estimateWidth =
-        showEstimate ? renderer.getTextWidth(SMALL_FONT_ID, "~") : 0;
+    const int estimateWidth = showEstimate ? renderer.getTextWidth(SMALL_FONT_ID, "~") : 0;
     constexpr int estimateGap = 2;
     const int estimateSpacing = showEstimate ? estimateGap : 0;
-    const int progressClusterWidth =
-        estimateWidth + estimateSpacing + progressTextWidth;
+    const int progressClusterWidth = estimateWidth + estimateSpacing + progressTextWidth;
 
     // Minuta: when Chapter Page Count is the only visible status text,
     // centre it. Progress Bar and Thickness live separately and are ignored.
     const bool onlyChapterPageCount =
-        sb.showChapterPageCount &&
-        !sb.showBookProgressPercent &&
-        !sb.showBattery &&
-        title.empty();
+        sb.showChapterPageCount && !sb.showBookProgressPercent && !sb.showBattery && title.empty();
 
     const int progressX =
         onlyChapterPageCount
             ? orientedMarginLeft +
-                  (renderer.getScreenWidth() -
-                   orientedMarginLeft -
-                   orientedMarginRight -
-                   progressClusterWidth) / 2
+                  (renderer.getScreenWidth() - orientedMarginLeft - orientedMarginRight - progressClusterWidth) / 2
             : rightClusterX - progressClusterWidth;
     if (showEstimate) {
-      const int estimateY = statusTextY + (renderer.getLineHeight(SMALL_FONT_ID) - renderer.getLineHeight(SMALL_FONT_ID)) / 2;
+      const int estimateY =
+          statusTextY + (renderer.getLineHeight(SMALL_FONT_ID) - renderer.getLineHeight(SMALL_FONT_ID)) / 2;
       renderer.drawText(SMALL_FONT_ID, progressX, estimateY, "~");
     }
     renderer.drawText(SMALL_FONT_ID, progressX + estimateWidth + estimateSpacing, statusTextY, progressStr);
@@ -862,13 +826,11 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
     const int barMarginLeft = fillMargin ? 0 : orientedMarginLeft;
     const int barMarginRight = fillMargin ? 0 : orientedMarginRight;
     const int progressBarMaxWidth = renderer.getScreenWidth() - barMarginLeft - barMarginRight;
-    const int barHeight =
-        sb.progressBarHeightPx + (fillMargin ? orientedMarginBottom - 1 : 0);
+    const int barHeight = sb.progressBarHeightPx + (fillMargin ? orientedMarginBottom - 1 : 0);
 
     // Anchor the bar directly against the bottom boundary.
     // paddingBottom still keeps previews above their button-hint area.
-    const int progressBarY =
-        renderer.getScreenHeight() - paddingBottom - barHeight;
+    const int progressBarY = renderer.getScreenHeight() - paddingBottom - barHeight;
 
     size_t progress;
     if (sb.progressBarMode == CrossPointSettings::STATUS_BAR_PROGRESS_BAR::BOOK_PROGRESS) {
@@ -898,24 +860,6 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
     }
 
     leftClusterWidth += batteryWidth;
-  }
-
-  // Draw Clock (X3 only — DS3231 RTC)
-  if (sb.showsClock() && halClock.isAvailable()) {
-    char timeBuf[9];
-    if (halClock.formatTime(timeBuf, sizeof(timeBuf), sb.clockUtcOffsetQ, sb.clock12h)) {
-      int clockTextWidth = renderer.getTextWidth(SMALL_FONT_ID, timeBuf);
-      int clockX = 0;
-      // Position to the left or right of the progress text (with a small gap)
-      if (sb.clockMode == CrossPointSettings::STATUS_BAR_CLOCK_LEFT) {
-        clockX = leftClusterX + leftClusterWidth + (leftClusterWidth > 0 ? 10 : 0);
-        leftClusterWidth += clockTextWidth + 10;
-      } else if (sb.clockMode == CrossPointSettings::STATUS_BAR_CLOCK_RIGHT) {
-        clockX = rightClusterX - rightClusterWidth - (rightClusterWidth > 0 ? 10 : 0) - clockTextWidth;
-        rightClusterWidth += clockTextWidth + 10;
-      }
-      renderer.drawText(SMALL_FONT_ID, clockX, statusTextY, timeBuf);
-    }
   }
 
   // Draw Bookmark

@@ -14,8 +14,8 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
 
  public:
   enum SLEEP_SCREEN_MODE {
-    DARK = 0,
-    LIGHT = 1,
+    LIGHT = 0,
+    DARK = 1,
     CUSTOM = 2,
     COVER = 3,
     COVER_CUSTOM = 4,
@@ -49,13 +49,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     XTC_STATUS_BAR_BOTTOM = 1,
     XTC_STATUS_BAR_TOP = 2,
     XTC_STATUS_BAR_MODE_COUNT
-  };
-
-  enum STATUS_BAR_CLOCK_MODE {
-    STATUS_BAR_CLOCK_HIDE = 0,
-    STATUS_BAR_CLOCK_RIGHT = 1,
-    STATUS_BAR_CLOCK_LEFT = 2,
-    STATUS_BAR_CLOCK_MODE_COUNT
   };
 
   enum ORIENTATION {
@@ -176,8 +169,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // painted over the page.
   enum READER_MENU_STYLE { READER_MENU_LIST = 0, READER_MENU_TOOLBAR = 1, READER_MENU_STYLE_COUNT };
 
-  enum TILT_PAGE_TURN { TILT_OFF = 0, TILT_NORMAL = 1, TILT_NVERTED = 2, TILT_PAGE_TURN_COUNT };
-
   enum TOUCH_READER_CONTROLS {
     TOUCH_READER_OFF = 0,
     TOUCH_READER_ON = 1,
@@ -197,7 +188,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   };
 
   // Sleep screen settings
-  uint8_t sleepScreen = DARK;
+  uint8_t sleepScreen = LIGHT;
   // Night mode: inverted output polarity, applied to every activity per
   // render by ActivityManager. The sleep screen opts out itself.
   uint8_t screenInverted = 0;
@@ -213,17 +204,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t statusBarTitle = HIDE_TITLE;
   uint8_t statusBarBattery = 0;
   uint8_t xtcStatusBarMode = XTC_STATUS_BAR_HIDE;
-  // Clock display in status bar (X3 only, requires DS3231 RTC)
-  uint8_t statusBarClock = STATUS_BAR_CLOCK_HIDE;
-  // Clock UTC offset in quarter-hour steps, biased by 48 so it fits in uint8_t.
-  // Value 48 = UTC+0, 0 = UTC-12:00, 104 = UTC+14:00.
-  // Quarter-hour granularity supports oddball zones like Nepal (+5:45) and Chatham (+12:45).
-  uint8_t clockUtcOffsetQ = 48;
-  // Clock display format: 0 = 24-hour, 1 = 12-hour
-  uint8_t clockFormat = 0;
-  // Set once an NTP sync succeeds. Used to skip re-syncing on every WiFi connect.
-  // Resetting to 0 (e.g. via the web UI) forces a re-sync on next WiFi connect.
-  uint8_t clockHasBeenSynced = 0;
   // Text rendering settings
   uint8_t extraParagraphSpacing = 1;
   uint8_t textAntiAliasing = 0;
@@ -301,8 +281,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t backShortToFileBrowser = 0;
   // Image rendering mode in EPUB reader
   uint8_t imageRendering = IMAGES_DISPLAY;
-  // Tilt-based page turning (X3 only — requires QMI8658 IMU)
-  uint8_t tiltPageTurn = TILT_OFF;
   // Touch screen reader zones/gestures on boards with a touch controller.
   uint8_t touchReaderControls = TOUCH_READER_SWIPE;
   // Reader menu open gesture (SHOW_READER_MENU: off / center tap / bottom-edge
@@ -358,21 +336,14 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     uint8_t titleMode = HIDE_TITLE;  // STATUS_BAR_TITLE
     bool showBattery = false;
     bool showBatteryPercent = false;
-    uint8_t clockMode = STATUS_BAR_CLOCK_HIDE;  // STATUS_BAR_CLOCK_MODE
-    bool clock12h = false;
-    uint8_t clockUtcOffsetQ = 48;             // 48 = UTC+0
     uint8_t progressBarMode = HIDE_PROGRESS;  // STATUS_BAR_PROGRESS_BAR
     uint8_t progressBarHeightPx = 0;          // (thickness+1)*2; 0 when the bar is hidden
     uint8_t xtcMode = XTC_STATUS_BAR_HIDE;    // XTC_STATUS_BAR_MODE
 
     bool showsProgressBar() const { return progressBarMode != HIDE_PROGRESS; }
     bool showsTitle() const { return titleMode != HIDE_TITLE; }
-    bool showsClock() const { return clockMode != STATUS_BAR_CLOCK_HIDE; }
-    // Visibility of the text lane. Clock hardware presence is the caller's
-    // concern: pass halClock.isAvailable(), or true for layout reservation.
-    bool textLaneVisible(bool clockAvailable) const {
-      return showChapterPageCount || showBookProgressPercent || showsTitle() || showBattery ||
-             (showsClock() && clockAvailable);
+    bool textLaneVisible() const {
+      return showChapterPageCount || showBookProgressPercent || showsTitle() || showBattery;
     }
   };
   StatusBarSpec statusBarSpec() const;

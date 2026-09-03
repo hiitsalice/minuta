@@ -4,14 +4,12 @@
 #include <FontCacheManager.h>
 #include <FontDecompressor.h>
 #include <GfxRenderer.h>
-#include <HalClock.h>
 #include <HalDisplay.h>
 #include <HalFrontlight.h>
 #include <HalGPIO.h>
 #include <HalPowerManager.h>
 #include <HalStorage.h>
 #include <HalSystem.h>
-#include <HalTiltSensor.h>
 #include <I18n.h>
 #include <Logging.h>
 #include <SPI.h>
@@ -65,51 +63,47 @@ EpdFont youngserif14BoldFont(&youngserif_14_bold);
 EpdFont youngserif14ItalicFont(&youngserif_14_italic);
 EpdFont youngserif14BoldItalicFont(&youngserif_14_bolditalic);
 EpdFontFamily youngserif14FontFamily(&youngserif14RegularFont, &youngserif14BoldFont, &youngserif14ItalicFont,
-                                    &youngserif14BoldItalicFont);
+                                     &youngserif14BoldItalicFont);
 #ifndef OMIT_FONTS
 EpdFont youngserif12RegularFont(&youngserif_12_regular);
 EpdFont youngserif12BoldFont(&youngserif_12_bold);
 EpdFont youngserif12ItalicFont(&youngserif_12_italic);
 EpdFont youngserif12BoldItalicFont(&youngserif_12_bolditalic);
 EpdFontFamily youngserif12FontFamily(&youngserif12RegularFont, &youngserif12BoldFont, &youngserif12ItalicFont,
-                                    &youngserif12BoldItalicFont);
+                                     &youngserif12BoldItalicFont);
 EpdFont youngserif16RegularFont(&youngserif_16_regular);
 EpdFont youngserif16BoldFont(&youngserif_16_bold);
 EpdFont youngserif16ItalicFont(&youngserif_16_italic);
 EpdFont youngserif16BoldItalicFont(&youngserif_16_bolditalic);
 EpdFontFamily youngserif16FontFamily(&youngserif16RegularFont, &youngserif16BoldFont, &youngserif16ItalicFont,
-                                    &youngserif16BoldItalicFont);
+                                     &youngserif16BoldItalicFont);
 EpdFont youngserif18RegularFont(&youngserif_18_regular);
 EpdFont youngserif18BoldFont(&youngserif_18_bold);
 EpdFont youngserif18ItalicFont(&youngserif_18_italic);
 EpdFont youngserif18BoldItalicFont(&youngserif_18_bolditalic);
 EpdFontFamily youngserif18FontFamily(&youngserif18RegularFont, &youngserif18BoldFont, &youngserif18ItalicFont,
-                                    &youngserif18BoldItalicFont);
+                                     &youngserif18BoldItalicFont);
 
 EpdFont dmsans12RegularFont(&dmsans_12_regular);
 EpdFont dmsans12BoldFont(&dmsans_12_bold);
 EpdFont dmsans12ItalicFont(&dmsans_12_italic);
 EpdFont dmsans12BoldItalicFont(&dmsans_12_bolditalic);
-EpdFontFamily dmsans12FontFamily(&dmsans12RegularFont, &dmsans12BoldFont, &dmsans12ItalicFont,
-                                   &dmsans12BoldItalicFont);
+EpdFontFamily dmsans12FontFamily(&dmsans12RegularFont, &dmsans12BoldFont, &dmsans12ItalicFont, &dmsans12BoldItalicFont);
 EpdFont dmsans14RegularFont(&dmsans_14_regular);
 EpdFont dmsans14BoldFont(&dmsans_14_bold);
 EpdFont dmsans14ItalicFont(&dmsans_14_italic);
 EpdFont dmsans14BoldItalicFont(&dmsans_14_bolditalic);
-EpdFontFamily dmsans14FontFamily(&dmsans14RegularFont, &dmsans14BoldFont, &dmsans14ItalicFont,
-                                   &dmsans14BoldItalicFont);
+EpdFontFamily dmsans14FontFamily(&dmsans14RegularFont, &dmsans14BoldFont, &dmsans14ItalicFont, &dmsans14BoldItalicFont);
 EpdFont dmsans16RegularFont(&dmsans_16_regular);
 EpdFont dmsans16BoldFont(&dmsans_16_bold);
 EpdFont dmsans16ItalicFont(&dmsans_16_italic);
 EpdFont dmsans16BoldItalicFont(&dmsans_16_bolditalic);
-EpdFontFamily dmsans16FontFamily(&dmsans16RegularFont, &dmsans16BoldFont, &dmsans16ItalicFont,
-                                   &dmsans16BoldItalicFont);
+EpdFontFamily dmsans16FontFamily(&dmsans16RegularFont, &dmsans16BoldFont, &dmsans16ItalicFont, &dmsans16BoldItalicFont);
 EpdFont dmsans18RegularFont(&dmsans_18_regular);
 EpdFont dmsans18BoldFont(&dmsans_18_bold);
 EpdFont dmsans18ItalicFont(&dmsans_18_italic);
 EpdFont dmsans18BoldItalicFont(&dmsans_18_bolditalic);
-EpdFontFamily dmsans18FontFamily(&dmsans18RegularFont, &dmsans18BoldFont, &dmsans18ItalicFont,
-                                   &dmsans18BoldItalicFont);
+EpdFontFamily dmsans18FontFamily(&dmsans18RegularFont, &dmsans18BoldFont, &dmsans18ItalicFont, &dmsans18BoldItalicFont);
 
 #endif  // OMIT_FONTS
 
@@ -118,21 +112,16 @@ EpdFont andika12RegularFont(&andika_12_regular);
 EpdFont andika12BoldFont(&andika_12_bold);
 EpdFont andika12ItalicFont(&andika_12_italic);
 EpdFont andika14BoldFont(&andika_14_bold);
-EpdFontFamily andika12FontFamily(
-    &andika12RegularFont, &andika12BoldFont,
-    &andika12ItalicFont, &andika14BoldFont);
+EpdFontFamily andika12FontFamily(&andika12RegularFont, &andika12BoldFont, &andika12ItalicFont, &andika14BoldFont);
 
 EpdFont andika16BoldFont(&andika_16_bold);
-EpdFontFamily andika16HeadwordFontFamily(
-    &andika16BoldFont, &andika16BoldFont,
-    &andika16BoldFont, &andika16BoldFont);
+EpdFontFamily andika16HeadwordFontFamily(&andika16BoldFont, &andika16BoldFont, &andika16BoldFont, &andika16BoldFont);
 
 EpdFont steinem8RegularFont(&steinem_8_regular);
 EpdFont steinem8BoldFont(&steinem_8_bold);
 EpdFont steinem8ItalicFont(&steinem_8_italic);
 EpdFont steinem8BoldItalicFont(&steinem_8_bolditalic);
-EpdFontFamily steinem8FontFamily(&steinem8RegularFont, &steinem8BoldFont, &steinem8ItalicFont,
-                                 &steinem8BoldItalicFont);
+EpdFontFamily steinem8FontFamily(&steinem8RegularFont, &steinem8BoldFont, &steinem8ItalicFont, &steinem8BoldItalicFont);
 
 EpdFont steinem10RegularFont(&steinem_10_regular);
 EpdFont steinem10BoldFont(&steinem_10_bold);
@@ -332,7 +321,6 @@ void enterDeepSleep(bool fromTimeout = false) {
     WiFi.mode(WIFI_OFF);
   }
 
-  halTiltSensor.deepSleep();
   display.deepSleep();
   LOG_DBG("MAIN", "Entering deep sleep");
 
@@ -376,8 +364,7 @@ void setupDisplayAndFonts(bool seamless = false) {
   renderer.insertFont(DMSANS_18_FONT_ID, dmsans18FontFamily);
 #endif  // OMIT_FONTS
   renderer.insertFont(DICTIONARY_FONT_ID, andika12FontFamily);
-  renderer.insertFont(DICTIONARY_HEADWORD_FONT_ID,
-                      andika16HeadwordFontFamily);
+  renderer.insertFont(DICTIONARY_HEADWORD_FONT_ID, andika16HeadwordFontFamily);
   renderer.insertFont(SMALL_FONT_ID, steinem8FontFamily);
   renderer.insertFont(UI_10_FONT_ID, steinem10FontFamily);
   renderer.insertFont(UI_11_FONT_ID, steinem11FontFamily);
@@ -433,11 +420,8 @@ void setup() {
   const bool recoveryFirmwareMode = wakeupReason == HalGPIO::WakeupReason::PowerButton && !BoardConfig::isPaperMono() &&
                                     mappedInputManager.isPressed(recoveryButton);
 
-  halTiltSensor.begin();
-  halClock.begin();
-
-#if FREEINK_DEVICE_X4 || FREEINK_DEVICE_X3
-  LOG_INF("MAIN", "Hardware detect: %s", gpio.deviceIsX3() ? "X3" : "X4");
+#if FREEINK_DEVICE_X4
+  LOG_INF("MAIN", "Device: X4");
 #else
   LOG_INF("MAIN", "Device: %s", BoardConfig::ACTIVE.name);
 #endif
@@ -607,8 +591,6 @@ void loop() {
     return;
   }
 
-  halTiltSensor.update(SETTINGS.tiltPageTurn, SETTINGS.orientation, activityManager.isReaderActivity());
-
   renderer.setFadingFix(SETTINGS.fadingFix);
 
   if (Serial && millis() - lastMemPrint >= 10000) {
@@ -636,8 +618,7 @@ void loop() {
 
   // Check for any user activity (button press or release) or active background work
   static unsigned long lastActivityTime = millis();
-  if (gpio.wasAnyPressed() || gpio.wasAnyReleased() || gpio.wasTouchActivity() || halTiltSensor.hadActivity() ||
-      activityManager.preventAutoSleep()) {
+  if (gpio.wasAnyPressed() || gpio.wasAnyReleased() || gpio.wasTouchActivity() || activityManager.preventAutoSleep()) {
     lastActivityTime = millis();         // Reset inactivity timer
     powerManager.setPowerSaving(false);  // Restore normal CPU frequency on user activity
   }

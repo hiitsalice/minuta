@@ -1,7 +1,6 @@
 #include "WifiSelectionActivity.h"
 
 #include <GfxRenderer.h>
-#include <HalClock.h>
 #include <I18n.h>
 #include <Logging.h>
 #include <WiFi.h>
@@ -517,16 +516,6 @@ void WifiSelectionActivity::checkConnectionStatus() {
             WiFi.RSSI());
 #endif
 
-    // Sync RTC from NTP on the first successful WiFi connection only. The DS3231
-    // drifts ~2 ppm so one sync is enough; users can force a re-sync from
-    // Settings > Customise Status Bar > Sync clock now.
-    if (halClock.isAvailable() && !SETTINGS.clockHasBeenSynced) {
-      if (halClock.syncFromNTP()) {
-        SETTINGS.clockHasBeenSynced = 1;
-        SETTINGS.saveToFile();
-      }
-    }
-
     // Save this as the last connected network - SD card operations need lock as
     // we use SPI for both
     {
@@ -841,30 +830,21 @@ void WifiSelectionActivity::render(RenderLock&&) {
 
   // Draw header
   // STR_NETWORKS_FOUND is ~37 bytes once the Arabic translation is substituted,
-  // so 32 truncated it. See ClockSyncActivity for the same class of bug.
+  // so 32 truncated it. This is the same class of truncation bug.
   char countStr[64];
   snprintf(countStr, sizeof(countStr), tr(STR_NETWORKS_FOUND), realNetworkCount);
-  const Rect headerRect{
-      screen.x, screen.y + metrics.topPadding,
-      screen.width, metrics.headerHeight};
+  const Rect headerRect{screen.x, screen.y + metrics.topPadding, screen.width, metrics.headerHeight};
   GUI.drawHeader(renderer, headerRect, tr(STR_WIFI_NETWORKS), nullptr);
 
   const int countWidth = renderer.getTextWidth(UI_10_FONT_ID, countStr);
-  const int countY =
-      headerRect.y + headerRect.height -
-      renderer.getTextHeight(UI_10_FONT_ID) - 17;
-  renderer.drawText(
-      UI_10_FONT_ID,
-      headerRect.x + headerRect.width -
-          metrics.headerSidePadding - countWidth,
-      countY, countStr);
+  const int countY = headerRect.y + headerRect.height - renderer.getTextHeight(UI_10_FONT_ID) - 17;
+  renderer.drawText(UI_10_FONT_ID, headerRect.x + headerRect.width - metrics.headerSidePadding - countWidth, countY,
+                    countStr);
 
   // Lower only the MAC text; retain the subheader's bottom separator.
   GUI.drawSubHeader(
       renderer,
-      Rect{screen.x,
-           screen.y + metrics.topPadding + metrics.headerHeight + 6,
-           screen.width, metrics.tabBarHeight - 6},
+      Rect{screen.x, screen.y + metrics.topPadding + metrics.headerHeight + 6, screen.width, metrics.tabBarHeight - 6},
       cachedMacAddress.c_str());
 
   switch (state) {
@@ -961,8 +941,7 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   props.labelYOffset = 1;
   props.balanceWrappedLabelWithValue = false;
   listNav.selected = static_cast<int>(selectedNetworkIndex);
-  int16_t rowHeight =
-      static_cast<int16_t>(screen.theme().rowHeight + 4);
+  int16_t rowHeight = static_cast<int16_t>(screen.theme().rowHeight + 4);
   if (!mappedInput.hasTouch()) {
     // Give X3/X4 Wi-Fi rows 2px more padding above and below.
     rowHeight = static_cast<int16_t>(metrics.listRowHeight + 4);
