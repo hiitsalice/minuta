@@ -11,9 +11,6 @@
 #include "MappedInputManager.h"
 #include "RecentBooksStore.h"
 #include "components/themes/BaseTheme.h"
-#include "components/themes/lyra/Lyra3CoversTheme.h"
-#include "components/themes/lyra/LyraTheme.h"
-#include "components/themes/roundedraff/RoundedRaffTheme.h"
 #include "components/themes/minuta/solum.h"
 #include "components/themes/minuta/quartum.h"
 
@@ -31,28 +28,18 @@ void UITheme::reload() {
 
 void UITheme::setTheme(CrossPointSettings::UI_THEME type) {
   switch (type) {
-    case CrossPointSettings::UI_THEME::CLASSIC:
-      LOG_DBG("UI", "Using Classic theme");
-      currentTheme = std::make_unique<BaseTheme>();
-      currentMetrics = &BaseMetrics::values;
+    case CrossPointSettings::UI_THEME::QUARTUM:
+      LOG_DBG("UI", "Using Quartum theme");
+      currentTheme = std::make_unique<QuartumTheme>();
+      currentMetrics = &QuartumMetrics::values;
       break;
-    case CrossPointSettings::UI_THEME::LYRA:
-      LOG_DBG("UI", "Using Lyra theme");
-      currentTheme = std::make_unique<LyraTheme>();
-      currentMetrics = &LyraMetrics::values;
+    case CrossPointSettings::UI_THEME::SOLUM:
+    default:
+      // Legacy or invalid saved theme values safely fall back to Solum.
+      LOG_DBG("UI", "Using Solum theme");
+      currentTheme = std::make_unique<SolumTheme>();
+      currentMetrics = &SolumMetrics::values;
       break;
-    case CrossPointSettings::UI_THEME::ROUNDEDRAFF:
-      LOG_DBG("UI", "Using RoundedRaff theme");
-      currentTheme = std::make_unique<RoundedRaffTheme>();
-      currentMetrics = &RoundedRaffMetrics::values;
-      break;
-    case CrossPointSettings::UI_THEME::LYRA_3_COVERS:
-      LOG_DBG("UI", "Using Lyra 3 Covers theme");
-      currentTheme = std::make_unique<Lyra3CoversTheme>();
-      currentMetrics = &Lyra3CoversMetrics::values;
-      break;
-    case CrossPointSettings::UI_THEME::SOLUM: LOG_DBG("UI", "Using Solum theme"); currentTheme = std::make_unique<SolumTheme>(); currentMetrics = &SolumMetrics::values; break;
-    case CrossPointSettings::UI_THEME::QUARTUM: LOG_DBG("UI", "Using Quartum theme"); currentTheme = std::make_unique<QuartumTheme>(); currentMetrics = &QuartumMetrics::values; break;
   }
   metricsValid = false;
 }

@@ -14,7 +14,6 @@
 #include "CrossPointSettings.h"
 #include "FontDownloadActivity.h"
 #include "KOReaderSettingsActivity.h"
-#include "LanguageSelectActivity.h"
 #include "MappedInputManager.h"
 #include "OpdsServerListActivity.h"
 #include "OtaUpdateActivity.h"
@@ -379,16 +378,6 @@ void SettingsActivity::toggleCurrentSetting() {
                                                                       TextSettingsActivity::Tab::Family),
                                [this](const ActivityResult&) {
                                  // TextSettingsActivity saves on each change; no save needed here.
-                                 rebuildSettingsLists();
-                               });
-        break;
-      case SettingAction::Language:
-        // Row labels are translated once in rebuildRowItems() and don't
-        // re-run on Pop (see ActivityManager::loop()), so a language switch
-        // needs an explicit rebuild here rather than the generic resultHandler.
-        startActivityForResult(std::make_unique<LanguageSelectActivity>(renderer, mappedInput),
-                               [this](const ActivityResult&) {
-                                 SETTINGS.saveToFile();
                                  rebuildSettingsLists();
                                });
         break;

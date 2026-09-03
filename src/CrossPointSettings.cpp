@@ -101,8 +101,8 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
     doc["dictionaryName"] = dictionaryName;
   }
 
-  // Language -- managed by LanguageSelectActivity, not in SettingsList.
-  // Stored as ISO code string ("EN", "DE", ...) for stability across enum reorders.
+  // Minuta contains only English, but the stored code remains for settings-file
+  // compatibility with existing installations.
   doc["language"] = (language < getLanguageCount()) ? LANGUAGE_CODES[language] : "EN";
 }
 
