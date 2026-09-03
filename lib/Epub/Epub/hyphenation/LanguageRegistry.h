@@ -19,7 +19,7 @@ struct LanguageEntryView {
   const LanguageEntry* end() const { return data + size; }
 };
 
-// Returns the Liang-backed hyphenator for a given primary language tag (e.g., "en", "fr").
+// Returns the English Liang-backed hyphenator for "en"; other languages return nullptr.
 const LanguageHyphenator* getLanguageHyphenatorForPrimaryTag(const std::string& primaryTag);
 
 // Exposes the list of supported languages primarily for tooling/tests.
