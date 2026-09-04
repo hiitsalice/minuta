@@ -18,21 +18,24 @@ Minuta is imagined as a sunlit mythical forest filled with cute little creatures
 
 <table align="center">
   <tr>
-    <td align="center"><a href="docs/gallery/sleep-screen.png"><img src="docs/gallery/sleep-screen.png" alt="Sleep Screen" width="150"></a><br><sub>Sleep Screen</sub></td>
-    <td align="center"><a href="docs/gallery/home-solum.png"><img src="docs/gallery/home-solum.png" alt="Solum" width="150"></a><br><sub>Solum</sub></td>
-    <td align="center"><a href="docs/gallery/home-quartum.gif"><img src="docs/gallery/home-quartum.gif" alt="Quartum" width="150"></a><br><sub>Quartum</sub></td>
-    <td align="center"><a href="docs/gallery/library.gif"><img src="docs/gallery/library.gif" alt="Library" width="150"></a><br><sub>Library</sub></td>
-    <td align="center"><a href="docs/gallery/settings.gif"><img src="docs/gallery/settings.gif" alt="Settings" width="150"></a><br><sub>Settings</sub></td>
+    <td align="center"><a href="docs/gallery/sleep-screen.png"><img src="docs/gallery/sleep-screen.png" alt="Sleep Screen" width="180"></a><br><br><strong>Sleep Screen</strong><br><br></td>
+    <td align="center"><a href="docs/gallery/home-solum.png"><img src="docs/gallery/home-solum.png" alt="Solum" width="180"></a><br><br><strong>Solum</strong><br><br></td>
+    <td align="center"><a href="docs/gallery/home-quartum.gif"><img src="docs/gallery/home-quartum.gif" alt="Quartum" width="180"></a><br><br><strong>Quartum</strong><br><br></td>
+    <td align="center"><a href="docs/gallery/library.gif"><img src="docs/gallery/library.gif" alt="Library" width="180"></a><br><br><strong>Library</strong><br><br></td>
   </tr>
   <tr>
-    <td align="center"><a href="docs/gallery/text-settings.gif"><img src="docs/gallery/text-settings.gif" alt="Text Settings" width="150"></a><br><sub>Text Settings</sub></td>
-    <td align="center"><a href="docs/gallery/status-bar.gif"><img src="docs/gallery/status-bar.gif" alt="Status Bar" width="150"></a><br><sub>Status Bar</sub></td>
-    <td align="center"><a href="docs/gallery/reader.png"><img src="docs/gallery/reader.png" alt="Reader" width="150"></a><br><sub>Reader</sub></td>
-    <td align="center"><a href="docs/gallery/reader-menu.png"><img src="docs/gallery/reader-menu.png" alt="Reader Menu" width="150"></a><br><sub>Reader Menu</sub></td>
-    <td align="center"><a href="docs/gallery/dictionary.gif"><img src="docs/gallery/dictionary.gif" alt="Dictionary" width="150"></a><br><sub>Dictionary</sub></td>
+    <td align="center"><a href="docs/gallery/settings.gif"><img src="docs/gallery/settings.gif" alt="Settings" width="180"></a><br><br><strong>Settings</strong><br><br></td>
+    <td align="center"><a href="docs/gallery/text-settings.gif"><img src="docs/gallery/text-settings.gif" alt="Text Settings" width="180"></a><br><br><strong>Text Settings</strong><br><br></td>
+    <td align="center"><a href="docs/gallery/status-bar.gif"><img src="docs/gallery/status-bar.gif" alt="Status Bar" width="180"></a><br><br><strong>Status Bar</strong><br><br></td>
+    <td align="center"><a href="docs/gallery/reader.png"><img src="docs/gallery/reader.png" alt="Reader" width="180"></a><br><br><strong>Reader</strong><br><br></td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <td align="center"><a href="docs/gallery/reader-menu.png"><img src="docs/gallery/reader-menu.png" alt="Reader Menu" width="180"></a><br><br><strong>Reader Menu</strong><br><br></td>
+    <td align="center"><a href="docs/gallery/dictionary.gif"><img src="docs/gallery/dictionary.gif" alt="Dictionary" width="180"></a><br><br><strong>Dictionary</strong><br><br></td>
+    <td>&nbsp;</td>
   </tr>
 </table>
-
 
 ## Support
 
