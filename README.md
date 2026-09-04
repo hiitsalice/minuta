@@ -102,7 +102,7 @@ Minuta uses **Young Serif** as its default reading font, with **DM Sans** includ
 
 ## Installation
 
-Download `firmware.bin` from the [Releases](../../releases) page. Minuta is for the ordinary XTEINK X4 only. Use the update method available on your device. SD-card updating is included for USB-locked X4 devices. Please back up anything important on your SD card before updating firmware.
+Download the `.bin` firmware file from the [Releases](../../releases) page. Minuta is for the ordinary XTEINK X4 only. Use the update method available on your device. SD-card updating is included for USB-locked X4 devices. Please back up anything important on your SD card before updating firmware.
 
 ## Credits
 
