@@ -60,7 +60,7 @@ Download `firmware.bin` from the [Releases](../../releases) page. Minuta is for 
 
 ## Credits
 
-Minuta is built on [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader), which provides the core reader and firmware foundation. Casper was also a big inspiration for Minuta’s minimal home-screen direction.
+Minuta is built on [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader), which provides the core reader and firmware foundation. [Casper](https://github.com/tweakerinc/casper) was also a big inspiration for Minuta’s minimal home-screen direction.
 
 ## About updates
 
