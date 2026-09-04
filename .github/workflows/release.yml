@@ -3,6 +3,7 @@ name: Compile Release
 # Builds the XTEINK X4 release firmware as firmware.bin.
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - '*'
