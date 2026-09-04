@@ -28,7 +28,7 @@ Minuta is imagined as a sunlit mythical forest filled with cute little creatures
 Minuta is intentionally built around XTEINK X4 only. Removing unused device support, inaccessible hardware features, extra language data, and serial logging keeps the firmware smaller and leaves more room for the reader itself.
 
 | Measure | Result |
-| --- | ---: |
+| --- | --- |
 | Starting firmware size | 4,507,904 bytes |
 | Minuta 1.0 firmware size | 4,030,688 bytes |
 | Total space saved | 477,216 bytes / 466.0 KiB |
@@ -67,7 +67,7 @@ Minuta keeps CrossPoint’s reading foundation, but I removed or rearranged a fe
 
 ## Fonts
 
-Minuta uses **Young Serif** as its default reading font, with **DM Sans** included as an alternative. You can still add your own fonts from the SD card.
+Minuta uses **Young Serif** as its default reading font, with **DM Sans** included as an alternative. You can also use **Manage Fonts** to download more fonts directly onto your device, or add your own fonts through the SD card.
 
 ## Installation
 
