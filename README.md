@@ -14,6 +14,26 @@ Minuta is basically my own preferences conjured into actual firmware. I spent an
 
 Minuta is imagined as a sunlit mythical forest filled with cute little creatures. They are simple, but they care about their appearance. I feel like I resonate with that. I like things to stay minimal in functionality and mechanics, but I still need them to feel good appearance-wise. I hope Minuta can also suit people who share these preferences.
 
+## Gallery
+
+<table align="center">
+  <tr>
+    <td align="center"><a href="docs/gallery/sleep-screen.png"><img src="docs/gallery/sleep-screen.png" alt="Sleep Screen" width="150"></a><br><sub>Sleep Screen</sub></td>
+    <td align="center"><a href="docs/gallery/home-solum.png"><img src="docs/gallery/home-solum.png" alt="Solum" width="150"></a><br><sub>Solum</sub></td>
+    <td align="center"><a href="docs/gallery/home-quartum.gif"><img src="docs/gallery/home-quartum.gif" alt="Quartum" width="150"></a><br><sub>Quartum</sub></td>
+    <td align="center"><a href="docs/gallery/library.gif"><img src="docs/gallery/library.gif" alt="Library" width="150"></a><br><sub>Library</sub></td>
+    <td align="center"><a href="docs/gallery/settings.gif"><img src="docs/gallery/settings.gif" alt="Settings" width="150"></a><br><sub>Settings</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="docs/gallery/text-settings.gif"><img src="docs/gallery/text-settings.gif" alt="Text Settings" width="150"></a><br><sub>Text Settings</sub></td>
+    <td align="center"><a href="docs/gallery/status-bar.gif"><img src="docs/gallery/status-bar.gif" alt="Status Bar" width="150"></a><br><sub>Status Bar</sub></td>
+    <td align="center"><a href="docs/gallery/reader.png"><img src="docs/gallery/reader.png" alt="Reader" width="150"></a><br><sub>Reader</sub></td>
+    <td align="center"><a href="docs/gallery/reader-menu.png"><img src="docs/gallery/reader-menu.png" alt="Reader Menu" width="150"></a><br><sub>Reader Menu</sub></td>
+    <td align="center"><a href="docs/gallery/dictionary.gif"><img src="docs/gallery/dictionary.gif" alt="Dictionary" width="150"></a><br><sub>Dictionary</sub></td>
+  </tr>
+</table>
+
+
 ## Support
 
 - Minuta is made for **XTEINK X4 only**.
