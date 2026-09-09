@@ -28,7 +28,8 @@ class UITheme {
   static void drawCenteredWrappedText(const GfxRenderer& renderer, Rect bounds, int fontId, const char* text,
                                       int maxLines, bool black = true,
                                       EpdFontFamily::Style style = EpdFontFamily::REGULAR,
-                                      TextVerticalAlignment verticalAlignment = TextVerticalAlignment::CENTER);
+                                      TextVerticalAlignment verticalAlignment = TextVerticalAlignment::CENTER,
+                                      int lineSpacing = 0);
   void reload();
   void setTheme(CrossPointSettings::UI_THEME type);
   static std::string getCoverThumbPath(std::string coverBmpPath, int coverHeight);

@@ -168,7 +168,7 @@ void OpdsServerListActivity::handleSelection() {
                      SETTINGS.opdsFilenameFormat, [this](int idx) {
                        SETTINGS.opdsFilenameFormat = static_cast<uint8_t>(idx);
                        SETTINGS.saveToFile();
-                     });
+                     }, true);
     requestUpdate();
     return;
   }

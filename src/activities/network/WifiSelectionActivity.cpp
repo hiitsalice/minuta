@@ -65,7 +65,8 @@ void WifiSelectionActivity::onPromptEvent(const fui::ActionEvent& event, void* u
       RenderLock lock(*self);
       WIFI_STORE.addCredential(self->selectedSSID, self->enteredPassword);
     }
-    self->onComplete(true);
+    self->state = WifiSelectionState::CONNECTED;
+    self->requestUpdate();
     return;
   }
   if (self->state == WifiSelectionState::FORGET_PROMPT) {
@@ -523,18 +524,19 @@ void WifiSelectionActivity::checkConnectionStatus() {
       WIFI_STORE.setLastConnectedSsid(selectedSSID);
     }
 
-    // If we entered a new password, ask if user wants to save it
-    // Otherwise, immediately complete so parent can start web server
+    // If we entered a new password, ask if user wants to save it first.
+    // After that, show the Connected result screen.
     if (!usedSavedPassword && !enteredPassword.empty()) {
       state = WifiSelectionState::SAVE_PROMPT;
       savePromptSelection = 0;  // Default to "Yes"
       requestUpdate();
     } else {
-      // Using saved password or open network - complete immediately
+      // Using saved password or open network: show the Connected result.
       LOG_DBG("WIFI",
               "Connected with saved/open credentials, "
-              "completing immediately");
-      onComplete(true);
+              "showing connected result");
+      state = WifiSelectionState::CONNECTED;
+      requestUpdate();
     }
     return;
   }
@@ -650,11 +652,13 @@ void WifiSelectionActivity::loop() {
         RenderLock lock(*this);
         WIFI_STORE.addCredential(selectedSSID, enteredPassword);
       }
-      // Complete - parent will start web server
-      onComplete(true);
+      // Show the Connected result before returning to the parent.
+      state = WifiSelectionState::CONNECTED;
+      requestUpdate();
     } else if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
-      // Skip saving, complete anyway
-      onComplete(true);
+      // Skip saving, but still show the Connected result.
+      state = WifiSelectionState::CONNECTED;
+      requestUpdate();
     }
     return;
   }
@@ -700,12 +704,13 @@ void WifiSelectionActivity::loop() {
     return;
   }
 
-  // Handle connected state (should not normally be reached - connection
-  // completes immediately)
+  // Handle connected result state.
+  // Connected has a Done button only, so Back does nothing here.
   if (state == WifiSelectionState::CONNECTED) {
-    // Safety fallback - immediately complete
-    onComplete(true);
-    return;
+    if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+      onComplete(true);
+      return;
+    }
   }
 
   // Handle connection failed state
@@ -846,6 +851,41 @@ void WifiSelectionActivity::render(RenderLock&&) {
       renderer,
       Rect{screen.x, screen.y + metrics.topPadding + metrics.headerHeight + 6, screen.width, metrics.tabBarHeight - 6},
       cachedMacAddress.c_str());
+
+  switch (state) {
+    case WifiSelectionState::AUTO_CONNECTING:
+      renderConnecting(&screen, &metrics);
+      break;
+    case WifiSelectionState::SCANNING:
+      renderConnecting(&screen, &metrics);
+      break;
+    case WifiSelectionState::NETWORK_LIST:
+      renderNetworkList(&screen, &metrics);
+      break;
+    case WifiSelectionState::HIDDEN_SSID_ENTRY:
+      break;
+    case WifiSelectionState::CONNECTING:
+      renderConnecting(&screen, &metrics);
+      break;
+    case WifiSelectionState::CONNECTED:
+      renderConnected(&screen, &metrics);
+      break;
+    case WifiSelectionState::SAVE_PROMPT:
+    case WifiSelectionState::FORGET_PROMPT: {
+      renderUi();
+      const auto labels =
+          mappedInput.mapLabels(state == WifiSelectionState::SAVE_PROMPT ? tr(STR_CANCEL) : tr(STR_BACK),
+                                tr(STR_SELECT), tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT));
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+      break;
+    }
+    case WifiSelectionState::CONNECTION_FAILED:
+      renderConnectionFailed(&screen, &metrics);
+      break;
+  }
+
+  renderer.displayBuffer();
+  return;
 
   switch (state) {
     case WifiSelectionState::AUTO_CONNECTING:
@@ -1031,13 +1071,12 @@ void WifiSelectionActivity::renderNetworkList(const Rect* screen, const ThemeMet
 void WifiSelectionActivity::renderConnecting(const Rect* screen, const ThemeMetrics* metrics) const {
   constexpr int MAX_STATUS_LINES = 2;
   const auto height = renderer.getLineHeight(UI_10_FONT_ID);
-  const auto top = screen->y + (screen->height - height) / 2;
-  const int statusX = screen->x + metrics->contentSidePadding;
-  const int statusWidth = screen->width - metrics->contentSidePadding * 2;
-
   if (state == WifiSelectionState::SCANNING) {
     const char* statusText = autoConnecting ? tr(STR_FINDING_SAVED_WIFI) : tr(STR_SCANNING);
-    const Rect statusBounds{statusX, screen->y, statusWidth, screen->height};
+    const Rect statusBounds{screen->x + metrics->contentSidePadding,
+                            screen->y,
+                            screen->width - metrics->contentSidePadding * 2,
+                            screen->height};
     UITheme::drawCenteredWrappedText(renderer, statusBounds, UI_10_FONT_ID, statusText, MAX_STATUS_LINES);
     if (autoConnecting) {
       const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), tr(STR_SHOW_NETWORKS), "", "");
@@ -1045,15 +1084,22 @@ void WifiSelectionActivity::renderConnecting(const Rect* screen, const ThemeMetr
     }
   } else {
     const char* statusText = autoConnecting ? tr(STR_CONNECTING_SAVED_WIFI) : tr(STR_CONNECTING);
-    const Rect statusBounds{statusX, screen->y, statusWidth, top - metrics->verticalSpacing - screen->y};
-    UITheme::drawCenteredWrappedText(renderer, statusBounds, UI_12_FONT_ID, statusText, MAX_STATUS_LINES, true,
-                                     EpdFontFamily::BOLD, UITheme::TextVerticalAlignment::BOTTOM);
 
     std::string ssidInfo = std::string(tr(STR_TO_PREFIX)) + selectedSSID;
     if (ssidInfo.length() > 25) {
       ssidInfo.replace(22, ssidInfo.length() - 22, "...");
     }
-    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, top, ssidInfo.c_str());
+
+    const int lineGap = metrics->verticalSpacing;
+    const int groupHeight = height * 2 + lineGap;
+    const int groupTop = screen->y + (screen->height - groupHeight) / 2;
+
+    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
+                              groupTop, statusText, true, EpdFontFamily::BOLD);
+
+    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
+                              groupTop + height + lineGap, ssidInfo.c_str());
+
     if (autoConnecting) {
       const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), tr(STR_SHOW_NETWORKS), "", "");
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -1063,34 +1109,41 @@ void WifiSelectionActivity::renderConnecting(const Rect* screen, const ThemeMetr
 
 void WifiSelectionActivity::renderConnected(const Rect* screen, const ThemeMetrics* metrics) const {
   const auto height = renderer.getLineHeight(UI_10_FONT_ID);
-  const auto top = screen->y + (screen->height - height * 4) / 2;
+  const int lineGap = metrics->verticalSpacing;
 
-  UITheme::drawCenteredText(renderer, *screen, UI_12_FONT_ID, top - 30, tr(STR_CONNECTED), true, EpdFontFamily::BOLD);
+  const int groupHeight = height * 3 + lineGap * 2;
+  const int groupTop = screen->y + (screen->height - groupHeight) / 2;
+
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
+                            groupTop, tr(STR_CONNECTED), true, EpdFontFamily::BOLD);
 
   std::string ssidInfo = std::string(tr(STR_NETWORK_PREFIX)) + selectedSSID;
   if (ssidInfo.length() > 28) {
     ssidInfo.replace(25, ssidInfo.length() - 25, "...");
   }
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, top + 10, ssidInfo.c_str());
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
+                            groupTop + height + lineGap, ssidInfo.c_str());
 
   const std::string ipInfo = std::string(tr(STR_IP_ADDRESS_PREFIX)) + connectedIP;
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, top + 40, ipInfo.c_str());
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
+                            groupTop + (height + lineGap) * 2, ipInfo.c_str());
 
-  // Use centralized button hints
   const auto labels = mappedInput.mapLabels("", tr(STR_DONE), "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
 void WifiSelectionActivity::renderConnectionFailed(const Rect* screen, const ThemeMetrics* metrics) const {
   const auto height = renderer.getLineHeight(UI_10_FONT_ID);
-  const auto top = screen->y + (screen->height - height * 2) / 2;
+  const int lineGap = metrics->verticalSpacing;
+  const int groupHeight = height * 2 + lineGap;
+  const int groupTop = screen->y + (screen->height - groupHeight) / 2;
 
-  UITheme::drawCenteredText(renderer, *screen, UI_12_FONT_ID, top - 20, tr(STR_CONNECTION_FAILED), true,
-                            EpdFontFamily::BOLD);
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, top + 20, connectionError.c_str());
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
+                            groupTop, tr(STR_CONNECTION_FAILED), true, EpdFontFamily::BOLD);
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
+                            groupTop + height + lineGap, connectionError.c_str());
 
-  // Use centralized button hints
-  const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_DONE), "", "");
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 

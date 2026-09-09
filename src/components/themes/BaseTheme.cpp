@@ -112,7 +112,7 @@ void BaseTheme::drawBatteryLeft(const GfxRenderer& renderer, Rect rect, const bo
 }
 
 void BaseTheme::drawProgressBar(const GfxRenderer& renderer, Rect rect, const size_t current,
-                                const size_t total) const {
+                                const size_t total, const int percentFontId, const int percentY) const {
   if (total == 0) {
     return;
   }
@@ -132,7 +132,9 @@ void BaseTheme::drawProgressBar(const GfxRenderer& renderer, Rect rect, const si
 
   // Draw percentage text centered below bar
   const std::string percentText = std::to_string(percent) + "%";
-  renderer.drawCenteredText(UI_10_FONT_ID, rect.y + rect.height + 15, percentText.c_str());
+  const int resolvedPercentFontId = percentFontId == 0 ? UI_10_FONT_ID : percentFontId;
+  const int resolvedPercentY = percentY >= 0 ? percentY : rect.y + rect.height + 15;
+  renderer.drawCenteredText(resolvedPercentFontId, resolvedPercentY, percentText.c_str());
 }
 
 // Centre a button-hint label inside its box. A label that fits is drawn on the

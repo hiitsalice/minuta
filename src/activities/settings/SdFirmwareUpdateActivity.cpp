@@ -18,7 +18,6 @@ void SdFirmwareUpdateActivity::onEnter() {
   Activity::onEnter();
   // Build-identity marker — confirms which firmware build owns the SD update flow.
   LOG_INF("FW", "SdFirmwareUpdateActivity build=%s %s recovery=%d", __DATE__, __TIME__, recoveryMode ? 1 : 0);
-  state = State::PICKING;
   launchPicker();
 }
 
@@ -219,48 +218,70 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, headerText);
 
   const auto lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
+  constexpr int textGap = 6;
   const auto top = (pageHeight - lineHeight) / 2;
 
+  const auto withoutEllipsis = [](const char* value) {
+    std::string text = value ? value : "";
+    if (text.size() >= 3 && text.compare(text.size() - 3, 3, "...") == 0) {
+      text.erase(text.size() - 3);
+    }
+    return text;
+  };
+
   if (state == State::VALIDATING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, tr(STR_VALIDATING_FIRMWARE));
+    renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_VALIDATING_FIRMWARE)).c_str());
   } else if (state == State::UPDATING) {
     // Throttle redraws to once per percent.
-    const unsigned int pct = firmwareSize > 0 ? static_cast<unsigned int>((writtenBytes * 100) / firmwareSize) : 0;
+    const unsigned int pct =
+        firmwareSize > 0 ? static_cast<unsigned int>((writtenBytes * 100) / firmwareSize) : 0;
     if (pct == lastRenderedPercent) {
       return;
     }
     lastRenderedPercent = pct;
 
-    renderer.drawCenteredText(UI_10_FONT_ID, top, tr(STR_UPDATING), true, EpdFontFamily::BOLD);
+    // Keep the progress bar at its existing position.
+    const int barY = top + lineHeight + textGap;
 
-    int y = top + lineHeight + metrics.verticalSpacing;
+    // Percentage: 10 pt, 12 px above the bar.
+    const int percentHeight = renderer.getLineHeight(UI_10_FONT_ID);
+    const int percentY = barY - percentHeight - 6;
+
     GUI.drawProgressBar(
         renderer,
-        Rect{metrics.contentSidePadding, y, pageWidth - metrics.contentSidePadding * 2, metrics.progressBarHeight},
-        static_cast<int>(pct), 100);
-    y += metrics.progressBarHeight + metrics.verticalSpacing;
-    // Percent label is drawn by BaseTheme::drawProgressBar; this slot is left intentionally empty
-    // so the do-not-power-off line below stays at the same Y as before.
-    y += lineHeight + metrics.verticalSpacing;
-    renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_FIRMWARE_UPDATE_DO_NOT_POWER_OFF));
+        Rect{metrics.contentSidePadding, barY, pageWidth - metrics.contentSidePadding * 2,
+             12},
+        static_cast<int>(pct), 100, UI_10_FONT_ID, percentY);
+
+    // Secondary status: centred below the progress bar in 10 pt italic.
+    const int statusY = barY + 12 + 12;
+    const std::string secondaryText =
+        withoutEllipsis(tr(STR_FIRMWARE_UPDATE_DO_NOT_POWER_OFF));
+
+    renderer.drawCenteredText(
+        UI_10_FONT_ID, statusY, secondaryText.c_str(),
+        true, EpdFontFamily::ITALIC);
   } else if (state == State::SUCCESS) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, tr(STR_UPDATE_COMPLETE), true, EpdFontFamily::BOLD);
-    const int hintY = top + lineHeight + metrics.verticalSpacing + 4;
+    renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_UPDATE_COMPLETE)).c_str(), true, EpdFontFamily::BOLD);
+    const int hintY = top + lineHeight + textGap + 6;
     const Rect hintBounds{metrics.contentSidePadding, hintY, pageWidth - metrics.contentSidePadding * 2,
                           pageHeight - hintY};
-    UITheme::drawCenteredWrappedText(renderer, hintBounds, UI_10_FONT_ID, tr(STR_RESTARTING_HINT), 3, true,
-                                     EpdFontFamily::REGULAR, UITheme::TextVerticalAlignment::TOP);
+    UITheme::drawCenteredWrappedText(renderer, hintBounds, UI_10_FONT_ID, withoutEllipsis(tr(STR_RESTARTING_HINT)).c_str(), 3, true,
+                                     EpdFontFamily::REGULAR, UITheme::TextVerticalAlignment::TOP, 6);
   } else if (state == State::FAILED) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, tr(STR_UPDATE_FAILED), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
     if (!errorMessage.empty()) {
-      renderer.drawCenteredText(UI_10_FONT_ID, top + lineHeight + metrics.verticalSpacing, errorMessage.c_str());
+      const int errorY = top + lineHeight + textGap + 6;
+      renderer.drawCenteredText(
+          UI_10_FONT_ID, errorY,
+          withoutEllipsis(errorMessage.c_str()).c_str());
     }
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else {
     // PICKING / CONFIRMING: a sub-activity is on top, nothing to draw.
     if (recoveryMode) {
-      renderer.drawCenteredText(UI_10_FONT_ID, top, tr(STR_RECOVERY_MODE_HINT));
+      renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_RECOVERY_MODE_HINT)).c_str());
     }
   }
 

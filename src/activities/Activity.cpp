@@ -22,9 +22,17 @@ void Activity::startActivityForResult(std::unique_ptr<Activity>&& activity, Acti
 void Activity::setResult(ActivityResult&& result) { this->result = std::move(result); }
 
 void Activity::finish() {
+  // Prevent the button that caused this activity to finish from leaking
+  // into the activity underneath it.
   if (mappedInput.isPressed(MappedInputManager::Button::Back) ||
       mappedInput.wasPressed(MappedInputManager::Button::Back)) {
     mappedInput.suppressRelease(MappedInputManager::Button::Back);
   }
+
+  if (mappedInput.isPressed(MappedInputManager::Button::Confirm) ||
+      mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+    mappedInput.suppressRelease(MappedInputManager::Button::Confirm);
+  }
+
   activityManager.popActivity();
 }

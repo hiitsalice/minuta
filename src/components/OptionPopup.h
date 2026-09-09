@@ -27,8 +27,9 @@
 class OptionPopup {
  public:
   void show(StrId titleId, const StrId* optionIds, int optionCount, int currentIndex,
-            std::function<void(int)> onSelect) {
+            std::function<void(int)> onSelect, bool compact = false) {
     title = I18N.get(titleId);
+    compactMode = compact;
     ownedStrings.resize(optionCount);
     for (int i = 0; i < optionCount; i++) {
       ownedStrings[i] = I18N.get(optionIds[i]);
@@ -40,7 +41,7 @@ class OptionPopup {
   }
 
   void show(const char* titleStr, const char* const* options, int optionCount, int currentIndex,
-            std::function<void(int)> onSelect) {
+            std::function<void(int)> onSelect, bool compact = false) {
     title = titleStr;
     ownedStrings.resize(optionCount);
     for (int i = 0; i < optionCount; i++) {
@@ -48,6 +49,7 @@ class OptionPopup {
     }
     selectedIndex = currentIndex;
     onSelectCallback = std::move(onSelect);
+    compactMode = compact;
     uiReady = false;
     active = true;
   }
@@ -184,13 +186,20 @@ class OptionPopup {
     // Touch only: physical buttons stay on the legacy wrap/confirm path above,
     // so the buffer never competes with it for focus/confirm dispatch.
     props.inputMask = fui::InputTouch;
-    props.titleText.font = fui::GfxRendererTarget::FONT_BODY;
+    props.titleText.font = compactMode
+        ? fui::GfxRendererTarget::FONT_SMALL
+        : fui::GfxRendererTarget::FONT_BODY;
     props.titleText.bold = true;
     props.titleText.align = fui::TextAlign::Center;
-    props.buttonText.font = fui::GfxRendererTarget::FONT_BODY;
-    const int16_t innerPadding = static_cast<int16_t>(metrics.optionPopupInnerPadding);
+    props.buttonText.font = compactMode
+        ? fui::GfxRendererTarget::FONT_SMALL
+        : fui::GfxRendererTarget::FONT_BODY;
+
+    const int16_t innerPadding = static_cast<int16_t>(
+        compactMode ? 18 : metrics.optionPopupInnerPadding);
     props.padding = fui::Insets{innerPadding, innerPadding, innerPadding, innerPadding};
-    props.gap = static_cast<int16_t>(metrics.optionPopupItemSpacing);
+    props.gap = static_cast<int16_t>(
+        compactMode ? 6 : metrics.optionPopupItemSpacing);
     // Rounded invert-fill themes use a black pill, not the default gray focus cursor.
     if (theme.listSelectionStyle == fui::SelectionStyle::InvertFill && theme.listRowRadius > 0) {
       props.buttonStyles = fui::defaultButtonStyles();
@@ -207,14 +216,20 @@ class OptionPopup {
     props.styles.active = props.styles.normal;
     props.styles.disabled = props.styles.normal;
     props.buttonHeight =
-        fui::clampI16(target.lineHeight(fui::GfxRendererTarget::FONT_BODY) + metrics.optionPopupSelectionVPadding * 2);
+        fui::clampI16(
+            target.lineHeight(
+                compactMode
+                    ? fui::GfxRendererTarget::FONT_SMALL
+                    : fui::GfxRendererTarget::FONT_BODY) +
+            (compactMode ? 10 : metrics.optionPopupSelectionVPadding * 2));
 
     // Fixed fraction of the screen, clamped by the theme's side margins; the
     // old max-text-width sizing is gone, long labels wrap inside the buttons.
     const fui::Rect screen = device.screen();
     const int16_t width =
         fui::clampI16(std::min<int>(screen.width * 3 / 4, screen.width - metrics.optionPopupDialogSideMargin * 2));
-    const int16_t height = fui::clampI16(fui::optionDialogHeight(target, props, width), 0, screen.height);
+    const int16_t height = fui::clampI16(
+        fui::optionDialogHeight(target, props, width), 0, screen.height);
     const fui::Rect dialogRect = fui::centeredRect(screen, fui::Size{width, height});
 
     // Chrome guard first, options after: route() scans newest-first, so the
@@ -250,6 +265,7 @@ class OptionPopup {
   std::vector<std::string> ownedStrings;
   int selectedIndex = 0;
   std::function<void(int)> onSelectCallback;
+  bool compactMode = false;
   // Written by the render task (frame registration), routed by the loop task;
   // uiReady closes the rebuild window exactly like UiListActivity::uiReady.
   mutable freeink::ui::InteractionBuffer<INTERACTION_CAPACITY> interactions;

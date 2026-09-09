@@ -397,7 +397,7 @@ bool KeyboardEntryActivity::cursorPositionFromPoint(const int x, const int y, si
 
   const int lineHeight = renderer.getLineHeight(UI_12_FONT_ID);
   const int inputStartY = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing +
-                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset;
+                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 12;
 
   const int availableWidth = pageWidth;
   const int effectiveMargin = (pageWidth - availableWidth * metrics.keyboardTextFieldWidthPercent / 100) / 2;
@@ -691,7 +691,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   const int lineHeight = renderer.getLineHeight(UI_12_FONT_ID);
   const int inputStartY = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing +
-                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset;
+                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 12;
   int inputHeight = 0;
 
   std::string displayText = displayTextForCurrentState();
@@ -760,7 +760,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
         } else {
           cursorPixelX = effectiveMargin + beforeWidth + kernOffset;
         }
-        cursorLineY = inputStartY + inputHeight;
+        cursorLineY = inputStartY + inputHeight + 12;
         cursorDrawn = true;
         isCursorLine = true;
       }
@@ -771,17 +771,17 @@ void KeyboardEntryActivity::render(RenderLock&&) {
         // displayText uses '*' for all chars; actual char may be wider than '*'.
         // Part 1: chars before cursor position
         const std::string part1 = displayText.substr(lineStartIdx, cursorPos - lineStartIdx);
-        renderer.drawText(UI_12_FONT_ID, lineStartX, inputStartY + inputHeight, part1.c_str());
+        renderer.drawText(UI_12_FONT_ID, lineStartX, inputStartY + inputHeight + 10, part1.c_str());
         // Part 2: skip cursor slot (block + actual char drawn later)
         // Part 3: chars after cursor position (skip char under cursor), starting at cursorPixelX + cursorCharWidth
         const int afterStart = static_cast<int>(cursorPos + cursorCharBytes);
         const int afterEnd = lineEndIdx;
         if (afterStart < afterEnd) {
           const std::string part3 = displayText.substr(afterStart, afterEnd - afterStart);
-          renderer.drawText(UI_12_FONT_ID, cursorPixelX + cursorCharWidth, inputStartY + inputHeight, part3.c_str());
+          renderer.drawText(UI_12_FONT_ID, cursorPixelX + cursorCharWidth, inputStartY + inputHeight + 10, part3.c_str());
         }
       } else {
-        renderer.drawText(UI_12_FONT_ID, lineStartX, inputStartY + inputHeight, lineText.c_str());
+        renderer.drawText(UI_12_FONT_ID, lineStartX, inputStartY + inputHeight + 10, lineText.c_str());
       }
       if (lineEndIdx == static_cast<int>(displayText.length())) {
         break;
@@ -794,32 +794,26 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   const int fieldWidth = (inputHeight > 0) ? maxLineWidth : textWidth;
   const int lineMargin = effectiveMargin;
-  GUI.drawTextField(renderer, Rect{0, inputStartY, pageWidth, inputHeight}, fieldWidth, cursorMode, lineMargin,
+  // Draw the text field without its built-in cursor.
+  // We draw our own thinner, shorter cursor below.
+  GUI.drawTextField(renderer, Rect{0, inputStartY, pageWidth, inputHeight}, fieldWidth, false, lineMargin,
                     pageWidth - 2 * lineMargin);
 
-  if (cursorMode && !togglePos && cursorPos <= displayText.length()) {
-    static constexpr int blockPadding = 1;
-    renderer.fillRect(cursorPixelX - blockPadding, cursorLineY, cursorCharWidth + blockPadding * 2, lineHeight, true);
-    if (cursorCharBytes > 0) {
-      renderer.drawText(UI_12_FONT_ID, cursorPixelX, cursorLineY, cursorChar, false);
-    }
-  } else if (cursorPos <= displayText.length()) {
-    static constexpr int serifW = 3;
-    const int cX = cursorPixelX;
-    const int cY = cursorLineY;
-    const int cBottom = cursorLineY + lineHeight - 1;
-    renderer.fillRect(cX, cY, 2, lineHeight, true);
-    renderer.drawLine(cX - serifW, cY, cX - 1, cY, 2, true);
-    renderer.drawLine(cX + 1, cY, cX + serifW, cY, 2, true);
-    renderer.drawLine(cX - serifW, cBottom, cX - 1, cBottom, 2, true);
-    renderer.drawLine(cX + 1, cBottom, cX + serifW, cBottom, 2, true);
+  if (cursorPos <= displayText.length()) {
+    // Thin cursor, vertically centred against the text.
+    constexpr int cursorWidth = 1;
+    constexpr int cursorVerticalPadding = 2;
+    const int cursorHeight = std::max(1, lineHeight - cursorVerticalPadding * 2 + 6);
+    const int cursorY = cursorLineY + cursorVerticalPadding - 8;
+
+    renderer.fillRect(cursorPixelX, cursorY, cursorWidth, cursorHeight, true);
   }
 
   if (isPassword) {
     const char* toggleLabel = passwordVisible ? "[***]" : "[abc]";
     const int toggleWidth = renderer.getTextWidth(UI_12_FONT_ID, toggleLabel);
     const int toggleX = pageWidth - effectiveMargin - toggleWidth;
-    const int toggleY = inputStartY + inputHeight;
+    const int toggleY = inputStartY + inputHeight + 12;
     const bool toggleSelected = cursorMode && togglePos;
 
     if (toggleSelected) {
@@ -843,6 +837,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
         hintLineY += hintLh;
         renderer.drawCenteredText(UI_10_FONT_ID, hintLineY, tr(STR_KB_HINT_RETURN_CURSOR), true);
       } else {
+        hintLineY += 10;
         renderer.drawCenteredText(UI_10_FONT_ID, hintLineY, tr(STR_KB_HINT_MOVE_CURSOR), true);
         hintLineY += hintLh;
         if (inputType == InputType::Password) {
@@ -859,53 +854,118 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   const int tipsLh = renderer.getLineHeight(UI_10_FONT_ID);
   const int underlineBottom = inputStartY + inputHeight + lineHeight + metrics.verticalSpacing + 4;
-  auto drawTip = [&](const char* tip, int y) { renderer.drawCenteredText(UI_10_FONT_ID, y, tip, true); };
 
-  int tipCount = 0;
-  if (cursorMode) {
-    tipCount = 1;
-  } else if (urlPanel) {
-    tipCount = 1 + (!text.empty() ? 1 : 0);
-  } else if (symbols) {
-    tipCount = !text.empty() ? 1 : 0;
-  } else {
-    tipCount = 1 + (inputType == InputType::Url ? 1 : 0) + (!text.empty() ? 1 : 0);
+  constexpr int tipGap = 9;
+  constexpr int tipsOffset = 12;
+
+  auto drawTip = [&](const char* tip, int y) {
+    renderer.drawCenteredText(UI_10_FONT_ID, y, tip, true);
+  };
+
+  /*
+   * The bottom Tips area has a fixed top position.
+   *
+   * This is intentional: adding "Clear text" when the user types
+   * must NOT move the existing tips upward.
+   */
+  const int tipsStartY =
+      (underlineBottom + kbRect.y) / 2 - 3 * tipsLh - 2 * tipGap - tipsOffset + 18;
+
+  // The normal uppercase hint is stored as one long string.
+  // Split it after "UPPERCASE" so the secondary part gets its own line.
+  const char* altCharTip = nullptr;
+  std::string altTipFirst;
+  std::string altTipSecond;
+  bool splitAltTip = false;
+
+  if (!cursorMode && !urlPanel && !symbols) {
+    if (inputType == InputType::Url) {
+      altCharTip = tr(STR_KB_HINT_SECONDARY_CHAR);
+    } else if (shifted) {
+      altCharTip = tr(STR_KB_HINT_LOWER_SECONDARY);
+    } else {
+      altCharTip = tr(STR_KB_HINT_UPPER_SECONDARY);
+    }
+
+    if (inputType != InputType::Url && altCharTip != nullptr) {
+      std::string fullTip = altCharTip;
+      const std::string uppercaseMarker = "UPPERCASE";
+      const std::string lowercaseMarker = "lowercase";
+
+      size_t markerPos = fullTip.find(uppercaseMarker);
+      std::string marker = uppercaseMarker;
+
+      if (markerPos == std::string::npos) {
+        markerPos = fullTip.find(lowercaseMarker);
+        marker = lowercaseMarker;
+      }
+
+      if (markerPos != std::string::npos) {
+        const size_t splitPos = markerPos + marker.length();
+
+        altTipFirst = fullTip.substr(0, splitPos);
+        altTipSecond = fullTip.substr(splitPos);
+
+        while (!altTipSecond.empty() &&
+               (altTipSecond.front() == ' ' ||
+                altTipSecond.front() == '\t')) {
+          altTipSecond.erase(altTipSecond.begin());
+        }
+
+        splitAltTip = !altTipSecond.empty();
+      }
+    }
   }
 
-  if (tipCount > 0) {
-    int y = (underlineBottom + kbRect.y) / 2 - (tipCount + 1) * tipsLh / 2;
-    drawTip(tr(STR_KB_TIPS), y);
-    y += tipsLh;
-    if (cursorMode) {
-      drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), y);
-    } else if (urlPanel) {
-      drawTip(tr(STR_KB_HINT_EXIT_URL_MODE), y);
-      y += tipsLh;
-      if (!text.empty()) {
-        drawTip(tr(STR_KB_HINT_CLEAR_TEXT), y);
-      }
-    } else if (symbols) {
-      if (!text.empty()) {
-        drawTip(tr(STR_KB_HINT_CLEAR_TEXT), y);
-      }
+  int y = tipsStartY;
+
+  if (cursorMode) {
+    y += 54;
+  }
+
+  drawTip(tr(STR_KB_TIPS), y);
+  y += tipsLh + tipGap;
+
+  if (cursorMode) {
+
+    drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), y);
+
+  } else if (urlPanel) {
+
+    drawTip(tr(STR_KB_HINT_EXIT_URL_MODE), y);
+    y += tipsLh + tipGap;
+
+    if (!text.empty()) {
+      drawTip(tr(STR_KB_HINT_CLEAR_TEXT), y);
+    }
+
+  } else if (symbols) {
+
+    if (!text.empty()) {
+      drawTip(tr(STR_KB_HINT_CLEAR_TEXT), y);
+    }
+
+  } else {
+
+    drawTip("Hold UP to move cursor", y);
+    y += tipsLh + tipGap;
+
+    if (splitAltTip) {
+      drawTip(altTipFirst.c_str(), y);
+      y += tipsLh + tipGap;
+      drawTip(altTipSecond.c_str(), y);
     } else {
-      const char* altCharTip;
-      if (inputType == InputType::Url) {
-        altCharTip = tr(STR_KB_HINT_SECONDARY_CHAR);
-      } else if (shifted) {
-        altCharTip = tr(STR_KB_HINT_LOWER_SECONDARY);
-      } else {
-        altCharTip = tr(STR_KB_HINT_UPPER_SECONDARY);
-      }
       drawTip(altCharTip, y);
-      y += tipsLh;
-      if (inputType == InputType::Url) {
-        drawTip(tr(STR_KB_HINT_URL_SNIPPETS), y);
-        y += tipsLh;
-      }
-      if (!text.empty()) {
-        drawTip(tr(STR_KB_HINT_CLEAR_TEXT), y);
-      }
+    }
+
+    if (inputType == InputType::Url) {
+      y += tipsLh + tipGap;
+      drawTip(tr(STR_KB_HINT_URL_SNIPPETS), y);
+    }
+
+    if (!text.empty()) {
+      y += tipsLh + tipGap;
+      drawTip(tr(STR_KB_HINT_CLEAR_TEXT), y);
     }
   }
 
@@ -949,8 +1009,6 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_SELECT), tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
-
-  GUI.drawSideButtonHints(renderer, ">", "<");
 
   renderer.displayBuffer();
 }

@@ -466,8 +466,16 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   screen.spacer(10);
 
   if (files.empty()) {
-    screen.centeredText(mode == Mode::PickFirmware ? tr(STR_NO_BIN_FILES) : tr(STR_NO_FILES_FOUND),
-                        screen.theme().bodyText);
+    if (mode == Mode::PickFirmware) {
+      renderer.drawCenteredText(
+          UI_10_FONT_ID,
+          renderer.getScreenHeight() / 2,
+          tr(STR_NO_BIN_FILES));
+    } else {
+      screen.centeredText(
+          tr(STR_NO_FILES_FOUND),
+          screen.theme().bodyText);
+    }
     return;
   }
 

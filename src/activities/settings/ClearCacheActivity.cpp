@@ -21,7 +21,7 @@ void ClearCacheActivity::onEnter() {
     } else {
       goBack();
     }
-  });
+  }, true);
   requestUpdate();
 }
 
