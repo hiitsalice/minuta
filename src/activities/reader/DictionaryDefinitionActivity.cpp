@@ -311,7 +311,7 @@ void DictionaryDefinitionActivity::render(RenderLock&&) {
     char counter[16];
     snprintf(counter, sizeof(counter), "%d/%d", currentPage + 1, totalPages);
     const int counterWidth = renderer.getTextWidth(UI_10_FONT_ID, counter);
-    renderer.drawText(UI_10_FONT_ID, contentX + contentWidth - SIDE_PADDING - counterWidth, headerY, counter);
+    renderer.drawText(UI_10_FONT_ID, contentX + contentWidth - SIDE_PADDING - counterWidth, headerY + 6, counter);
   }
 
   // Body: two-pass draw inside a prewarm scope (same pattern as the reader's
