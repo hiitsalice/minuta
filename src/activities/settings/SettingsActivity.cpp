@@ -10,6 +10,7 @@
 #include <cstring>
 
 #include "ButtonRemapActivity.h"
+#include "activities/util/ConfirmationActivity.h"
 #include "ClearCacheActivity.h"
 #include "CrossPointSettings.h"
 #include "FontDownloadActivity.h"
@@ -86,6 +87,8 @@ void SettingsActivity::rebuildSettingsLists() {
   // asset isn't published yet just report no update available.
   systemSettings.push_back(SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate));
+
+  // TEMPORARY UI TEST ENTRIES - remove before final firmware.
   readerSettings.insert(readerSettings.begin(),
                         SettingInfo::Action(StrId::STR_TEXT_SETTINGS, SettingAction::TextSettings));
   readerSettings.insert(readerSettings.begin() + 1,
@@ -361,7 +364,9 @@ void SettingsActivity::toggleCurrentSetting() {
       case SettingAction::SdFirmwareUpdate:
         startActivityForResult(std::make_unique<SdFirmwareUpdateActivity>(renderer, mappedInput), resultHandler);
         break;
-      case SettingAction::DownloadFonts:
+
+      // TEMPORARY UI TEST ACTIONS - remove before final firmware.
+case SettingAction::DownloadFonts:
         startActivityForResult(std::make_unique<FontDownloadActivity>(renderer, mappedInput),
                                [this](const ActivityResult&) {
                                  SETTINGS.saveToFile();

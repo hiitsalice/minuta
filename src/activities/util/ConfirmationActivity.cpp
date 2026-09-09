@@ -25,7 +25,7 @@ void ConfirmationActivity::onEnter() {
 
   // Text sits in the upper part of the screen so the confirmation popup
   // (centered) doesn't cover it.
-  startY = renderer.getScreenHeight() / 6;
+  startY = renderer.getScreenHeight() / 6 + 18;
 
   const char* options[] = {I18N.get(StrId::STR_CANCEL), I18N.get(StrId::STR_CONFIRM)};
   confirmPopup.show(safeHeading.c_str(), options, 2, 0, [this](int idx) {
@@ -33,7 +33,7 @@ void ConfirmationActivity::onEnter() {
     res.isCancelled = (idx != 1);
     setResult(std::move(res));
     finish();
-  });
+  }, true);
 
   requestUpdate(true);
 }
@@ -46,7 +46,7 @@ void ConfirmationActivity::render(RenderLock&& lock) {
   // Draw Heading
   if (!safeHeading.empty()) {
     renderer.drawCenteredText(UI_10_FONT_ID, currentY, safeHeading.c_str(), true, EpdFontFamily::BOLD);
-    currentY += lineHeight + spacing;
+    currentY += lineHeight + 9;
   }
 
   // Draw Body

@@ -25,7 +25,9 @@ constexpr fui::ActionId ACTION_PROMPT = 3;
 
 WifiSelectionActivity::WifiSelectionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                              const bool autoConnect)
-    : Activity("WifiSelection", renderer, mappedInput), UiAppHost(renderer), allowAutoConnect(autoConnect) {}
+    : Activity("WifiSelection", renderer, mappedInput),
+      UiAppHost(renderer),
+      allowAutoConnect(autoConnect) {}
 
 void WifiSelectionActivity::onRowEvent(const fui::ActionEvent& event, void* user) {
   auto* self = static_cast<WifiSelectionActivity*>(user);
@@ -131,12 +133,16 @@ void WifiSelectionActivity::onEnter() {
   cachedMacAddress = std::string(macStr);
 
   listNav.reset();
+
+  // Initialise the real Wi-Fi UI first, including its screen and actions.
   resetUi();
   app.on(ACTION_ROW, &WifiSelectionActivity::onRowEvent, this);
   app.on(ACTION_SCAN, &WifiSelectionActivity::onScanEvent, this);
   app.on(ACTION_PROMPT, &WifiSelectionActivity::onPromptEvent, this);
   app.setScreen(&WifiSelectionActivity::listScreen, this);
 
+  // TEMPORARY UI TEST: enter the real forget-network dialog.
+  // The normal UI above must already be registered so renderUi() can draw it.
   // Trigger first update to show scanning message
   requestUpdate();
 
@@ -671,36 +677,45 @@ void WifiSelectionActivity::loop() {
     if (route.routed && app.invalidated()) requestUpdate();
     if (route) return;  // dispatched to onPromptEvent
 
-    if (mappedInput.wasPressed(MappedInputManager::Button::Up) ||
-        mappedInput.wasPressed(MappedInputManager::Button::Left)) {
-      if (forgetPromptSelection > 0) {
-        forgetPromptSelection--;
-        requestUpdate();
-      }
-    } else if (mappedInput.wasPressed(MappedInputManager::Button::Down) ||
-               mappedInput.wasPressed(MappedInputManager::Button::Right)) {
-      if (forgetPromptSelection < 1) {
-        forgetPromptSelection++;
-        requestUpdate();
-      }
+    if (mappedInput.wasPressed(MappedInputManager::Button::Up)) {
+      // Wrap around so Up can be pressed infinitely.
+      forgetPromptSelection = (forgetPromptSelection == 0) ? 1 : 0;
+      requestUpdate();
+    } else if (mappedInput.wasPressed(MappedInputManager::Button::Down)) {
+      // Wrap around so Down can be pressed infinitely.
+      forgetPromptSelection = (forgetPromptSelection == 1) ? 0 : 1;
+      requestUpdate();
+    } else if (mappedInput.wasPressed(MappedInputManager::Button::Left)) {
+      // Keep Left as a navigation alias, also with wrapping.
+      forgetPromptSelection = (forgetPromptSelection == 0) ? 1 : 0;
+      requestUpdate();
+    } else if (mappedInput.wasPressed(MappedInputManager::Button::Right)) {
+      // Keep Right as a navigation alias, also with wrapping.
+      forgetPromptSelection = (forgetPromptSelection == 1) ? 0 : 1;
+      requestUpdate();
     } else if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
       if (forgetPromptSelection == 1) {
         RenderLock lock(*this);
         // User chose "Forget network" - forget the network
         WIFI_STORE.removeCredential(selectedSSID);
+
         // Update the network list to reflect the change
-        const auto network = find_if(networks.begin(), networks.end(),
-                                     [this](const WifiNetworkInfo& net) { return net.ssid == selectedSSID; });
+        const auto network = find_if(
+            networks.begin(), networks.end(),
+            [this](const WifiNetworkInfo& net) { return net.ssid == selectedSSID; });
+
         if (network != networks.end()) {
           network->hasSavedPassword = false;
         }
       }
-      // Go back to network list (whether Cancel or Forget network was selected)
+
+      // Go back to network list (whether Cancel or Forget was selected)
       startWifiScan();
     } else if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       // Skip forgetting, go back to network list
       startWifiScan();
     }
+
     return;
   }
 
@@ -873,9 +888,10 @@ void WifiSelectionActivity::render(RenderLock&&) {
     case WifiSelectionState::SAVE_PROMPT:
     case WifiSelectionState::FORGET_PROMPT: {
       renderUi();
+
       const auto labels =
           mappedInput.mapLabels(state == WifiSelectionState::SAVE_PROMPT ? tr(STR_CANCEL) : tr(STR_BACK),
-                                tr(STR_SELECT), tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT));
+                                tr(STR_SELECT), "Up", "Down");
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
       break;
     }
@@ -994,13 +1010,10 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
 void WifiSelectionActivity::buildPromptDialog(UiScreen& screen) {
   const bool isForget = state == WifiSelectionState::FORGET_PROMPT;
 
-  // Owned for the duration of the draw; the dialog wraps long SSIDs itself.
-  const std::string ssidInfo = std::string(tr(STR_NETWORK_PREFIX)) + selectedSSID;
-
   const int selection = isForget ? forgetPromptSelection : savePromptSelection;
   fui::DialogOption options[2];
   options[0].label = isForget ? tr(STR_CANCEL) : tr(STR_YES);
-  options[1].label = isForget ? tr(STR_FORGET_NETWORK) : tr(STR_NO);
+  options[1].label = isForget ? tr(STR_FORGET_BUTTON) : tr(STR_NO);
   for (int i = 0; i < 2; i++) {
     options[i].action = ACTION_PROMPT;
     options[i].value = static_cast<int16_t>(i);
@@ -1008,28 +1021,50 @@ void WifiSelectionActivity::buildPromptDialog(UiScreen& screen) {
   }
 
   fui::OptionDialogProps props;
-  props.title = isForget ? tr(STR_FORGET_NETWORK) : tr(STR_CONNECTED);
-  props.headline = ssidInfo.c_str();
-  props.message = isForget ? tr(STR_FORGET_AND_REMOVE) : tr(STR_SAVE_PASSWORD);
+
+  // The network name occupies the title position on the Forget dialog.
+  // It is styled as regular text rather than a bold title.
+  const std::string ssidInfo = std::string(tr(STR_NETWORK_PREFIX)) + selectedSSID;
+  props.title = isForget ? selectedSSID.c_str() : tr(STR_CONNECTED);
+  props.titlePrefix = isForget ? tr(STR_NETWORK_PREFIX) : nullptr;
+  props.headline = isForget ? nullptr : ssidInfo.c_str();
+  props.message = isForget ? "Forget and remove password?" : tr(STR_SAVE_PASSWORD);
+
   props.options = options;
   props.optionCount = 2;
-  // Stacked full-width options (matching OptionPopup): side-by-side halves
-  // truncate the long "Forget network" label.
   props.verticalOptions = true;
-  props.titleText = screen.theme().smallText;
-  props.titleText.bold = true;
-  // TextStyle defaults to maxLines=1 (ellipsis truncation); let the SSID
-  // headline and the question wrap. optionDialogHeight measures with the same
-  // styles, so the dialog grows to fit the wrapped lines.
-  props.headlineText = screen.theme().bodyText;
-  props.headlineText.maxLines = 2;
-  props.messageText = screen.theme().smallText;
+
+  props.titleText.font = fui::GfxRendererTarget::FONT_SMALL;
+  props.titleText.bold = !isForget;
+  props.titleText.align = fui::TextAlign::Center;
+
+  // The Forget dialog shows the network name above the popup.
+  props.titleOutside = isForget;
+  props.titleOffsetY = isForget ? 3 : 0;
+  props.messageOffsetY = 0;
+  props.messageGapAfter = isForget ? 12 : 0;
+
+  props.headlineText.font = fui::GfxRendererTarget::FONT_SMALL;
+  props.headlineText.bold = false;
+  props.headlineText.align = fui::TextAlign::Center;
+  props.headlineText.maxLines = 1;
+
+  props.messageText.font = fui::GfxRendererTarget::FONT_SMALL;
+  props.messageText.bold = isForget;
+  props.messageText.align = fui::TextAlign::Center;
   props.messageText.maxLines = 3;
-  props.buttonText = screen.theme().smallText;
-  props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
-  // defaultPopupStyles() (fui::optionDialog's fallback when styles is left
-  // unset) has no border; opt one in explicitly using the theme's popup frame
-  // metrics, matching OptionPopup::render().
+
+  props.buttonText.font = fui::GfxRendererTarget::FONT_SMALL;
+  props.buttonText.align = fui::TextAlign::Center;
+
+  props.gap = 5;
+  props.padding = fui::Insets{12, 12, 12, 12};
+
+  props.buttonHeight = static_cast<int16_t>(
+      screen.target().lineHeight(fui::GfxRendererTarget::FONT_SMALL) + 10);
+
+  props.inputMask = fui::InputTouch;
+
   const auto& metrics = UITheme::getInstance().getMetrics();
   props.styles = fui::defaultPopupStyles();
   props.styles.normal.border = fui::Paint::solid(fui::Color::Black);
@@ -1043,6 +1078,7 @@ void WifiSelectionActivity::buildPromptDialog(UiScreen& screen) {
   const fui::Rect body = screen.body();
   int16_t width = static_cast<int16_t>(renderer.getScreenWidth() * 3 / 4);
   if (width > body.width) width = body.width;
+
   const int16_t height = fui::optionDialogHeight(screen.target(), props, width);
   fui::optionDialog(screen.frame(), fui::centeredRect(body, fui::Size{width, height}), props);
 }
