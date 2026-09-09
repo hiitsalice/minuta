@@ -364,7 +364,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
       labelStyle.align = fui::TextAlign::Right;
       const int16_t labelWidth = static_cast<int16_t>(iconX - headerBatteryGap - batteryX);
 
-      ui.target.text(fui::Rect{batteryX, static_cast<int16_t>(batteryBandY - 1), labelWidth, batteryH}, percentText,
+      ui.target.text(fui::Rect{batteryX, static_cast<int16_t>(batteryBandY), labelWidth, batteryH}, percentText,
                      labelStyle);
     }
 
@@ -372,7 +372,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
     iconOnly.label = nullptr;
 
     fui::batteryIndicator(ui.frame,
-                          fui::Rect{iconX, static_cast<int16_t>(batteryBandY + 8),
+                          fui::Rect{iconX, static_cast<int16_t>(batteryBandY + 9),
                                     static_cast<int16_t>(headerBatteryWidth + batteryNubWidth), headerBatteryHeight},
                           iconOnly);
   } else {
