@@ -14,7 +14,7 @@ Minuta is basically my own preferences conjured into actual firmware. I spent an
 
 Minuta is imagined as a sunlit mythical forest filled with cute little creatures. They are simple, but they care about their appearance. I feel like I resonate with that. I like things to stay minimal in functionality and mechanics, but I still need them to feel good appearance-wise. I hope Minuta can also suit people who share these preferences.
 
-## Gallery
+## Gallery (v1.0)
 
 <table align="center">
   <tr>
