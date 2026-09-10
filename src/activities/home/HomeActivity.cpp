@@ -250,17 +250,17 @@ void HomeActivity::loop() {
 
   if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM) {
     const int bookCount = static_cast<int>(recentBooks.size());
-    const int frontButton = mappedInput.getReleasedFrontButton();
 
-    // Quartum Home uses fixed physical front buttons:
+    // Quartum Home uses the logical front-button roles:
     // Browse / Read / Prev / Next.
-    if (frontButton == HalGPIO::BTN_BACK) {
+    // MappedInputManager translates these through the user's remapping.
+    if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       activityManager.goToBrowseMenu();
       return;
     }
 
     if (bookCount > 0) {
-      if (frontButton == HalGPIO::BTN_CONFIRM) {
+      if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
         // Quartum's Read button may only open one of the visible books.
         // Never let an invalid/stale selector fall through to a home menu item.
         selectorIndex = std::clamp(selectorIndex, 0, bookCount - 1);
@@ -268,13 +268,13 @@ void HomeActivity::loop() {
         return;
       }
 
-      if (frontButton == HalGPIO::BTN_LEFT) {
+      if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
         selectorIndex = (selectorIndex - 1 + bookCount) % bookCount;
         requestUpdate();
         return;
       }
 
-      if (frontButton == HalGPIO::BTN_RIGHT) {
+      if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
         selectorIndex = (selectorIndex + 1) % bookCount;
         requestUpdate();
         return;
@@ -310,33 +310,26 @@ void HomeActivity::loop() {
       }
     }
 
-    // Any other front-button release is intentionally ignored here.
-    if (frontButton != -1) {
-      return;
-    }
   }
 
   if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM) {
-    const int frontButton = mappedInput.getReleasedFrontButton();
 
-    // Solum Home uses fixed physical front buttons:
+    // Solum Home uses the logical front-button roles:
     // Browse / blank / blank / Read.
-    if (frontButton == HalGPIO::BTN_BACK) {
+    // MappedInputManager translates these through the user's remapping.
+    if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       activityManager.goToBrowseMenu();
       return;
     }
 
-    if (frontButton == HalGPIO::BTN_RIGHT) {
+    if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
       if (!recentBooks.empty()) {
         onSelectBook(recentBooks[0].path);
       }
       return;
     }
 
-    // Physical buttons 2 and 3 intentionally do nothing.
-    if (frontButton != -1) {
-      return;
-    }
+    // Other logical front-button roles intentionally do nothing here.
   }
 
   if (SETTINGS.uiTheme != CrossPointSettings::UI_THEME::SOLUM &&

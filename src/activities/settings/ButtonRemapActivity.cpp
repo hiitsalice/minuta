@@ -97,8 +97,12 @@ void ButtonRemapActivity::loop() {
     currentStep++;
 
     if (currentStep >= kRoleCount) {
-      // All roles assigned; save to settings and exit.
+      // All roles assigned. Apply the new mapping first, then suppress the
+      // release of the physical button that completed the remap. Since the
+      // fourth assignment is always the logical Right role, suppressing Right
+      // prevents that same physical release from leaking into SettingsActivity.
       applyTempMapping();
+      mappedInput.suppressRelease(MappedInputManager::Button::Right);
       SETTINGS.saveToFile();
       finish();
       return;
