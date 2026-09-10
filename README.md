@@ -89,11 +89,12 @@ Minuta keeps CrossPoint’s reading foundation, but I removed or rearranged a fe
 - File Transfer was moved into System Settings.
 - The setting that moves finished books into another folder was removed. Finished books stay in their original folders.
 - “Short Back To File Browser” was removed from Controls.
+- "Long-press Back" was added to Controls
 - Settings and Library/File Browser are tucked into the home-screen menu, accessed with the usual Back button.
 - The battery indicator is always shown.
 - The reader always wakes to the home screen after sleep.
 - The bottom reader margin adapts to the status bar.
-- Book covers use Minuta’s fixed 2:5 home-screen ratio.
+- Book covers use Minuta’s fixed 3:5 home-screen ratio.
 - Text Settings, Customise Status Bar, and Controls begin with my own preferred defaults. They are still customisable.
 
 ## Fonts
