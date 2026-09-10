@@ -134,12 +134,25 @@ inline bool handleBackNavigation(const MappedInputManager& mappedInput, Activity
     return false;
   }
 
-  const bool backTriggered = mappedInput.wasLongPressed(MappedInputManager::Button::Back, GO_BACK_OR_HOME_MS) ||
-                             mappedInput.wasReleased(MappedInputManager::Button::Back);
-  if (!backTriggered) return false;
+  const bool longPress =
+      mappedInput.wasLongPressed(MappedInputManager::Button::Back, GO_BACK_OR_HOME_MS);
 
-  const bool longPress = mappedInput.getHeldTime() >= GO_BACK_OR_HOME_MS;
-  if (longPress != SETTINGS.backShortToFileBrowser) {
+  if (longPress) {
+    if (SETTINGS.longPressBackDestination == CrossPointSettings::LONG_PRESS_BACK_SETTINGS) {
+      activityManager.goToSettings();
+    } else {
+      // Long-press Back -> Library always opens the outermost Library.
+      activityManager.goToFileBrowser("/");
+    }
+    return true;
+  }
+
+  if (!mappedInput.wasReleased(MappedInputManager::Button::Back)) {
+    return false;
+  }
+
+  // Short Back behaviour remains controlled by the existing setting.
+  if (SETTINGS.backShortToFileBrowser) {
     activityManager.goToFileBrowser(filePath);
   } else {
     goHome.fn(goHome.ctx);
