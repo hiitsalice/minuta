@@ -230,7 +230,8 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
   };
 
   if (state == State::VALIDATING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_VALIDATING_FIRMWARE)).c_str());
+    // Fixed layout per audit: Y=420.
+    renderer.drawCenteredText(UI_10_FONT_ID, 420, withoutEllipsis(tr(STR_VALIDATING_FIRMWARE)).c_str());
   } else if (state == State::UPDATING) {
     // Throttle redraws to once per percent.
     const unsigned int pct =
