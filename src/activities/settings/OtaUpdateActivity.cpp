@@ -131,7 +131,8 @@ void OtaUpdateActivity::render(RenderLock&&) {
   }
 
   if (state == CHECKING_FOR_UPDATE) {
-    renderer.drawCenteredText(UI_12_FONT_ID, top, withoutEllipsis(tr(STR_CHECKING_UPDATE)).c_str());
+    // Fixed layout per audit: 10pt, Y=420, keep the "..." (no stripping).
+    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_CHECKING_UPDATE));
   } else if (state == WAITING_CONFIRMATION) {
     // Version info sits in the upper part of the screen so the centered
     // Cancel/Update popup doesn't cover it (same layout as ConfirmationActivity).
