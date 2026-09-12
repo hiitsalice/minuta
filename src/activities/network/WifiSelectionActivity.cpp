@@ -709,8 +709,9 @@ void WifiSelectionActivity::loop() {
 
   // Handle connection failed state
   if (state == WifiSelectionState::CONNECTION_FAILED) {
-    if (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
-        mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+    // Only Back (button 1) is live on this screen per audit; Confirm must
+    // not trigger the same action.
+    if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       // If we were auto-connecting or using a saved credential, offer to forget
       // the network
       if (autoConnecting || usedSavedPassword) {
@@ -1142,15 +1143,11 @@ void WifiSelectionActivity::renderConnected(const Rect* screen, const ThemeMetri
 }
 
 void WifiSelectionActivity::renderConnectionFailed(const Rect* screen, const ThemeMetrics* metrics) const {
-  const auto height = renderer.getLineHeight(UI_10_FONT_ID);
-  const int lineGap = metrics->verticalSpacing;
-  const int groupHeight = height * 2 + lineGap;
-  const int groupTop = screen->y + (screen->height - groupHeight) / 2;
-
+  // Fixed layout per audit: header bold at Y=404, reason at Y=432.
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            groupTop, tr(STR_CONNECTION_FAILED), true, EpdFontFamily::BOLD);
+                            404, tr(STR_CONNECTION_FAILED), true, EpdFontFamily::BOLD);
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            groupTop + height + lineGap, connectionError.c_str());
+                            432, connectionError.c_str());
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
