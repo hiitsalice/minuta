@@ -735,19 +735,17 @@ void WifiSelectionActivity::loop() {
       return;
     }
 
-    // Check for Back button to exit (cancel)
-    if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+    // Check for Back button to exit (cancel). Disabled on the empty
+    // "No networks found" screen per audit: only Retry (button 4) is live.
+    if (!networks.empty() && mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       onComplete(false);
       return;
     }
 
-    // Check for Confirm button to select network or rescan
-    if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
-      if (!networks.empty()) {
-        selectNetwork(selectedNetworkIndex);
-      } else {
-        startWifiScan();
-      }
+    // Check for Confirm button to select network. Disabled on the empty
+    // "No networks found" screen per audit: only Retry (button 4) is live.
+    if (!networks.empty() && mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+      selectNetwork(selectedNetworkIndex);
       return;
     }
 
@@ -940,8 +938,11 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   }
 
   if (networks.empty()) {
-    screen.centeredText(tr(STR_NO_NETWORKS), screen.theme().bodyText);
+    // renderNetworkList() now draws the full "No networks found" screen
+    // (header, hint, Retry button) for non-touch boards, so skip the
+    // framework's own text here to avoid duplicate rendering.
     if (mappedInput.hasTouch()) {
+      screen.centeredText(tr(STR_NO_NETWORKS), screen.theme().bodyText);
       // Touch has no OK button to rescan with; offer the retry on screen instead
       // of the "Press OK" hint renderNetworkList draws for button boards.
       const auto& theme = screen.theme();
@@ -1065,11 +1066,15 @@ void WifiSelectionActivity::buildPromptDialog(UiScreen& screen) {
 void WifiSelectionActivity::renderNetworkList(const Rect* screen, const ThemeMetrics* metrics) {
   renderUi();
   if (networks.empty() && !mappedInput.hasTouch()) {
-    // Below the centered "no networks" line the app drew. Touch boards get an
-    // on-screen Retry button from the screen builder instead of this hint.
-    const auto height = renderer.getLineHeight(UI_10_FONT_ID);
-    const auto top = screen->y + (screen->height - height) / 2;
-    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, top + height + 10, tr(STR_PRESS_OK_SCAN));
+    // "No networks found" screen: bold header at Y=404, retry hint at Y=432.
+    // Buttons 1-3 are inert here, so only the Retry (button 4) label is shown
+    // and the encrypted/saved legend is omitted.
+    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 404, tr(STR_NO_NETWORKS), true, EpdFontFamily::BOLD);
+    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 432, tr(STR_PRESS_OK_SCAN));
+
+    const auto labels = mappedInput.mapLabels("", "", "", tr(STR_RETRY));
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    return;
   }
 
   GUI.drawHelpText(renderer,
