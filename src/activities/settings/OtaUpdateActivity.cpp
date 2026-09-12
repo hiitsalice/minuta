@@ -180,7 +180,8 @@ void OtaUpdateActivity::render(RenderLock&&) {
         UI_10_FONT_ID, statusY, secondaryText.c_str(),
         true, EpdFontFamily::ITALIC);
   } else if (state == NO_UPDATE) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_NO_UPDATE)).c_str());
+    // Fixed layout per audit: Y=420.
+    renderer.drawCenteredText(UI_10_FONT_ID, 420, withoutEllipsis(tr(STR_NO_UPDATE)).c_str());
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == FAILED) {
