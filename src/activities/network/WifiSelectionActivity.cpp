@@ -579,33 +579,12 @@ void WifiSelectionActivity::checkConnectionStatus() {
 void WifiSelectionActivity::loop() {
   // Check scan progress
   if (state == WifiSelectionState::SCANNING) {
-    if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
-      WiFi.scanDelete();
-      onComplete(false);
-      return;
-    }
-    if (autoConnecting && mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
-      autoConnecting = false;
-      manualNetworkListRequested = true;
-      requestUpdate();
-    }
     processWifiScanResults();
     return;
   }
 
   // Check connection progress
   if (state == WifiSelectionState::CONNECTING || state == WifiSelectionState::AUTO_CONNECTING) {
-    if (state == WifiSelectionState::AUTO_CONNECTING) {
-      if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
-        WiFi.disconnect();
-        onComplete(false);
-        return;
-      }
-      if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
-        showNetworkListFromAutoConnect();
-        return;
-      }
-    }
     checkConnectionStatus();
     return;
   }
@@ -1110,14 +1089,11 @@ void WifiSelectionActivity::renderConnecting(const Rect* screen, const ThemeMetr
   if (state == WifiSelectionState::SCANNING) {
     const char* statusText = autoConnecting ? tr(STR_FINDING_SAVED_WIFI) : tr(STR_SCANNING);
     const Rect statusBounds{screen->x + metrics->contentSidePadding,
-                            screen->y,
+                            420,
                             screen->width - metrics->contentSidePadding * 2,
                             screen->height};
-    UITheme::drawCenteredWrappedText(renderer, statusBounds, UI_10_FONT_ID, statusText, MAX_STATUS_LINES);
-    if (autoConnecting) {
-      const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), tr(STR_SHOW_NETWORKS), "", "");
-      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
-    }
+    UITheme::drawCenteredWrappedText(renderer, statusBounds, UI_10_FONT_ID, statusText, MAX_STATUS_LINES,
+                                     true, EpdFontFamily::Style::REGULAR, UITheme::TextVerticalAlignment::TOP);
   } else {
     const char* statusText = autoConnecting ? tr(STR_CONNECTING_SAVED_WIFI) : tr(STR_CONNECTING);
 
