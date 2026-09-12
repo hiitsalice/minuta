@@ -1107,20 +1107,13 @@ void WifiSelectionActivity::renderConnecting(const Rect* screen, const ThemeMetr
       ssidInfo.replace(22, ssidInfo.length() - 22, "...");
     }
 
-    const int lineGap = metrics->verticalSpacing;
-    const int groupHeight = height * 2 + lineGap;
-    const int groupTop = screen->y + (screen->height - groupHeight) / 2;
+    // Fixed layout per audit: header bold at Y=404, network name at Y=432.
+    // No button hints for either Connecting or Connecting-to-saved states.
+    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
+                              404, statusText, true, EpdFontFamily::BOLD);
 
     UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                              groupTop, statusText, true, EpdFontFamily::BOLD);
-
-    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                              groupTop + height + lineGap, ssidInfo.c_str());
-
-    if (autoConnecting) {
-      const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), tr(STR_SHOW_NETWORKS), "", "");
-      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
-    }
+                              432, ssidInfo.c_str());
   }
 }
 
