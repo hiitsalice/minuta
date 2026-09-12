@@ -185,20 +185,17 @@ void OtaUpdateActivity::render(RenderLock&&) {
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == FAILED) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
+    // Fixed layout per audit: header bold at Y=404, reason at Y=432.
+    renderer.drawCenteredText(UI_10_FONT_ID, 404, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
     if (failedDetail != nullptr) {
-      renderer.drawCenteredText(
-          UI_10_FONT_ID,
-          top + renderer.getLineHeight(UI_10_FONT_ID) + textGap + 6,
-          withoutEllipsis(failedDetail).c_str());
+      renderer.drawCenteredText(UI_10_FONT_ID, 432, withoutEllipsis(failedDetail).c_str());
     }
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == FINISHED) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_UPDATE_COMPLETE)).c_str(), true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID,
-                              top + renderer.getLineHeight(UI_10_FONT_ID) + 9,
-                              withoutEllipsis(tr(STR_POWER_ON_HINT)).c_str());
+    // Fixed layout per audit: header bold at Y=404, hint at Y=432.
+    renderer.drawCenteredText(UI_10_FONT_ID, 404, withoutEllipsis(tr(STR_UPDATE_COMPLETE)).c_str(), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 432, withoutEllipsis(tr(STR_POWER_ON_HINT)).c_str());
   }
 
   renderer.displayBuffer();
