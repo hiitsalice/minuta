@@ -1122,21 +1122,20 @@ void WifiSelectionActivity::renderConnected(const Rect* screen, const ThemeMetri
   const int lineGap = metrics->verticalSpacing;
 
   const int groupHeight = height * 3 + lineGap * 2;
-  const int groupTop = screen->y + (screen->height - groupHeight) / 2;
-
+  // Fixed layout per audit: Connected! at Y=388, network name at Y=416, IP at Y=444.
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            groupTop, tr(STR_CONNECTED), true, EpdFontFamily::BOLD);
+                            388, tr(STR_CONNECTED), true, EpdFontFamily::BOLD);
 
   std::string ssidInfo = std::string(tr(STR_NETWORK_PREFIX)) + selectedSSID;
   if (ssidInfo.length() > 28) {
     ssidInfo.replace(25, ssidInfo.length() - 25, "...");
   }
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            groupTop + height + lineGap, ssidInfo.c_str());
+                            416, ssidInfo.c_str());
 
   const std::string ipInfo = std::string(tr(STR_IP_ADDRESS_PREFIX)) + connectedIP;
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            groupTop + (height + lineGap) * 2, ipInfo.c_str());
+                            444, ipInfo.c_str());
 
   const auto labels = mappedInput.mapLabels("", tr(STR_DONE), "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
