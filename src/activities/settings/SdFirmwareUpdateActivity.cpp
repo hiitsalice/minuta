@@ -194,8 +194,9 @@ void SdFirmwareUpdateActivity::loop() {
   if (state == State::FAILED) {
     int x = 0;
     int y = 0;
-    if (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
-        mappedInput.wasPressed(MappedInputManager::Button::Confirm) || mappedInput.wasScreenTapped(x, y)) {
+    // Only Back (button 1) is live on this screen per audit; Confirm must
+    // not trigger the same action.
+    if (mappedInput.wasPressed(MappedInputManager::Button::Back) || mappedInput.wasScreenTapped(x, y)) {
       if (recoveryMode) {
         // Go back to picker so user can try a different .bin
         state = State::PICKING;
@@ -270,12 +271,10 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
     renderer.drawCenteredText(UI_10_FONT_ID, 418, "Restarting... If device does not restart,");
     renderer.drawCenteredText(UI_10_FONT_ID, 442, "hold the power button for a few seconds");
   } else if (state == State::FAILED) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
+    // Fixed layout per audit: header bold at Y=404, reason at Y=432.
+    renderer.drawCenteredText(UI_10_FONT_ID, 404, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
     if (!errorMessage.empty()) {
-      const int errorY = top + lineHeight + textGap + 6;
-      renderer.drawCenteredText(
-          UI_10_FONT_ID, errorY,
-          withoutEllipsis(errorMessage.c_str()).c_str());
+      renderer.drawCenteredText(UI_10_FONT_ID, 432, withoutEllipsis(errorMessage.c_str()).c_str());
     }
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
