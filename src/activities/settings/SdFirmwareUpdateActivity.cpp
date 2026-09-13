@@ -263,12 +263,12 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
         UI_10_FONT_ID, statusY, secondaryText.c_str(),
         true, EpdFontFamily::ITALIC);
   } else if (state == State::SUCCESS) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_UPDATE_COMPLETE)).c_str(), true, EpdFontFamily::BOLD);
-    const int hintY = top + lineHeight + textGap + 6;
-    const Rect hintBounds{metrics.contentSidePadding, hintY, pageWidth - metrics.contentSidePadding * 2,
-                          pageHeight - hintY};
-    UITheme::drawCenteredWrappedText(renderer, hintBounds, UI_10_FONT_ID, withoutEllipsis(tr(STR_RESTARTING_HINT)).c_str(), 3, true,
-                                     EpdFontFamily::REGULAR, UITheme::TextVerticalAlignment::TOP, 6);
+    // Fixed layout per audit: header at Y=390, hint split into two lines at
+    // Y=418 and Y=442 (STR_RESTARTING_HINT is one sentence; the audit wants
+    // it broken at the comma into two fixed-position lines).
+    renderer.drawCenteredText(UI_10_FONT_ID, 390, tr(STR_UPDATE_COMPLETE), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 418, "Restarting... If device does not restart,");
+    renderer.drawCenteredText(UI_10_FONT_ID, 442, "hold the power button for a few seconds");
   } else if (state == State::FAILED) {
     renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
     if (!errorMessage.empty()) {
