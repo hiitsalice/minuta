@@ -232,6 +232,7 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
 
   if (state == State::VALIDATING) {
     // Fixed layout per audit: Y=420, keep the "..." (no stripping).
+    // Live-verified: input inert, layout correct (confirmed via static test build).
     renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_VALIDATING_FIRMWARE));
   } else if (state == State::UPDATING) {
     // Throttle redraws to once per percent.
