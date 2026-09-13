@@ -14,7 +14,7 @@ Minuta is basically my own preferences conjured into actual firmware. I spent an
 
 Minuta is imagined as a sunlit mythical forest filled with cute little creatures. They are simple, but they care about their appearance. I feel like I resonate with that. I like things to stay minimal in functionality and mechanics, but I still need them to feel good appearance-wise. I hope Minuta can also suit people who share these preferences.
 
-## Gallery
+## Gallery (v1.0)
 
 <table align="center">
   <tr>
@@ -47,10 +47,10 @@ Minuta is intentionally built around XTEINK X4 only. Removing unused device supp
 | Measure | Result |
 | --- | --- |
 | Starting firmware size | 4,507,904 bytes |
-| Minuta 1.1 firmware size | 4,120,015 bytes |
-| Total space saved | 387,889 bytes / 378.8 KiB |
-| Total size reduction | 8.6% |
-| Free app-partition space | 2,433,585 bytes / 2.32 MiB |
+| Minuta 1.1 firmware size | 4,033,072 bytes |
+| Total space saved | 474,832 bytes / 463.7 KiB |
+| Total size reduction | 10.5% |
+| Free app-partition space | 2,520,528 bytes / 2.40 MiB |
 | RAM used | 55,860 bytes / 17.0% |
 
 These are firmware-size measurements rather than promises about page-turn speed or battery life. Minuta was made smaller so the X4 has less unnecessary firmware to carry around.
