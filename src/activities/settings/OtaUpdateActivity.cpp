@@ -29,8 +29,10 @@ void OtaUpdateActivity::onWifiSelectionComplete(const bool success) {
   const auto res = updater.checkForUpdate();
   // NO_UPDATE here means the release carries no firmware asset for this board
   // (expected until per-board assets are published) — not a failure.
-  if (res == OtaUpdater::NO_UPDATE) {
-    LOG_DBG("OTA", "No firmware asset for this board in latest release");
+  // UPDATE_OLDER_ERROR means a firmware asset exists but isn't newer than the
+  // current version — same practical outcome as NO_UPDATE for the user.
+  if (res == OtaUpdater::NO_UPDATE || res == OtaUpdater::UPDATE_OLDER_ERROR) {
+    LOG_DBG("OTA", "No firmware asset for this board in latest release, or already up to date");
     {
       RenderLock lock(*this);
       state = NO_UPDATE;
@@ -41,6 +43,23 @@ void OtaUpdateActivity::onWifiSelectionComplete(const bool success) {
     LOG_DBG("OTA", "Update check failed: %d", res);
     {
       RenderLock lock(*this);
+      switch (res) {
+        case OtaUpdater::HTTP_ERROR:
+          failedDetail = "Could not connect to server";
+          break;
+        case OtaUpdater::JSON_PARSE_ERROR:
+          failedDetail = "Update could not be read";
+          break;
+        case OtaUpdater::OOM_ERROR:
+          failedDetail = "Not enough memory";
+          break;
+        case OtaUpdater::WRONG_DEVICE_ERROR:
+          failedDetail = tr(STR_FIRMWARE_WRONG_DEVICE);
+          break;
+        default:
+          failedDetail = "An error occurred";
+          break;
+      }
       state = FAILED;
     }
     return;
@@ -218,7 +237,23 @@ void OtaUpdateActivity::runUpdateInstall() {
     LOG_DBG("OTA", "Update failed: %d", res);
     {
       RenderLock lock(*this);
-      failedDetail = res == OtaUpdater::WRONG_DEVICE_ERROR ? tr(STR_FIRMWARE_WRONG_DEVICE) : nullptr;
+      switch (res) {
+        case OtaUpdater::HTTP_ERROR:
+          failedDetail = "Could not connect to server";
+          break;
+        case OtaUpdater::JSON_PARSE_ERROR:
+          failedDetail = "Update could not be read";
+          break;
+        case OtaUpdater::OOM_ERROR:
+          failedDetail = "Not enough memory";
+          break;
+        case OtaUpdater::WRONG_DEVICE_ERROR:
+          failedDetail = tr(STR_FIRMWARE_WRONG_DEVICE);
+          break;
+        default:
+          failedDetail = "An error occurred";
+          break;
+      }
       state = FAILED;
     }
     requestUpdate();
