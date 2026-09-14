@@ -931,12 +931,13 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   screen.setContentMargin(fui::Insets{
       // Tighter gap between the MAC subheader and the first row (12px
       // instead of the default verticalSpacing), scoped to this screen only.
-      static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight + 12),
-      // Pull rows in to match the header/MAC text's edges (6px extension
-      // each side) so names and signal icons align with them.
-      static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width) - metrics.headerSidePadding + 12),
+      static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight + 6),
+      // Highlight box extended 9px beyond the header-aligned edges on each
+      // side, for visible padding around the row content (sidePadding and
+      // valueInset below pull the text back 3px to partially offset it).
+      static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width) - metrics.headerSidePadding + 9),
       static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + metrics.verticalSpacing * 2),
-      static_cast<int16_t>(safe.x - 6)});
+      static_cast<int16_t>(safe.x - 9)});
 
   if (state == WifiSelectionState::SAVE_PROMPT || state == WifiSelectionState::FORGET_PROMPT) {
     buildPromptDialog(screen);
@@ -974,7 +975,8 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   props.action = ACTION_ROW;
   // Tap opens; long-press a saved network forgets it (physical buttons stay in loop()).
   props.inputMask = fui::InputTouch | fui::InputLongPress;
-  props.valueInset = 3;  // air between the signal bars and the row edge
+  props.valueInset = 1;  // air between the signal bars and the row edge
+  props.sidePadding = 11;  // air between the row edge and the name text
   // Long SSIDs wrap onto a second line inside the row (two body lines always
   // fit the theme row height) instead of truncating; the trailing value is
   // just the short status glyphs, so skip the balanced 60%-band wrap cap.
@@ -983,10 +985,9 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   props.labelYOffset = 1;
   props.balanceWrappedLabelWithValue = false;
   listNav.selected = static_cast<int>(selectedNetworkIndex);
-  int16_t rowHeight = static_cast<int16_t>(screen.theme().rowHeight + 4);
+  int16_t rowHeight = screen.theme().rowHeight;
   if (!mappedInput.hasTouch()) {
-    // Give X3/X4 Wi-Fi rows 2px more padding above and below.
-    rowHeight = static_cast<int16_t>(metrics.listRowHeight + 4);
+    rowHeight = metrics.listRowHeight;
   }
   props.rowHeight = rowHeight;
   listNav.syncToProps(screen.body(), rowHeight, screen.theme().listRowGap, static_cast<int>(networks.size()), props);
