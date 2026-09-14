@@ -139,6 +139,8 @@ void WifiSelectionActivity::onEnter() {
   app.on(ACTION_ROW, &WifiSelectionActivity::onRowEvent, this);
   app.on(ACTION_SCAN, &WifiSelectionActivity::onScanEvent, this);
   app.on(ACTION_PROMPT, &WifiSelectionActivity::onPromptEvent, this);
+  // Network list rows use 10pt instead of the default 12pt body font.
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
   app.setScreen(&WifiSelectionActivity::listScreen, this);
 
   // TEMPORARY UI TEST: enter the real forget-network dialog.
