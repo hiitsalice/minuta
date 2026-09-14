@@ -932,9 +932,11 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
       // Tighter gap between the MAC subheader and the first row (12px
       // instead of the default verticalSpacing), scoped to this screen only.
       static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight + 12),
-      static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
+      // Pull rows in to match the header/MAC text's edges (6px extension
+      // each side) so names and signal icons align with them.
+      static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width) - metrics.headerSidePadding + 12),
       static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + metrics.verticalSpacing * 2),
-      static_cast<int16_t>(safe.x)});
+      static_cast<int16_t>(safe.x - 6)});
 
   if (state == WifiSelectionState::SAVE_PROMPT || state == WifiSelectionState::FORGET_PROMPT) {
     buildPromptDialog(screen);
@@ -972,7 +974,7 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   props.action = ACTION_ROW;
   // Tap opens; long-press a saved network forgets it (physical buttons stay in loop()).
   props.inputMask = fui::InputTouch | fui::InputLongPress;
-  props.valueInset = 8;  // air between the signal bars and the row edge
+  props.valueInset = 3;  // air between the signal bars and the row edge
   // Long SSIDs wrap onto a second line inside the row (two body lines always
   // fit the theme row height) instead of truncating; the trailing value is
   // just the short status glyphs, so skip the balanced 60%-band wrap cap.
