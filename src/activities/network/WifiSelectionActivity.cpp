@@ -929,8 +929,9 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   // Content below the header + MAC sub-band, above the legend line.
   screen.setContentMargin(fui::Insets{
-      static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight +
-                           metrics.verticalSpacing),
+      // Tighter gap between the MAC subheader and the first row (12px
+      // instead of the default verticalSpacing), scoped to this screen only.
+      static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight + 12),
       static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
       static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + metrics.verticalSpacing * 2),
       static_cast<int16_t>(safe.x)});
