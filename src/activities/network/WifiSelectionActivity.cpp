@@ -143,8 +143,6 @@ void WifiSelectionActivity::onEnter() {
   uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
   app.setScreen(&WifiSelectionActivity::listScreen, this);
 
-  // TEMPORARY UI TEST: enter the real forget-network dialog.
-  // The normal UI above must already be registered so renderUi() can draw it.
   // Trigger first update to show scanning message
   requestUpdate();
 
@@ -956,6 +954,7 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   // Tap opens; long-press a saved network forgets it (physical buttons stay in loop()).
   props.inputMask = fui::InputTouch | fui::InputLongPress;
   props.valueInset = 1;  // air between the signal bars and the row edge
+  props.valueSignalYOffset = 2;  // raise only the signal bars
   props.sidePadding = 11;  // air between the row edge and the name text
   // Long SSIDs wrap onto a second line inside the row (two body lines always
   // fit the theme row height) instead of truncating; the trailing value is
