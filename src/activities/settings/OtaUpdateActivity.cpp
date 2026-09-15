@@ -126,7 +126,9 @@ void OtaUpdateActivity::render(RenderLock&&) {
   renderer.clearScreen();
 
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, tr(STR_UPDATE));
-  const auto height = renderer.getLineHeight(UI_12_FONT_ID);
+  // Matches SD firmware update's progress screen Y positions (both use
+  // UI_10_FONT_ID's line height for this calculation).
+  const auto height = renderer.getLineHeight(UI_10_FONT_ID);
   constexpr int textGap = 6;
   const auto top = (pageHeight - height) / 2;
 
@@ -190,11 +192,10 @@ void OtaUpdateActivity::render(RenderLock&&) {
              12},
         static_cast<int>(updaterProgress * 100), 100, UI_10_FONT_ID, percentY);
 
-    // Secondary status: centred below the progress bar in 10 pt italic.
+    // Secondary status: centred below the progress bar in 10 pt italic,
+    // matching the SD firmware update progress screen.
     const int statusY = barY + 12 + 12;
-    const std::string secondaryText =
-        std::to_string(updater.getProcessedSize()) + " / " +
-        std::to_string(updater.getTotalSize());
+    const std::string secondaryText = withoutEllipsis(tr(STR_FIRMWARE_UPDATE_DO_NOT_POWER_OFF));
 
     renderer.drawCenteredText(
         UI_10_FONT_ID, statusY, secondaryText.c_str(),
