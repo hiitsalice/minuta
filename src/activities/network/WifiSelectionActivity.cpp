@@ -613,33 +613,13 @@ void WifiSelectionActivity::loop() {
     return;
   }
 
-  // Handle save prompt state
+  // Handle save prompt state: button 1 = Cancel (skip save), button 2 =
+  // Save. No Up/Down navigation or dialog box; see renderSavePrompt().
   if (state == WifiSelectionState::SAVE_PROMPT) {
-    // Touch goes through the FreeInkApp: render() registered the dialog
-    // button hit rects; route the snapshot and let onPromptEvent dispatch.
-    const auto route = routeTouch(mappedInput);
-    if (route.routed && app.invalidated()) requestUpdate();
-    if (route) return;  // dispatched to onPromptEvent
-
-    if (mappedInput.wasPressed(MappedInputManager::Button::Up) ||
-        mappedInput.wasPressed(MappedInputManager::Button::Left)) {
-      if (savePromptSelection > 0) {
-        savePromptSelection--;
-        requestUpdate();
-      }
-    } else if (mappedInput.wasPressed(MappedInputManager::Button::Down) ||
-               mappedInput.wasPressed(MappedInputManager::Button::Right)) {
-      if (savePromptSelection < 1) {
-        savePromptSelection++;
-        requestUpdate();
-      }
-    } else if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
-      if (savePromptSelection == 0) {
-        // User chose "Yes" - save the password
-        RenderLock lock(*this);
-        WIFI_STORE.addCredential(selectedSSID, enteredPassword);
-      }
-      // Show the Connected result before returning to the parent.
+    if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+      // Save the password.
+      RenderLock lock(*this);
+      WIFI_STORE.addCredential(selectedSSID, enteredPassword);
       state = WifiSelectionState::CONNECTED;
       requestUpdate();
     } else if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
@@ -807,12 +787,12 @@ std::string WifiSelectionActivity::getSignalStrengthIndicator(const int32_t rssi
     return "||||";  // Excellent
   }
   if (rssi >= -60) {
-    return " |||";  // Good
+    return "|||";  // Good
   }
   if (rssi >= -70) {
-    return "  ||";  // Fair
+    return "||";  // Fair
   }
-  return "   |";  // Very weak
+  return "|";  // Very weak
 }
 
 void WifiSelectionActivity::render(RenderLock&&) {
@@ -866,12 +846,12 @@ void WifiSelectionActivity::render(RenderLock&&) {
       renderConnected(&screen, &metrics);
       break;
     case WifiSelectionState::SAVE_PROMPT:
+      renderSavePrompt(&screen, &metrics);
+      break;
     case WifiSelectionState::FORGET_PROMPT: {
       renderUi();
 
-      const auto labels =
-          mappedInput.mapLabels(state == WifiSelectionState::SAVE_PROMPT ? tr(STR_CANCEL) : tr(STR_BACK),
-                                tr(STR_SELECT), "Up", "Down");
+      const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_SELECT), "Up", "Down");
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
       break;
     }
@@ -935,9 +915,9 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
       // Highlight box extended 9px beyond the header-aligned edges on each
       // side, for visible padding around the row content (sidePadding and
       // valueInset below pull the text back 3px to partially offset it).
-      static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width) - metrics.headerSidePadding + 9),
+      static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width) - metrics.headerSidePadding + 5),
       static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + metrics.verticalSpacing * 2),
-      static_cast<int16_t>(safe.x - 9)});
+      static_cast<int16_t>(safe.x - 12)});
 
   if (state == WifiSelectionState::SAVE_PROMPT || state == WifiSelectionState::FORGET_PROMPT) {
     buildPromptDialog(screen);
@@ -981,7 +961,7 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   // fit the theme row height) instead of truncating; the trailing value is
   // just the short status glyphs, so skip the balanced 60%-band wrap cap.
   props.labelText = screen.theme().bodyText;
-  props.labelText.maxLines = 2;
+  props.labelText.maxLines = 1;
   props.labelYOffset = 1;
   props.balanceWrappedLabelWithValue = false;
   listNav.selected = static_cast<int>(selectedNetworkIndex);
@@ -1156,6 +1136,24 @@ void WifiSelectionActivity::renderConnectionFailed(const Rect* screen, const The
                             432, connectionError.c_str());
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+}
+
+void WifiSelectionActivity::renderSavePrompt(const Rect* screen, const ThemeMetrics* metrics) const {
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 404, selectedSSID.c_str());
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 432, "Connected! Save password?", true,
+                            EpdFontFamily::BOLD);
+
+  const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Save", "", "");
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+}
+
+void WifiSelectionActivity::renderForgetPrompt(const Rect* screen, const ThemeMetrics* metrics) const {
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 404, selectedSSID.c_str());
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 432, "Forget and remove password?", true,
+                            EpdFontFamily::BOLD);
+
+  const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), tr(STR_FORGET_BUTTON), "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 

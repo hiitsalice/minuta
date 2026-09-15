@@ -34,6 +34,12 @@ bool WifiCredentialStore::fromJson(JsonVariantConst doc) {
   credentials.reserve(std::min(arr.size(), MAX_NETWORKS));
   bool needsResave = false;
 
+#ifdef SIMULATOR
+  // Simulator-only saved open network for Wi-Fi UI testing.
+  // An empty password keeps the network open while making it appear saved.
+  credentials.push_back({"Minuta Saved Open Network", ""});
+#endif
+
   for (JsonObjectConst obj : arr) {
     if (credentials.size() >= MAX_NETWORKS) break;
     WifiCredential cred;
