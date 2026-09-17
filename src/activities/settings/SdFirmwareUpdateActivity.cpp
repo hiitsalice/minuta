@@ -9,7 +9,6 @@
 
 #include "MappedInputManager.h"
 #include "activities/home/FileBrowserActivity.h"
-#include "activities/util/ConfirmationActivity.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "network/FirmwareFlasher.h"
@@ -117,15 +116,7 @@ void SdFirmwareUpdateActivity::promptConfirmation() {
     RenderLock lock(*this);
     state = State::CONFIRMING;
   }
-  // Show "Update firmware?" with the file path as the body line.
-  std::string heading = tr(STR_FIRMWARE_UPDATE_PROMPT);
-  // Use the basename only to keep the body short.
-  std::string body = firmwarePath;
-  const auto pos = body.find_last_of('/');
-  if (pos != std::string::npos) body = body.substr(pos + 1);
-
-  startActivityForResult(std::make_unique<ConfirmationActivity>(renderer, mappedInput, heading, body),
-                         [this](const ActivityResult& result) { onConfirmationResult(result); });
+  requestUpdate();
 }
 
 void SdFirmwareUpdateActivity::onConfirmationResult(const ActivityResult& result) {
@@ -191,6 +182,21 @@ void SdFirmwareUpdateActivity::performUpdate() {
 }
 
 void SdFirmwareUpdateActivity::loop() {
+  // Handle update confirmation: button 1 = Cancel, button 2 = Update. No
+  // sub-activity popup; see the CONFIRMING render block.
+  if (state == State::CONFIRMING) {
+    if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+      ActivityResult result;
+      result.isCancelled = false;
+      onConfirmationResult(result);
+    } else if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+      ActivityResult result;
+      result.isCancelled = true;
+      onConfirmationResult(result);
+    }
+    return;
+  }
+
   if (state == State::FAILED) {
     int x = 0;
     int y = 0;
@@ -279,8 +285,19 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
     }
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  } else if (state == State::CONFIRMING) {
+    // Fixed layout per audit: header bold at Y=404, firmware name at Y=432.
+    std::string firmwareName = firmwarePath;
+    const auto pos = firmwareName.find_last_of('/');
+    if (pos != std::string::npos) firmwareName = firmwareName.substr(pos + 1);
+
+    renderer.drawCenteredText(UI_10_FONT_ID, 404, "Update firmware?", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 432, firmwareName.c_str());
+
+    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Update", "", "");
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else {
-    // PICKING / CONFIRMING: a sub-activity is on top, nothing to draw.
+    // PICKING: a sub-activity is on top, nothing to draw.
     if (recoveryMode) {
       renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_RECOVERY_MODE_HINT)).c_str());
     }
