@@ -78,16 +78,6 @@ void OtaUpdateActivity::onWifiSelectionComplete(const bool success) {
     RenderLock lock(*this);
     state = WAITING_CONFIRMATION;
   }
-  const char* options[] = {tr(STR_CANCEL), tr(STR_UPDATE)};
-  // Default the selection to Update so the hardware Confirm button installs,
-  // matching the pre-popup layout (Back = cancel, Confirm = update).
-  confirmPopup.show(tr(STR_NEW_UPDATE), options, 2, 1, [this](const int idx) {
-    if (idx == 1) {
-      runUpdateInstall();
-    } else {
-      finish();
-    }
-  }, true);
   requestUpdate();
 }
 
@@ -156,28 +146,16 @@ void OtaUpdateActivity::render(RenderLock&&) {
     // Live-verified: input inert, layout correct (confirmed via static test build).
     renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_CHECKING_UPDATE));
   } else if (state == WAITING_CONFIRMATION) {
-    // Version info sits in the upper part of the screen so the centered
-    // Cancel/Update popup doesn't cover it (same layout as ConfirmationActivity).
-    const int headerBottom = metrics.topPadding + metrics.headerHeight;
-    const int infoTop = headerBottom + 18;
+    // Fixed layout per audit: header bold at Y=390, current version at
+    // Y=418, new version at Y=442.
+    renderer.drawCenteredText(UI_10_FONT_ID, 390, "Update available!", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 418,
+                              (std::string("Current: ") + CROSSPOINT_VERSION).c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, 442,
+                              (std::string("New: ") + updater.getLatestVersion()).c_str());
 
-    renderer.drawText(
-        UI_10_FONT_ID,
-        metrics.contentSidePadding,
-        infoTop,
-        (std::string(tr(STR_CURRENT_VERSION)) + CROSSPOINT_VERSION).c_str(),
-        true,
-        EpdFontFamily::ITALIC);
-
-    renderer.drawText(
-        UI_10_FONT_ID,
-        metrics.contentSidePadding,
-        infoTop + renderer.getLineHeight(UI_10_FONT_ID) + textGap + 6,
-        (std::string(tr(STR_NEW_VERSION)) + updater.getLatestVersion()).c_str(),
-        true,
-        EpdFontFamily::BOLD);
-
-    if (confirmPopup.processRender(renderer, mappedInput)) return;
+    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Update", "", "");
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == UPDATE_IN_PROGRESS) {
     // Keep the progress bar at its existing position.
     const int barY = top + height + textGap;
@@ -275,10 +253,14 @@ void OtaUpdateActivity::runUpdateInstall() {
 }
 
 void OtaUpdateActivity::loop() {
+  // Handle update confirmation: button 1 = Cancel, button 2 = Update. No
+  // popup box; see the WAITING_CONFIRMATION render block.
   if (state == WAITING_CONFIRMATION) {
-    if (confirmPopup.handleInput(mappedInput, [this] { requestUpdate(); })) return;
-    // Popup dismissed without a selection (Back button or tap outside): cancel.
-    finish();
+    if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+      runUpdateInstall();
+    } else if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+      finish();
+    }
     return;
   }
 
