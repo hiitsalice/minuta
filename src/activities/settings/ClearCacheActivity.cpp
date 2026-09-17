@@ -14,14 +14,6 @@ void ClearCacheActivity::onEnter() {
   Activity::onEnter();
 
   state = WARNING;
-  const char* options[] = {tr(STR_CANCEL), tr(STR_CLEAR_BUTTON)};
-  confirmPopup.show(tr(STR_CLEAR_READING_CACHE), options, 2, 0, [this](int idx) {
-    if (idx == 1) {
-      beginClear();
-    } else {
-      goBack();
-    }
-  }, true);
   requestUpdate();
 }
 
@@ -37,15 +29,10 @@ void ClearCacheActivity::render(RenderLock&&) {
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, tr(STR_CLEAR_READING_CACHE));
 
   if (state == WARNING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 60, tr(STR_CLEAR_CACHE_WARNING_1), true);
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 30, tr(STR_CLEAR_CACHE_WARNING_2), true,
-                              EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 10, tr(STR_CLEAR_CACHE_WARNING_3), true);
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 30, tr(STR_CLEAR_CACHE_WARNING_4), true);
+    // Fixed layout per audit: bold, Y=420.
+    renderer.drawCenteredText(UI_10_FONT_ID, 420, "Clear reading cache?", true, EpdFontFamily::BOLD);
 
-    if (confirmPopup.processRender(renderer, mappedInput)) return;
-
-    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), tr(STR_CLEAR_BUTTON), "", "");
+    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Clear", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
     return;
@@ -58,12 +45,13 @@ void ClearCacheActivity::render(RenderLock&&) {
   }
 
   if (state == SUCCESS) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, tr(STR_CACHE_CLEARED), true, EpdFontFamily::BOLD);
+    // Fixed layout per audit: header bold at Y=404, result at Y=432.
+    renderer.drawCenteredText(UI_10_FONT_ID, 404, tr(STR_CACHE_CLEARED), true, EpdFontFamily::BOLD);
     std::string resultText = std::to_string(clearedCount) + " " + std::string(tr(STR_ITEMS_REMOVED));
     if (failedCount > 0) {
       resultText += ", " + std::to_string(failedCount) + " " + std::string(tr(STR_FAILED_LOWER));
     }
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 10, resultText.c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, 432, resultText.c_str());
 
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -72,9 +60,9 @@ void ClearCacheActivity::render(RenderLock&&) {
   }
 
   if (state == FAILED) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 - 20, tr(STR_CLEAR_CACHE_FAILED), true,
-                              EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 10, tr(STR_CHECK_SERIAL_OUTPUT));
+    // Fixed layout per audit: header bold at Y=404, reason at Y=432.
+    renderer.drawCenteredText(UI_10_FONT_ID, 404, tr(STR_CLEAR_CACHE_FAILED), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 432, tr(STR_CHECK_SERIAL_OUTPUT));
 
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -141,14 +129,14 @@ void ClearCacheActivity::clearCache() {
 }
 
 void ClearCacheActivity::loop() {
+  // Handle clear-cache confirmation: button 1 = Cancel, button 2 = Clear.
+  // No popup box; see the WARNING render block.
   if (state == WARNING) {
     if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       LOG_DBG("CLEAR_CACHE", "User cancelled");
       goBack();
       return;
     }
-
-    if (confirmPopup.handleInput(mappedInput, [this] { requestUpdate(); })) return;
 
     if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
       beginClear();
