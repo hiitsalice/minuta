@@ -740,6 +740,10 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
           std::make_unique<EpubReaderChapterSelectionActivity>(renderer, mappedInput, epub, spineIdx),
           [this](const ActivityResult& result) {
             if (result.isCancelled) {
+              // Force a render cycle so renderBook() rebuilds `section`
+              // (reset above) before openReaderMenu() reads its page/progress
+              // values; otherwise the menu briefly shows 0% and no page number.
+              requestUpdateAndWait();
               openReaderMenu();
               return;
             }
@@ -781,6 +785,10 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
                                  }
                                  section.reset();
                                }
+                               // Force a render cycle so renderBook() rebuilds `section`
+                               // before openReaderMenu() reads its page/progress values;
+                               // otherwise the menu briefly shows 0% and no page number.
+                               requestUpdateAndWait();
                                openReaderMenu();
                              });
       break;
