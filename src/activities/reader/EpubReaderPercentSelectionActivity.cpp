@@ -43,14 +43,25 @@ void EpubReaderPercentSelectionActivity::onEnter() {
 void EpubReaderPercentSelectionActivity::onExit() { Activity::onExit(); }
 
 void EpubReaderPercentSelectionActivity::adjustPercent(const int delta) {
-  // Wrap using a 100-value ring (0% and 100% are the same wrap point), but keep 100 as the
-  // natural landing value when reached without crossing the boundary (e.g. 90 + 10 = 100).
-  const int raw = percent + delta;
-  if (raw > 0 && raw % 100 == 0) {
-    percent = 100;
+  // 0% and 100% are the same wrap point, but 100% remains a valid landing value.
+  if (percent == 100 && delta > 0) {
+    // 100% is the same boundary as 0%, so +1 wraps to 0%.
+    percent = (delta == 1) ? 0 : delta % 100;
+  } else if (percent == 0 && delta < 0) {
+    // Leaving the 0% boundary backwards wraps to 100% for a 1% step.
+    percent = (delta == -1) ? 100 : 100 + delta;
   } else {
-    percent = ((raw % 100) + 100) % 100;
+    const int raw = percent + delta;
+
+    if (raw > 100) {
+      percent = raw % 100;
+    } else if (raw < 0) {
+      percent = (raw % 100 + 100) % 100;
+    } else {
+      percent = raw;
+    }
   }
+
   requestUpdate();
 }
 
@@ -169,6 +180,11 @@ void EpubReaderPercentSelectionActivity::buildPercentScreen(UiScreen& screen) {
   spec.okAction = ACTION_OK;
   spec.hintLine1 = hint1;
   spec.hintLine2 = hint2;
+  spec.readoutY = 376;
+  spec.sliderY = 410;
+  spec.readoutFontId = SMALL_FONT_ID;
+  spec.hintLine1Y = 436;
+  spec.hintLine2Y = 464;
   buildSliderDialogScreen(screen, renderer, mappedInput, spec);
 }
 
