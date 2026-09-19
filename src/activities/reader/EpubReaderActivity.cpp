@@ -207,6 +207,11 @@ bool EpubReaderActivity::loadBook() {
         LOG_DBG("ERS", "Ignoring stale last-page sentinel from progress cache");
         nextPageNumber = 0;
       }
+      if (currentSpineIndex >= epub->getSpineItemsCount()) {
+        LOG_DBG("ERS", "Book was previously finished; restarting from first page");
+        currentSpineIndex = 0;
+        nextPageNumber = 0;
+      }
       cachedSpineIndex = currentSpineIndex;
       LOG_DBG("ERS", "Loaded cache: %d, %d", currentSpineIndex, nextPageNumber);
     }
@@ -473,22 +478,37 @@ void EpubReaderActivity::loop() {
     }
   }
 
-  if (handleEndOfBookMenu()) {
-    return;
-  }
-
-  if (confirmReleased) {
-    openReaderMenu();
-  }
-
   if (footnoteDepth > 0 && mappedInput.wasReleased(MappedInputManager::Button::Back) &&
       mappedInput.getHeldTime() < ReaderUtils::GO_BACK_OR_HOME_MS) {
     restoreSavedPosition();
     return;
   }
 
+  if (isAtEndOfBook()) {
+    if (mappedInput.wasReleased(MappedInputManager::Button::Left) ||
+        mappedInput.wasReleased(MappedInputManager::Button::PageBack)) {
+      onReturnFromEndOfBook();
+      requestUpdate();
+      return;
+    }
+
+    if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+      if (epub && !saveProgress(0, 0, 0)) {
+        LOG_ERR("ERS", "Failed to reset finished-book progress");
+      }
+      onGoHome();
+      return;
+    }
+
+    return;
+  }
+
   if (handleBackNavigation()) {
     return;
+  }
+
+  if (confirmReleased) {
+    openReaderMenu();
   }
 
   if (SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::FOOTNOTES &&
@@ -530,10 +550,6 @@ void EpubReaderActivity::loop() {
 
   auto [prevTriggered, nextTriggered] = ReaderUtils::detectPageTurn(mappedInput);
   if (!prevTriggered && !nextTriggered) {
-    return;
-  }
-
-  if (handleEndOfBookPageTurn(prevTriggered, nextTriggered)) {
     return;
   }
 

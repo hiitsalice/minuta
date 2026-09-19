@@ -93,58 +93,15 @@ void ReaderActivity::clearEndOfBookOptionsIfNeeded() {
   endOfBookOptions.reset();
 }
 
-bool ReaderActivity::handleEndOfBookMenu(const bool suppressConfirmRelease) {
-  if (!isAtEndOfBook() || !endOfBookOptionsReady.load(std::memory_order_acquire) || !endOfBookOptions->menuActive() ||
-      suppressConfirmRelease) {
-    return false;
-  }
-
-  std::string openPath;
-  switch (endOfBookOptions->handleMenuInput(mappedInput, &openPath)) {
-    case EndOfBookOptions::Action::OpenBook:
-      activityManager.goToReader(openPath);
-      return true;
-    case EndOfBookOptions::Action::GoHome:
-      onGoHome();
-      return true;
-    case EndOfBookOptions::Action::LastPage:
-      onReturnFromEndOfBook();
-      requestUpdate();
-      return true;
-    case EndOfBookOptions::Action::Redraw:
-      requestUpdate();
-      return true;
-    case EndOfBookOptions::Action::None:
-      return false;
-  }
-
-  return false;
-}
-
-bool ReaderActivity::handleEndOfBookPageTurn(const bool prevTriggered, const bool nextTriggered) {
-  if (!isAtEndOfBook()) return false;
-
-  if (endOfBookOptionsReady.load(std::memory_order_acquire) && endOfBookOptions->menuActive()) {
-    return true;
-  }
-  if (nextTriggered) {
-    onGoHome();
-  } else if (prevTriggered) {
-    onReturnFromEndOfBook();
-    requestUpdate();
-  }
-  return true;
-}
-
 void ReaderActivity::loop() {
   clearEndOfBookOptionsIfNeeded();
-  if (handleEndOfBookMenu()) return;
   if (handleFormatInput()) return;
   if (handleBackNavigation()) return;
 
+  if (isAtEndOfBook()) return;
+
   auto [prevTriggered, nextTriggered] = ReaderUtils::detectPageTurn(mappedInput);
   if (!prevTriggered && !nextTriggered) return;
-  if (handleEndOfBookPageTurn(prevTriggered, nextTriggered)) return;
 
   const unsigned long heldMs = mappedInput.getHeldTime();
   const bool skip = SETTINGS.longPressButtonBehavior == SETTINGS.CHAPTER_SKIP && heldMs >= ReaderUtils::SKIP_HOLD_MS;
