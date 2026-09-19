@@ -239,12 +239,12 @@ bool EpubReaderActivity::loadBook() {
 
 void EpubReaderActivity::openReaderMenu() {
   pendingManualTurn = 0;
-  const int currentPage = section ? section->currentPage + 1 : 0;
-  const int totalPages = section ? section->estimatedTotalPages() : 0;
+  const int currentPage = section ? section->currentPage + 1 : nextPageNumber + 1;
+  const int totalPages = section ? section->estimatedTotalPages() : cachedChapterTotalPageCount;
   float bookProgress = 0.0f;
-  if (epub->getBookSize() > 0 && section && section->estimatedTotalPages() > 0) {
-    const float chapterProgress =
-        static_cast<float>(section->currentPage) / static_cast<float>(section->estimatedTotalPages());
+  if (epub->getBookSize() > 0 && totalPages > 0) {
+    const int page = section ? section->currentPage : nextPageNumber;
+    const float chapterProgress = static_cast<float>(page) / static_cast<float>(totalPages);
     bookProgress = epub->calculateProgress(currentSpineIndex, chapterProgress) * 100.0f;
   }
   const int bookProgressPercent = clampPercent(static_cast<int>(bookProgress + 0.5f));
@@ -715,10 +715,6 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
           std::make_unique<EpubReaderChapterSelectionActivity>(renderer, mappedInput, epub, spineIdx),
           [this](const ActivityResult& result) {
             if (result.isCancelled) {
-              // Force a render cycle so renderBook() rebuilds `section`
-              // (reset above) before openReaderMenu() reads its page/progress
-              // values; otherwise the menu briefly shows 0% and no page number.
-              requestUpdateAndWait();
               openReaderMenu();
               return;
             }
@@ -760,10 +756,6 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
                                  }
                                  section.reset();
                                }
-                               // Force a render cycle so renderBook() rebuilds `section`
-                               // before openReaderMenu() reads its page/progress values;
-                               // otherwise the menu briefly shows 0% and no page number.
-                               requestUpdateAndWait();
                                openReaderMenu();
                              });
       break;
