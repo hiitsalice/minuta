@@ -69,6 +69,8 @@ void FontDownloadActivity::onBackButton() {
 
 void FontDownloadActivity::onEnter() {
   UiListActivity::onEnter();
+  // Outer screen, font names, and descriptions all at 10pt.
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
   WiFi.mode(WIFI_STA);
   startActivityForResult(std::make_unique<WifiSelectionActivity>(renderer, mappedInput),
                          [this](const ActivityResult& result) { onWifiSelectionComplete(!result.isCancelled); });
@@ -628,9 +630,11 @@ void FontDownloadActivity::activateSelected() {
 
 void FontDownloadActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
-  // Content below the GUI.drawHeader band, above the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight), 0,
-                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
+  // Content below the GUI.drawHeader band, above the button hints. Top
+  // trimmed slightly, bottom trimmed substantially (list rows no longer
+  // need the full button-hints band reserved above them).
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 2), 0,
+                                      static_cast<int16_t>(metrics.buttonHintsHeight - 8), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
 
   if (state_ == FAMILY_LIST && filteredIndices_.empty()) {
@@ -648,7 +652,20 @@ void FontDownloadActivity::buildScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(rowItems_.size());
   props.action = ACTION_ROW;
   props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
-  props.valueInset = 8;               // air between the status and the row edge
+  props.sidePadding = 7;
+  props.rowInset = static_cast<int16_t>(state_ == GROUP_LIST ? 33 : 11);
+  props.valueInset = static_cast<int16_t>(state_ == GROUP_LIST ? 3 : 0);               // air between the status and the row edge
+  // Font name at 10pt, description at 8pt (smaller than the theme's default
+  // 12pt menu rows), with a matching shorter row height so unused vertical
+  // space doesn't accumulate at the bottom of the list.
+  props.labelText = screen.theme().bodyText;
+  props.labelText.font = fui::GfxRendererTarget::FONT_BODY;
+  props.labelText.bold = (state_ == FAMILY_LIST);
+  props.subtitleText.font = fui::GfxRendererTarget::FONT_BODY;
+  props.subtitleGap = 6;  // air between the font name and its description (includes 1px lower shift)
+  props.labelYOffset = static_cast<int16_t>(state_ == FAMILY_LIST ? 2 : 0);  // FAMILY_LIST: 2px, GROUP_LIST: 0px
+  const int16_t lineHeight = screen.target().lineHeight(fui::GfxRendererTarget::FONT_BODY);
+  props.rowHeight = static_cast<int16_t>(state_ == FAMILY_LIST ? lineHeight * 2 + 26 : lineHeight + 18);
   syncListViewport(screen, props, /*hasSubtitle=*/state_ == FAMILY_LIST);
   screen.list(props);
 }
@@ -696,8 +713,9 @@ void FontDownloadActivity::rebuildFamilyRowItems() {
   for (int i = 0; i < listSize; i++) {
     fui::ListItem item;
     if (isDownloadAllRow(i)) {
-      rowLabels_[i] = std::string(tr(STR_DOWNLOAD_ALL)) + " (" + formatSize(totalDownloadSize()) + ")";
+      rowLabels_[i] = std::string("Install Everything") + " (" + formatSize(totalDownloadSize()) + ")";
       item.label = rowLabels_[i].c_str();
+      item.subtitle = "Install all fonts in this group";
     } else if (isUpdateAllRow(i)) {
       rowLabels_[i] = std::string(tr(STR_UPDATE_ALL)) + " (" + formatSize(totalUpdateSize()) + ")";
       item.label = rowLabels_[i].c_str();
@@ -812,7 +830,16 @@ void FontDownloadActivity::render(RenderLock&&) {
                          : tr(STR_ALL_FONTS);
   }
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, tr(STR_FONT_BROWSER),
-                 headerSubtitle);
+                 nullptr);
+
+  if (headerSubtitle != nullptr) {
+    const int16_t labelHeight = static_cast<int16_t>(renderer.getLineHeight(UI_10_FONT_ID));
+    const int16_t labelWidth = static_cast<int16_t>(renderer.getTextWidth(UI_10_FONT_ID, headerSubtitle));
+    const int16_t labelX = static_cast<int16_t>(pageWidth - metrics.headerSidePadding - labelWidth);
+    const int16_t labelY = static_cast<int16_t>(
+        metrics.topPadding + metrics.headerHeight - metrics.headerUnderlineSize - 10 - labelHeight);
+    renderer.drawText(UI_10_FONT_ID, labelX, labelY, headerSubtitle);
+  }
 
   const auto lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
   const auto contentTop = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing;
@@ -832,7 +859,7 @@ void FontDownloadActivity::render(RenderLock&&) {
     const char* confirmLabel = !hasVisibleFamilies            ? ""
                                : isSelectedFamilyDeletable()  ? tr(STR_DELETE)
                                : isUpdateAllRow(nav.selected) ? tr(STR_UPDATE)
-                                                              : tr(STR_DOWNLOAD);
+                                                              : "Install";
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabel, hasVisibleFamilies ? tr(STR_DIR_UP) : "",
                                               hasVisibleFamilies ? tr(STR_DIR_DOWN) : "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
