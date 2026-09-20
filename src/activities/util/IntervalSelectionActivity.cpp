@@ -187,13 +187,23 @@ void IntervalSelectionActivity::buildIntervalScreen(UiScreen& screen) {
   spec.okAction = ACTION_OK;
   spec.hintLine1 = hints[0];
   spec.hintLine2 = hints[1];
+  spec.readoutY = 376;
+  spec.sliderY = 410;
+  spec.readoutFontId = SMALL_FONT_ID;
+  spec.hintLine1Y = 436;
+  spec.hintLine2Y = 464;
   buildSliderDialogScreen(screen, renderer, mappedInput, spec);
 }
 
 void IntervalSelectionActivity::render(RenderLock&&) {
   renderer.clearScreen();
 
-  renderer.drawCenteredText(UI_12_FONT_ID, 15, I18N.get(titleId), true, EpdFontFamily::BOLD);
+  auto& theme = UITheme::getInstance();
+  auto metrics = theme.getMetrics();
+  Rect screen = theme.getScreenSafeArea(renderer, true, false);
+
+  GUI.drawHeader(renderer, Rect{screen.x, screen.y + metrics.topPadding, screen.width, metrics.headerHeight},
+                 I18N.get(titleId));
 
   // Value readout, slider, hints, and the touch Cancel/OK pair render through the
   // app so the interactive elements register touch hit rects.
