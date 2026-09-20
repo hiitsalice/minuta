@@ -353,7 +353,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   // strip (batteryBarHeight) — the legacy shared-line headers drew the battery
   // at the top edge, and it keeps the lower-right corner free for the manual
   // right label below.
-  const int16_t batteryEdgeInset = batteryDetached ? 12 : static_cast<int16_t>(tokens.headerSidePadding - 2);
+  const int16_t batteryEdgeInset = batteryDetached ? 12 : static_cast<int16_t>(tokens.headerSidePadding - 4);
   const int16_t batteryX = batteryLeft ? static_cast<int16_t>(band.x + batteryEdgeInset)
                                        : static_cast<int16_t>(band.right() - batteryEdgeInset - batteryReserve);
   const int16_t batteryH = static_cast<int16_t>(metrics.batteryBarHeight);
