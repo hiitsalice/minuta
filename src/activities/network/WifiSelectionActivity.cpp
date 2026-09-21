@@ -33,16 +33,6 @@ void WifiSelectionActivity::onRowEvent(const fui::ActionEvent& event, void* user
   if (self->state != WifiSelectionState::NETWORK_LIST) return;
   if (event.value < 0 || event.value >= static_cast<int16_t>(self->networks.size())) return;
   self->selectedNetworkIndex = static_cast<size_t>(event.value);
-  // Long-press a saved network to forget it (mirrors the Left-button hold in loop()).
-  if (event.longPress) {
-    if (self->networks[self->selectedNetworkIndex].hasSavedPassword) {
-      self->selectedSSID = self->networks[self->selectedNetworkIndex].ssid;
-      self->state = WifiSelectionState::FORGET_PROMPT;
-      self->app.clearTapFlash();
-      self->requestUpdate();
-    }
-    return;
-  }
   // Selection leaves this screen (password entry / connecting); a lingering
   // flash would gray an unrelated row.
   self->app.clearTapFlash();
@@ -685,24 +675,6 @@ void WifiSelectionActivity::loop() {
       }
     }
 
-    // Touch goes through the FreeInkApp: render() registered the row hit
-    // rects; route the snapshot and let onRowEvent dispatch. Long-press on a
-    // network row fires "forget" while the finger is down.
-    const auto route = routeTouch(mappedInput, /*withLongPress=*/true);
-    if (route.routed && app.invalidated()) requestUpdate();
-    if (route) return;  // dispatched to onRowEvent
-
-    if (!networks.empty()) {
-      // Swipes scroll the viewport; the selection stays put and button
-      // navigation pulls the view back to it.
-      const auto swipe = mappedInput.wasSwipe();
-      if (swipe == MappedInputManager::SwipeDir::Up || swipe == MappedInputManager::SwipeDir::Down) {
-        const int delta = swipe == MappedInputManager::SwipeDir::Up ? listNav.visibleRows : -listNav.visibleRows;
-        if (listNav.scrollBy(delta, static_cast<int>(networks.size()))) requestUpdate();
-        return;
-      }
-    }
-
     const auto moveSelection = [this](const int index) {
       selectedNetworkIndex = static_cast<size_t>(index);
       listNav.selected = index;
@@ -855,22 +827,6 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
     // renderNetworkList() now draws the full "No networks found" screen
     // (header, hint, Retry button) for non-touch boards, so skip the
     // framework's own text here to avoid duplicate rendering.
-    if (mappedInput.hasTouch()) {
-      screen.centeredText(tr(STR_NO_NETWORKS), screen.theme().bodyText);
-      // Touch has no OK button to rescan with; offer the retry on screen instead
-      // of the "Press OK" hint renderNetworkList draws for button boards.
-      const auto& theme = screen.theme();
-      const fui::Rect body = screen.body();
-      const int16_t buttonWidth = static_cast<int16_t>(body.width / 2);
-      const fui::Rect buttonRect{static_cast<int16_t>(body.x + (body.width - buttonWidth) / 2),
-                                 static_cast<int16_t>(body.y + body.height * 2 / 3), buttonWidth, theme.rowHeight};
-      fui::ButtonProps scan;
-      scan.label = tr(STR_RETRY);
-      scan.action = ACTION_SCAN;
-      scan.inputMask = fui::InputTouch;
-      scan.text = theme.bodyText;
-      fui::button(screen.frame(), buttonRect, scan);
-    }
     return;
   }
 
@@ -880,8 +836,6 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   props.items = networkRowItems.data();
   props.count = static_cast<uint16_t>(networkRowItems.size());
   props.action = ACTION_ROW;
-  // Tap opens; long-press a saved network forgets it (physical buttons stay in loop()).
-  props.inputMask = fui::InputTouch | fui::InputLongPress;
   props.valueInset = 1;  // air between the signal bars and the row edge
   props.valueSignalYOffset = 2;  // raise only the signal bars
   props.sidePadding = 11;  // air between the row edge and the name text
@@ -893,10 +847,7 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   props.labelYOffset = 1;
   props.balanceWrappedLabelWithValue = false;
   listNav.selected = static_cast<int>(selectedNetworkIndex);
-  int16_t rowHeight = screen.theme().rowHeight;
-  if (!mappedInput.hasTouch()) {
-    rowHeight = metrics.listRowHeight;
-  }
+  const int16_t rowHeight = metrics.listRowHeight;
   props.rowHeight = rowHeight;
   listNav.syncToProps(screen.body(), rowHeight, screen.theme().listRowGap, static_cast<int>(networks.size()), props);
   screen.list(props);
@@ -904,7 +855,7 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
 
 void WifiSelectionActivity::renderNetworkList(const Rect* screen, const ThemeMetrics* metrics) {
   renderUi();
-  if (networks.empty() && !mappedInput.hasTouch()) {
+  if (networks.empty()) {
     // "No networks found" screen: bold header at Y=404, retry hint at Y=432.
     // Buttons 1-3 are inert here, so only the Retry (button 4) label is shown
     // and the encrypted/saved legend is omitted.
