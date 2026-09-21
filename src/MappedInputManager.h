@@ -28,7 +28,6 @@ class MappedInputManager {
     ScreenUp,
     ScreenDown
   };
-  enum class SwipeDir { None, Left, Right, Up, Down };
 
   struct Labels {
     const char* btn1;
@@ -47,17 +46,6 @@ class MappedInputManager {
   bool consumeSuppressedRelease() const;
   void suppressRelease(Button button) const;
   bool isPressed(Button button) const;
-  // The ordinary XTEINK X4 has no touchscreen.
-  constexpr bool wasTapInRect(int, int, int, int) const { return false; }
-
-  enum class RowTouch : uint8_t { None, Down, Tap };
-  constexpr RowTouch rowTouch(int&, int, int, int, int = 0, int = INT32_MAX, int = 0) const {
-    return RowTouch::None;
-  }
-  constexpr RowTouch colTouch(int&, int, int, int, int, int, int = 0) const {
-    return RowTouch::None;
-  }
-
   constexpr bool wasBackGesture() const { return false; }
   constexpr bool wasMenuGesture() const { return false; }
   bool wasAnyPressed() const;

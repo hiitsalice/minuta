@@ -142,9 +142,6 @@ class OptionPopup {
     props.options = options;
     props.optionCount = count;
     props.verticalOptions = true;
-    // Touch only: physical buttons stay on the legacy wrap/confirm path above,
-    // so the buffer never competes with it for focus/confirm dispatch.
-    props.inputMask = fui::InputTouch;
     props.titleText.font = compactMode
         ? fui::GfxRendererTarget::FONT_SMALL
         : fui::GfxRendererTarget::FONT_BODY;
@@ -193,7 +190,6 @@ class OptionPopup {
 
     // Chrome guard first, options after: route() scans newest-first, so the
     // option buttons win inside the dialog and the guard absorbs the rest.
-    frame.hit(dialogRect, ACTION_CHROME, 0, fui::InputTouch);
     fui::optionDialog(frame, dialogRect, props);
     // Atomically make this generation the one handleInput() reads, now that
     // every hit() call for this frame is done.

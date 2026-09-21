@@ -80,14 +80,11 @@ inline void buildSliderDialogScreen(UiAppHost::UiScreen& screen, const GfxRender
       fui::Rect{static_cast<int16_t>(minusHit.x + glyphInset), minusGlyphY, stepW, glyphLh}, "-", glyph);
   screen.target().text(
       fui::Rect{static_cast<int16_t>(plusHit.x - glyphInset), plusGlyphY, stepW, glyphLh}, "+", glyph);
-  screen.frame().hit(minusHit, spec.stepAction, -1, fui::InputTouch);
-  screen.frame().hit(plusHit, spec.stepAction, +1, fui::InputTouch);
 
   fui::SliderProps props;
   props.value = spec.value;
   props.max = spec.max;
   props.action = spec.sliderAction;
-  props.inputMask = fui::InputTouch | fui::InputDrag;
   constexpr int16_t sideGap = 56;
   fui::slider(screen.frame(), row.inset(fui::Insets{0, sideGap, 0, sideGap}), props);
 
