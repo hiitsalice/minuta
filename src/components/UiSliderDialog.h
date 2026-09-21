@@ -91,13 +91,6 @@ inline void buildSliderDialogScreen(UiAppHost::UiScreen& screen, const GfxRender
   constexpr int16_t sideGap = 56;
   fui::slider(screen.frame(), row.inset(fui::Insets{0, sideGap, 0, sideGap}), props);
 
-  if (mappedInput.hasTouch()) {
-    // Touch devices drive the slider directly and confirm/cancel on screen; the
-    // physical-button step hints are hidden there — same rule as GUI.drawButtonHints.
-    addDialogCancelOk(screen, spec.cancelAction, spec.okAction);
-    return;
-  }
-
   // Two-line step hint (front buttons = fine step, side buttons = coarse step),
   // preformatted by the caller so the layout doesn't depend on a separator
   // hidden in translated text.

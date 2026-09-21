@@ -284,7 +284,7 @@ void OpdsBookBrowserActivity::buildStatusScreen(UiScreen& screen) {
   if (state == BrowserState::ERROR) {
     const int16_t lh = screen.target().lineHeight(centered.font);
     const int16_t gap = screen.theme().spaceMd;
-    const bool showTapHint = mappedInput.hasTouch();
+    const bool showTapHint = false;
     const int16_t blockH = static_cast<int16_t>(lh * (showTapHint ? 3 : 2) + gap * (showTapHint ? 2 : 1));
     const fui::Rect body = screen.body();
     if (body.height > blockH) screen.spacer(static_cast<int16_t>((body.height - blockH) / 2));
