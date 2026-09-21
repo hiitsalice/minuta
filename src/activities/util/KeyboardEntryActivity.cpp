@@ -486,52 +486,6 @@ fui::Rect KeyboardEntryActivity::keyboardRect() const {
 }
 
 void KeyboardEntryActivity::loop() {
-  int tx = 0;
-  int ty = 0;
-
-  size_t touchedCursorPos = 0;
-  if (mappedInput.wasScreenTapped(tx, ty) && cursorPositionFromPoint(tx, ty, touchedCursorPos)) {
-    cursorPos = std::min(touchedCursorPos, text.length());
-    // The masked text field maps taps per byte; snap back to a boundary so
-    // the cursor never lands inside a multi-byte character.
-    while (cursorPos > 0 && cursorPos < text.length() && (static_cast<uint8_t>(text[cursorPos]) & 0xC0) == 0x80) {
-      cursorPos--;
-    }
-    cursorMode = false;
-    togglePos = false;
-    hintVisible = false;
-    touchRouter.reset();
-    requestUpdate();
-    return;
-  }
-
-  if (!cursorMode && interactionsReady) {
-    const bool pressedDown = mappedInput.wasScreenTouchDown(tx, ty);
-    int tapX = 0;
-    int tapY = 0;
-    const bool tapped = mappedInput.wasScreenTapped(tapX, tapY);
-    int hx = 0;
-    int hy = 0;
-    const bool inContact = mappedInput.isScreenTouchHeld(hx, hy);
-
-    const fui::TouchHoldRouter::Result result =
-        touchRouter.update(interactions, pressedDown, static_cast<int16_t>(tx), static_cast<int16_t>(ty), tapped,
-                           static_cast<int16_t>(tapX), static_cast<int16_t>(tapY), inContact, millis());
-    if (result.event) {
-      syncSelectionToValue(result.event.value);
-      if (activateValue(result.event.value, result.event.longPress)) {
-        requestUpdate();
-      }
-      return;
-    }
-    if (result.activeChanged) {
-      requestUpdate();
-    }
-    if (pressedDown || tapped) {
-      return;
-    }
-  }
-
   if (!cursorMode && mappedInput.wasPressed(MappedInputManager::Button::Up)) {
     upHeld = true;
     upLongHandled = false;
