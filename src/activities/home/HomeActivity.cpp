@@ -235,17 +235,6 @@ void HomeActivity::loop() {
       requestUpdate();
     });
 
-    const auto swipe = mappedInput.wasSwipe();
-    if (swipe == MappedInputManager::SwipeDir::Up) {
-      selectorIndex = ButtonNavigator::nextIndex(selectorIndex, menuCount);
-      requestUpdate();
-      return;
-    }
-    if (swipe == MappedInputManager::SwipeDir::Down) {
-      selectorIndex = ButtonNavigator::previousIndex(selectorIndex, menuCount);
-      requestUpdate();
-      return;
-    }
   }
 
   if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM) {

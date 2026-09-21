@@ -260,16 +260,6 @@ void BmpViewerActivity::loop() {
     return;
   }
 
-  const auto swipe = mappedInput.wasSwipe();
-  if (swipe == MappedInputManager::SwipeDir::Left) {
-    openSibling(1);
-    return;
-  }
-  if (swipe == MappedInputManager::SwipeDir::Right) {
-    openSibling(-1);
-    return;
-  }
-
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     if (canSetSleepCover()) doSetSleepCover();
     return;

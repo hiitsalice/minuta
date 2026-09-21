@@ -113,16 +113,6 @@ void EpubReaderPercentSelectionActivity::loop() {
     return;
   }
 
-  const auto swipe = mappedInput.wasSwipe();
-  if (swipe == MappedInputManager::SwipeDir::Right) {
-    adjustPercent(kLargeStep);
-    return;
-  }
-  if (swipe == MappedInputManager::SwipeDir::Left) {
-    adjustPercent(-kLargeStep);
-    return;
-  }
-
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     confirm();
     return;
