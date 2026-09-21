@@ -56,12 +56,6 @@ bool UiListActivity::handleButtons() {
   return false;
 }
 
-bool UiListActivity::routeListTouch() {
-  // Touch goes through the FreeInkApp: render() registered the row hit rects;
-  // route the snapshot and let the action trampoline dispatch.
-  return false;
-}
-
 void UiListActivity::moveSelectionTo(const int index) {
   {
     // The render task reads nav mid-build (syncToProps, layout feedback); a
@@ -77,25 +71,6 @@ void UiListActivity::moveSelectionTo(const int index) {
 void UiListActivity::loop() {
   if (handleCustomInput()) return;
   if (handleButtons()) return;
-  if (routeListTouch()) return;
-
-  // Swipes scroll the viewport; the selection stays put (it may scroll
-  // off-screen) and button navigation pulls the view back to it.
-  const auto swipe = mappedInput.wasSwipe();
-  if (swipe == MappedInputManager::SwipeDir::Up || swipe == MappedInputManager::SwipeDir::Down) {
-    bool moved = false;
-    {
-      // Same nav-vs-render race as moveSelectionTo: the render task writes
-      // pageRows/top mid-build, so read and mutate under one lock.
-      RenderLock lock(*this);
-      auto& n = activeNav();
-      const int delta = swipe == MappedInputManager::SwipeDir::Up ? n.pageRows() : -n.pageRows();
-      moved = n.scrollBy(delta, listCount());
-    }
-    if (moved) requestUpdate();
-    return;
-  }
-
   navigateButtons();
 }
 

@@ -87,7 +87,6 @@ class UiListActivity : public Activity, protected UiAppHost {
   static void rowActionTrampoline(const freeink::ui::ActionEvent& event, void* user);
   // Named apart from UiAppHost::routeTouch so the host overload stays visible
   // (not name-hidden) to subclasses with extra touch surfaces.
-  bool routeListTouch();
 
   const bool wantsTouchLongPress;
 };
