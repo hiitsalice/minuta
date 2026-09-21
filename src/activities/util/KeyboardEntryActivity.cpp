@@ -134,9 +134,6 @@ void KeyboardEntryActivity::onEnter() {
   rightLongHandled = false;
   savedCursorPos = 0;
   rightStartCursorPos = 0;
-  touchRouter.reset();
-  touchRouter.holdMs = TOUCH_LONG_PRESS_MS;
-  touchRouter.overrideHoldMs = TOUCH_DEL_LONG_PRESS_MS;
   interactionsReady = false;
   requestUpdate();
 }

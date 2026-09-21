@@ -433,7 +433,6 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
   statusMessage = book.title;
   downloadProgress = downloadTotal = 0;
   cancelDownload = false;
-  goHomeAfterCancel = false;
   requestUpdate(true);
 
   // Build full download URL relative to the current feed, not the root server URL
@@ -488,13 +487,8 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
     clearBookCache(filename);
     state = BrowserState::BROWSING;
   } else if (result == HttpDownloader::ABORTED) {
-    // User cancelled; the partial file is already removed. Back to the list,
-    // or straight home when the abort came from the home gesture.
+    // User cancelled; the partial file is already removed. Back to the list.
     LOG_INF("OPDS", "Download cancelled");
-    if (goHomeAfterCancel) {
-      onGoHome();
-      return;
-    }
     state = BrowserState::BROWSING;
   } else {
     LOG_ERR("OPDS", "Download failed: %d", static_cast<int>(result));

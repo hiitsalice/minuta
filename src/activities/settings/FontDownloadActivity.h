@@ -94,7 +94,6 @@ class FontDownloadActivity final : public UiListActivity {
   bool cancelRequested_ = false;
   // Set when the cancel came from the home gesture (consumed by the download
   // callback's own input pump); exit to home after the abort unwinds.
-  bool goHomeRequested_ = false;
 
   // Shared cache for group and family rows. It is rebuilt only when the visible
   // list changes, never for cursor movement or tap flash repaints.

@@ -424,7 +424,6 @@ void FontDownloadActivity::downloadFamily(ManifestFamily& family) {
     fileProgress_ = 0;
     fileTotal_ = 0;
     cancelRequested_ = false;
-    goHomeRequested_ = false;
   }
   requestUpdateAndWait();
 
@@ -468,10 +467,6 @@ void FontDownloadActivity::downloadFamily(ManifestFamily& family) {
       fontInstaller_.deleteFamily(family.name.c_str());
       family.installed = false;
       family.hasUpdate = false;
-      if (goHomeRequested_) {
-        onGoHome();
-        return;
-      }
       {
         RenderLock lock(*this);
         state_ = FAMILY_LIST;
