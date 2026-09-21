@@ -76,7 +76,6 @@ void NetworkModeSelectionActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems_;
   props.count = static_cast<uint16_t>(MENU_ITEM_COUNT);
   props.action = ACTION_ROW;
-  props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
   props.subtitleText = screen.theme().smallText;
   props.subtitleText.maxLines = 2;
   props.subtitleGap = 3;

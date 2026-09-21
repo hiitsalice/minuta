@@ -28,7 +28,7 @@ std::string getFileExtension(const std::string& filename);
 
 FileBrowserActivity::FileBrowserActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                          std::string initialPath, const Mode mode)
-    : UiListActivity("FileBrowser", renderer, mappedInput, /*wantsTouchLongPress=*/true),
+    : UiListActivity("FileBrowser", renderer, mappedInput),
       mode(mode),
       basepath(initialPath.empty() ? "/" : std::move(initialPath)) {}
 
@@ -494,7 +494,6 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(rowItems.size());
   props.action = ACTION_ROW;
   // Tap opens/navigates; long-press prompts delete (physical buttons stay in loop()).
-  props.inputMask = fui::InputTouch | fui::InputLongPress;
   // File names in the small font, wrapping onto a second line inside the same
   // row height (rowHeight is derived from the small font itself: two of its
   // lines plus 8, so two small lines always fit), so long names show more

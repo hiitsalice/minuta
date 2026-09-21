@@ -191,7 +191,6 @@ void OpdsSettingsActivity::buildScreen(UiScreen& screen) {
   props.items = fieldRowItems;
   props.count = static_cast<uint16_t>(getMenuItemCount());
   props.action = ACTION_ROW;
-  props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
   props.valueInset = 8;               // air between the value and the row edge
   // Label at the value's font size: both sides of the row read as one unit.
   // maxLines=2 also marks the style caller-owned (see textStyleUnset).

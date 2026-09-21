@@ -19,7 +19,7 @@ constexpr int ENTER_DELETE_MODE_MS = 700;
 
 EpubReaderBookmarksActivity::EpubReaderBookmarksActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                                          const std::shared_ptr<Epub>& epub, const std::string& epubPath)
-    : UiListActivity("EpubReaderBookmarks", renderer, mappedInput, /*wantsTouchLongPress=*/true),
+    : UiListActivity("EpubReaderBookmarks", renderer, mappedInput),
       epub(epub),
       epubPath(epubPath) {}
 
@@ -224,7 +224,6 @@ void EpubReaderBookmarksActivity::buildScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(bookmarkRowItems.size());
   props.action = ACTION_ROW;
   // Tap opens; long-press deletes (physical buttons stay in loop()).
-  props.inputMask = fui::InputTouch | fui::InputLongPress;
   syncListViewport(screen, props, /*hasSubtitle=*/true);
   screen.list(props);
 }

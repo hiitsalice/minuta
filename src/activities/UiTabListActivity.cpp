@@ -127,7 +127,6 @@ void UiTabListActivity::buildTabBar(UiScreen& screen) {
   tabProps.tabs = tabs;
   tabProps.count = static_cast<uint16_t>(count);
   tabProps.action = ACTION_TAB;
-  tabProps.inputMask = fui::InputTouch;
   // Pill shape and label size are theme-driven. Label-hugging (Lyra): small
   // text so the pill wraps a compact label, kept tight horizontally so wide
   // labels (e.g. "Controls") still fit their slot at large UI scales.

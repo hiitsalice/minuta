@@ -21,7 +21,7 @@ constexpr unsigned long LONG_PRESS_MS = 1000;
 }  // namespace
 
 RecentBooksActivity::RecentBooksActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
-    : UiListActivity("RecentBooks", renderer, mappedInput, /*wantsTouchLongPress=*/true) {}
+    : UiListActivity("RecentBooks", renderer, mappedInput) {}
 
 void RecentBooksActivity::loadRecentBooks() {
   recentBooks = RECENT_BOOKS.getBooks();
@@ -166,7 +166,6 @@ void RecentBooksActivity::buildScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(rowItems.size());
   props.action = ACTION_ROW;
   // Tap opens; long-press prompts removal (physical buttons stay in loop()).
-  props.inputMask = fui::InputTouch | fui::InputLongPress;
   // Titles in the small font so more of a long title fits on the line; the row
   // height stays on the theme cadence. Bold keeps the title/author hierarchy
   // and doubles as the caller-owned marker: an all-default smallText fails

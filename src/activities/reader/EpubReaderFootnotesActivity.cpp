@@ -75,7 +75,6 @@ void EpubReaderFootnotesActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems.data();
   props.count = static_cast<uint16_t>(rowItems.size());
   props.action = ACTION_ROW;
-  props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
   syncListViewport(screen, props);
   screen.list(props);
 }

@@ -520,7 +520,6 @@ void KOReaderSyncActivity::buildResultScreen(UiScreen& screen) {
     actionProps.count = 2;
     actionProps.selectedIndex = static_cast<int16_t>(selectedOption);
     actionProps.action = ACTION_ROW;
-    actionProps.inputMask = fui::InputTouch;  // physical buttons stay in loop()
     actionProps.scrollIndicator = false;      // never scrolls; no indicator needed
     // Non-touch hardware (X3/X4) keeps the original, denser row height instead
     // of FreeInkUI's touch-target-sized default (see
@@ -559,7 +558,6 @@ void KOReaderSyncActivity::buildResultScreen(UiScreen& screen) {
     actionProps.count = 1;
     actionProps.selectedIndex = 0;
     actionProps.action = ACTION_ROW;
-    actionProps.inputMask = fui::InputTouch;
     actionProps.scrollIndicator = false;
     // See the equivalent override above; keeps actionsBand in sync with the
     // row height actually used on non-touch hardware (X3/X4).

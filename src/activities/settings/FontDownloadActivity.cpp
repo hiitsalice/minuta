@@ -651,7 +651,6 @@ void FontDownloadActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems_.data();
   props.count = static_cast<uint16_t>(rowItems_.size());
   props.action = ACTION_ROW;
-  props.inputMask = fui::InputTouch;  // physical buttons stay in loop()
   props.sidePadding = 7;
   props.rowInset = static_cast<int16_t>(state_ == GROUP_LIST ? 33 : 11);
   props.valueInset = static_cast<int16_t>(state_ == GROUP_LIST ? 3 : 0);               // air between the status and the row edge

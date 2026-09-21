@@ -83,7 +83,6 @@ void BrowseMenuActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems_;
   props.count = static_cast<uint16_t>(MENU_ITEM_COUNT);
   props.action = ACTION_ROW;
-  props.inputMask = fui::InputTouch;
 
   props.labelText = screen.theme().bodyText;
   props.labelText.align = fui::TextAlign::Center;
