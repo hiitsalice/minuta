@@ -77,7 +77,7 @@ void UiTabListActivity::syncTabListViewport(UiScreen& screen, fui::ListProps& pr
   int16_t rowHeight =
       props.rowHeight > 0 ? props.rowHeight : screen.theme().rowHeight;
 
-  if (!mappedInput.hasTouch() && props.rowHeight <= 0) {
+  if (props.rowHeight <= 0) {
     const auto& metrics = UITheme::getInstance().getMetrics();
     rowHeight =
         static_cast<int16_t>(hasSubtitle ? metrics.listWithSubtitleRowHeight
