@@ -77,26 +77,6 @@ EpdFont youngserif18BoldItalicFont(&youngserif_18_bolditalic);
 EpdFontFamily youngserif18FontFamily(&youngserif18RegularFont, &youngserif18BoldFont, &youngserif18ItalicFont,
                                      &youngserif18BoldItalicFont);
 
-EpdFont dmsans12RegularFont(&dmsans_12_regular);
-EpdFont dmsans12BoldFont(&dmsans_12_bold);
-EpdFont dmsans12ItalicFont(&dmsans_12_italic);
-EpdFont dmsans12BoldItalicFont(&dmsans_12_bolditalic);
-EpdFontFamily dmsans12FontFamily(&dmsans12RegularFont, &dmsans12BoldFont, &dmsans12ItalicFont, &dmsans12BoldItalicFont);
-EpdFont dmsans14RegularFont(&dmsans_14_regular);
-EpdFont dmsans14BoldFont(&dmsans_14_bold);
-EpdFont dmsans14ItalicFont(&dmsans_14_italic);
-EpdFont dmsans14BoldItalicFont(&dmsans_14_bolditalic);
-EpdFontFamily dmsans14FontFamily(&dmsans14RegularFont, &dmsans14BoldFont, &dmsans14ItalicFont, &dmsans14BoldItalicFont);
-EpdFont dmsans16RegularFont(&dmsans_16_regular);
-EpdFont dmsans16BoldFont(&dmsans_16_bold);
-EpdFont dmsans16ItalicFont(&dmsans_16_italic);
-EpdFont dmsans16BoldItalicFont(&dmsans_16_bolditalic);
-EpdFontFamily dmsans16FontFamily(&dmsans16RegularFont, &dmsans16BoldFont, &dmsans16ItalicFont, &dmsans16BoldItalicFont);
-EpdFont dmsans18RegularFont(&dmsans_18_regular);
-EpdFont dmsans18BoldFont(&dmsans_18_bold);
-EpdFont dmsans18ItalicFont(&dmsans_18_italic);
-EpdFont dmsans18BoldItalicFont(&dmsans_18_bolditalic);
-EpdFontFamily dmsans18FontFamily(&dmsans18RegularFont, &dmsans18BoldFont, &dmsans18ItalicFont, &dmsans18BoldItalicFont);
 
 #endif  // OMIT_FONTS
 
@@ -313,10 +293,6 @@ void setupDisplayAndFonts(bool seamless = false) {
   renderer.insertFont(YOUNGSERIF_16_FONT_ID, youngserif16FontFamily);
   renderer.insertFont(YOUNGSERIF_18_FONT_ID, youngserif18FontFamily);
 
-  renderer.insertFont(DMSANS_12_FONT_ID, dmsans12FontFamily);
-  renderer.insertFont(DMSANS_14_FONT_ID, dmsans14FontFamily);
-  renderer.insertFont(DMSANS_16_FONT_ID, dmsans16FontFamily);
-  renderer.insertFont(DMSANS_18_FONT_ID, dmsans18FontFamily);
 #endif  // OMIT_FONTS
   renderer.insertFont(DICTIONARY_FONT_ID, andika12FontFamily);
   renderer.insertFont(DICTIONARY_HEADWORD_FONT_ID, andika16HeadwordFontFamily);

@@ -99,7 +99,7 @@ Minuta keeps CrossPoint’s reading foundation, but I removed or rearranged a fe
 
 ## Fonts
 
-Minuta uses **Young Serif** as its default reading font, with **DM Sans** included as an alternative. You can also use **Manage Fonts** to download more fonts directly onto your device, or add your own fonts through the SD card.
+Minuta uses **Young Serif** as its default reading font. You can also use **Manage Fonts** to download more fonts directly onto your device, or add your own fonts through the SD card.
 
 ## Installation
 

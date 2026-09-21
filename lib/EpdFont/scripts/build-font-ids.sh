@@ -44,41 +44,9 @@ ruby -rdigest -e 'puts [
 ].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
 ))"
 
-echo "#define DMSANS_12_FONT_ID ($(
-ruby -rdigest -e 'puts [
-  "./dmsans_12_regular.h",
-  "./dmsans_12_bold.h",
-  "./dmsans_12_bolditalic.h",
-  "./dmsans_12_italic.h",
-].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
-))"
 
-echo "#define DMSANS_14_FONT_ID ($(
-ruby -rdigest -e 'puts [
-  "./dmsans_14_regular.h",
-  "./dmsans_14_bold.h",
-  "./dmsans_14_bolditalic.h",
-  "./dmsans_14_italic.h",
-].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
-))"
 
-echo "#define DMSANS_16_FONT_ID ($(
-ruby -rdigest -e 'puts [
-  "./dmsans_16_regular.h",
-  "./dmsans_16_bold.h",
-  "./dmsans_16_bolditalic.h",
-  "./dmsans_16_italic.h",
-].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
-))"
 
-echo "#define DMSANS_18_FONT_ID ($(
-ruby -rdigest -e 'puts [
-  "./dmsans_18_regular.h",
-  "./dmsans_18_bold.h",
-  "./dmsans_18_bolditalic.h",
-  "./dmsans_18_italic.h",
-].map{|f| Digest::SHA256.hexdigest(File.read(f)).to_i(16) }.sum % (2 ** 32) - (2 ** 31)'
-))"
 
 echo "#define DICTIONARY_FONT_ID ($(
 ruby -rdigest -e 'puts [

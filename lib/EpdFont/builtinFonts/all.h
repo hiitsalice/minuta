@@ -20,25 +20,9 @@
 #include <builtinFonts/youngserif_18_italic.h>
 #include <builtinFonts/youngserif_18_regular.h>
 
-#include <builtinFonts/dmsans_12_bold.h>
-#include <builtinFonts/dmsans_12_bolditalic.h>
-#include <builtinFonts/dmsans_12_italic.h>
-#include <builtinFonts/dmsans_12_regular.h>
 
-#include <builtinFonts/dmsans_14_bold.h>
-#include <builtinFonts/dmsans_14_bolditalic.h>
-#include <builtinFonts/dmsans_14_italic.h>
-#include <builtinFonts/dmsans_14_regular.h>
 
-#include <builtinFonts/dmsans_16_bold.h>
-#include <builtinFonts/dmsans_16_bolditalic.h>
-#include <builtinFonts/dmsans_16_italic.h>
-#include <builtinFonts/dmsans_16_regular.h>
 
-#include <builtinFonts/dmsans_18_bold.h>
-#include <builtinFonts/dmsans_18_bolditalic.h>
-#include <builtinFonts/dmsans_18_italic.h>
-#include <builtinFonts/dmsans_18_regular.h>
 
 #include <builtinFonts/andika_12_regular.h>
 #include <builtinFonts/andika_12_bold.h>
