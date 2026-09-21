@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <Epub/Page.h>
 #include <I18n.h>
 
@@ -34,7 +35,7 @@ class DictionaryWordSelectActivity final : public Activity {
     int16_t y;
     int16_t width;
     uint16_t row;
-    const char* text;
+    std::string text;
     EpdFontFamily::Style style;
   };
 
