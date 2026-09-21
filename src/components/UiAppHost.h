@@ -43,22 +43,6 @@ class UiAppHost {
   // should paint; chrome before, hints after.
   void renderUi();
 
-  // What loop-task routing saw this pass. `routed` is true when the gate was
-  // open and the snapshot carried relevant touch input — the invalidated()
-  // repaint check belongs behind it, so a pending render requested elsewhere
-  // is not re-requested on every idle pass.
-  struct TouchRoute {
-    freeink::ui::ActionEvent event{};
-    freeink::ui::InputSnapshot snap{};
-    bool routed = false;
-    explicit operator bool() const { return static_cast<bool>(event); }
-  };
-
-  // Gated snapshot-build + route: the common loop head. withLongPress forwards
-  // the SDK long-press (rows must carry InputLongPress); routeHeld forwards
-  // held frames for InputDrag elements (sliders, drag-select fields).
-  TouchRoute routeTouch(const MappedInputManager& input, bool withLongPress = false, bool routeHeld = false);
-
   // Gated route of a caller-built snapshot, for flows that need the snapshot
   // before dispatch (e.g. a handler that reads "was this a release" state).
   freeink::ui::ActionEvent route(const freeink::ui::InputSnapshot& snap);

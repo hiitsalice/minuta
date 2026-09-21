@@ -71,47 +71,6 @@ class OptionPopup {
     // so button wrap-around must not select an invisible option.
     const int total = static_cast<int>(ownedStrings.size());
     const int count = total > MAX_OPTIONS ? MAX_OPTIONS : total;
-    const freeink::ui::InputSnapshot snap = touchSnapshotFrom(input);
-    if (snap.touchPressed || snap.touchReleased || snap.touchHeld) {
-      // Interactions are registered on the render task; only route once the
-      // first render after show() has populated the table (uiReady handshake).
-      if (uiReady) {
-        const freeink::ui::ActionEvent event = interactions.routePublished(snap);
-        if (event && event.action == ACTION_OPTION) {
-          // Tap released on an option: select it, fire, dismiss.
-          selectedIndex = event.value;
-          active = false;
-          if (onSelectCallback) onSelectCallback(selectedIndex);
-          requestUpdate();
-          return true;
-        }
-        if (event && event.action == ACTION_CHROME) {
-          // Taps on the dialog chrome (title, padding) keep the popup open.
-          return true;
-        }
-        if (snap.touchReleased && snap.touchX >= 0) {
-          // Tap released outside the dialog: dismiss without firing. Swipe-end
-          // releases arrive with -1,-1 coords and fall through (no dismiss).
-          active = false;
-          requestUpdate();
-          return true;
-        }
-        if (snap.touchPressed) {
-          // Touch-down on an option moves the highlight (route() latched the
-          // hit as the active interaction; read it back, no re-hit-testing).
-          const int16_t idx = interactions.activeIndex();
-          if (idx >= 0) {
-            const freeink::ui::Interaction& hit = interactions.publishedData()[idx];
-            if (hit.action == ACTION_OPTION && selectedIndex != hit.value) {
-              selectedIndex = hit.value;
-              requestUpdate();
-            }
-          }
-        }
-      }
-      return true;
-    }
-
     if (input.wasPressed(MappedInputManager::Button::NavPrevious)) {
       selectedIndex = (selectedIndex - 1 + count) % count;
       requestUpdate();
