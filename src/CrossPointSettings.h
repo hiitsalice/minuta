@@ -81,7 +81,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
 
   // Side button layout options
   // Default: Up = Previous, Down = Next
-  enum SIDE_BUTTON_LAYOUT { PREV_NEXT = 0, NEXT_PREV = 1, SIDE_BUTTONS_DISABLED = 2, SIDE_BUTTON_LAYOUT_COUNT };
+  enum SIDE_BUTTON_LAYOUT { PREV_NEXT = 0, NEXT_PREV = 1, SIDE_BUTTON_LAYOUT_COUNT };
 
   // Font family options (built-in fonts only; SD card fonts use sdFontFamilyName)
   enum FONT_FAMILY { YOUNGSERIF = 0, DMSANS = 1, FONT_FAMILY_COUNT };
@@ -125,12 +125,11 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
 
   // Short power button press actions
   enum SHORT_PWRBTN {
-    IGNORE = 0,
-    SLEEP = 1,
-    PAGE_TURN = 2,
-    FORCE_REFRESH = 3,
-    FOOTNOTES = 4,
-    PWR_CONFIRM = 5,
+    SLEEP = 0,
+    PAGE_TURN = 1,
+    FORCE_REFRESH = 2,
+    FOOTNOTES = 3,
+    PWR_CONFIRM = 4,
     SHORT_PWRBTN_COUNT
   };
 
@@ -146,10 +145,9 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
 
 enum LONG_PRESS_MENU_FUNCTION {
     LP_MENU_KOSYNC = 0,
-    LP_MENU_DISABLED = 1,
-    LP_MENU_BOOKMARK = 2,
-    LP_MENU_DICTIONARY = 3,
-    LP_MENU_READER_MENU = 4,
+    LP_MENU_BOOKMARK = 1,
+    LP_MENU_DICTIONARY = 2,
+    LP_MENU_READER_MENU = 3,
     LONG_PRESS_MENU_FUNCTION_COUNT
   };
 
@@ -158,9 +156,8 @@ enum LONG_PRESS_MENU_FUNCTION {
 
   // Page turn button long press behavior
   enum LONG_PRESS_BUTTON_BEHAVIOR {
-    OFF = 0,
-    CHAPTER_SKIP = 1,
-    ORIENTATION_CHANGE = 2,
+    CHAPTER_SKIP = 0,
+    ORIENTATION_CHANGE = 1,
     LONG_PRESS_BUTTON_BEHAVIOR_COUNT
   };
 

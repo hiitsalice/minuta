@@ -1,0 +1,313 @@
+Processing default (platform: https://github.com/pioarduino/platform-espressif32/releases/download/55.03.37/platform-espressif32.zip; board: esp32-c3-devkitm-1; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+Patched wolfSSL settings: .pio/libdeps/gh_release/Arduino-wolfSSL/src/user_settings.h
+Patched wolfSSL settings: .pio/libdeps/default/Arduino-wolfSSL/src/user_settings.h
+Generated: src/network/html/FilesPageHtml.generated.h
+  Original: 223743 bytes
+  Minified: 219515 bytes (98.1%)
+  Compressed: 51336 bytes (22.9%)
+Generated: src/network/html/SettingsPageHtml.generated.h
+  Original: 25672 bytes
+  Minified: 25556 bytes (99.5%)
+  Compressed: 5790 bytes (22.6%)
+Generated: src/network/html/HomePageHtml.generated.h
+  Original: 4514 bytes
+  Minified: 4226 bytes (93.6%)
+  Compressed: 1446 bytes (32.0%)
+Generated: src/network/html/FontsPageHtml.generated.h
+  Original: 10940 bytes
+  Minified: 10772 bytes (98.5%)
+  Compressed: 3285 bytes (30.0%)
+Generated: src/network/html/js/jszip_minJs.generated.h
+  Original: 97630 bytes
+  Minified: 97630 bytes (100.0%)
+  Compressed: 28379 bytes (29.1%)
+Language  Code  BCP47  Own  Fallback  Unused  Data (B)
+--------  ----  -----  ---  --------  ------  --------
+English   EN    en     443  0         50      7376    
+
+  Total: 443  |  Used in code: 393  |  Never used: 50
+  Flash:   7,376 B strings (deduped)  +     886 B offset tables  =    8,262 B
+
+  Stripping 50 unused string(s) from output.
+
+Code generation complete!
+  Languages: 1
+  String keys: 393
+CrossPoint build version: 1.2-dev-develop-3b7863f
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32-c3-devkitm-1.html
+PLATFORM: Espressif 32 (55.3.37) > Espressif ESP32-C3-DevKitM-1
+HARDWARE: ESP32C3 160MHz, 320KB RAM, 16MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-builtin, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - contrib-piohome @ 3.4.4 
+ - framework-arduinoespressif32 @ 3.3.7 
+ - framework-arduinoespressif32-libs @ 5.5.0+sha.87912cd291 
+ - framework-espidf @ 3.50502.0 (5.5.2) 
+ - tool-cmake @ 4.0.3 
+ - tool-cppcheck @ 2.11.0+230717 
+ - tool-esp-rom-elfs @ 2024.10.11 
+ - tool-esptoolpy @ 5.1.2 
+ - tool-ninja @ 1.13.1 
+ - tool-scons @ 4.40801.0 (4.8.1) 
+ - toolchain-riscv32-esp @ 14.2.0+20251107
+[ComponentManager] Processed 1 ignored libraries
+[ComponentManager] Session completed with 1 changes
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 83 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- BatteryMonitor @ 2.0.0
+|-- InputManager @ 2.0.0
+|-- EInkDisplay @ 2.0.0
+|-- SDCardManager @ 2.0.0
+|-- BoardConfig @ 2.0.0
+|-- XteinkDetect @ 1.0.0
+|-- PowerManager @ 1.0.0
+|-- SecureNet @ 1.0.0
+|-- FreeInkUI @ 0.1.0
+|-- Icons @ 1.0.0
+|-- ArduinoJson @ 7.4.2
+|-- QRCode @ 0.0.1
+|-- PNGdec @ 1.1.6
+|-- JPEGDEC @ 1.2.7+sha.8628297
+|-- WebSockets @ 2.7.3
+|-- Arduino-wolfSSL @ 5.7.2
+|-- I18n
+|-- Logging
+|-- Serialization
+|-- hal
+|-- GfxRenderer
+|-- Epub
+|-- FsHelpers
+|-- Xtc
+|-- Memory
+|-- Txt
+|-- OpdsParser
+|-- WiFi @ 3.3.7
+|-- Utf8
+|-- ESPmDNS @ 3.3.7
+|-- DNSServer @ 3.3.7
+|-- KOReaderSync
+|-- MiniBidi
+|-- EpdFont
+|-- SPI @ 3.3.7
+|-- JsonParser
+|-- InflateReader
+|-- Networking @ 3.3.7
+|-- WebServer @ 3.3.7
+Building in release mode
+Compiling .pio/build/default/src/activities/boot_sleep/SleepActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/DictionaryWordSelectActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/EndOfBookOptions.cpp.o
+Compiling .pio/build/default/src/activities/reader/EpubReaderActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/EpubReaderBookmarksActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/EpubReaderChapterSelectionActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/EpubReaderFootnotesActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/EpubReaderMenuActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/EpubReaderPercentSelectionActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/KOReaderSyncActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/QrDisplayActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/ReaderActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/TxtReaderActivity.cpp.o
+In file included from src/activities/reader/EpubReaderPercentSelectionActivity.cpp:11:
+src/components/UiSliderDialog.h: In function 'void buildSliderDialogScreen(UiAppHost::UiScreen&, const GfxRenderer&, const MappedInputManager&, const UiSliderDialogSpec&)':
+src/components/UiSliderDialog.h:56:39: warning: narrowing conversion of '(int)safe.Rect::x' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+   56 |   screen.target().text(fui::Rect{safe.x, static_cast<int16_t>(readoutY - readoutLh / 2),
+      |                                  ~~~~~^
+src/components/UiSliderDialog.h:57:39: warning: narrowing conversion of '(int)safe.Rect::width' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+   57 |                                  safe.width, readoutLh},
+      |                                  ~~~~~^~~~~
+src/components/UiSliderDialog.h:65:24: warning: narrowing conversion of '(int)safe.Rect::x' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+   65 |       ? fui::Rect{safe.x, static_cast<int16_t>(spec.sliderY - theme.rowHeight / 2),
+      |                   ~~~~~^
+src/components/UiSliderDialog.h:66:25: warning: narrowing conversion of '(int)safe.Rect::width' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+   66 |                    safe.width, theme.rowHeight}.inset(sideInset)
+      |                    ~~~~~^~~~~
+src/components/UiSliderDialog.h:109:26: warning: narrowing conversion of '(int)safe.Rect::x' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+  109 |         ? fui::Rect{safe.x, spec.hintLine1Y, safe.width, hintLh}
+      |                     ~~~~~^
+src/components/UiSliderDialog.h:109:51: warning: narrowing conversion of '(int)safe.Rect::width' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+  109 |         ? fui::Rect{safe.x, spec.hintLine1Y, safe.width, hintLh}
+      |                                              ~~~~~^~~~~
+src/components/UiSliderDialog.h:115:26: warning: narrowing conversion of '(int)safe.Rect::x' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+  115 |         ? fui::Rect{safe.x, spec.hintLine2Y, safe.width, hintLh}
+      |                     ~~~~~^
+src/components/UiSliderDialog.h:115:51: warning: narrowing conversion of '(int)safe.Rect::width' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+  115 |         ? fui::Rect{safe.x, spec.hintLine2Y, safe.width, hintLh}
+      |                                              ~~~~~^~~~~
+Compiling .pio/build/default/src/activities/reader/XtcReaderActivity.cpp.o
+Compiling .pio/build/default/src/activities/reader/XtcReaderChapterSelectionActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/ButtonRemapActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/ClearCacheActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/FontDownloadActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/KOReaderAuthActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/KOReaderSettingsActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/OpdsServerListActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/OpdsSettingsActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/OtaUpdateActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/SdFirmwareUpdateActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/SettingsActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/StatusBarSettingsActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/TextSettingsActivity.cpp.o
+Compiling .pio/build/default/src/activities/settings/TextSettingsPreview.cpp.o
+Compiling .pio/build/default/src/activities/util/BmpViewerActivity.cpp.o
+Compiling .pio/build/default/src/activities/util/ConfirmationActivity.cpp.o
+Compiling .pio/build/default/src/activities/util/FullScreenMessageActivity.cpp.o
+Compiling .pio/build/default/src/activities/util/IntervalSelectionActivity.cpp.o
+Compiling .pio/build/default/src/activities/util/KeyboardEntryActivity.cpp.o
+Compiling .pio/build/default/src/components/UITheme.cpp.o
+Compiling .pio/build/default/src/components/UiAppHost.cpp.o
+In file included from src/activities/util/IntervalSelectionActivity.cpp:12:
+src/components/UiSliderDialog.h: In function 'void buildSliderDialogScreen(UiAppHost::UiScreen&, const GfxRenderer&, const MappedInputManager&, const UiSliderDialogSpec&)':
+src/components/UiSliderDialog.h:56:39: warning: narrowing conversion of '(int)safe.Rect::x' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+   56 |   screen.target().text(fui::Rect{safe.x, static_cast<int16_t>(readoutY - readoutLh / 2),
+      |                                  ~~~~~^
+src/components/UiSliderDialog.h:57:39: warning: narrowing conversion of '(int)safe.Rect::width' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+   57 |                                  safe.width, readoutLh},
+      |                                  ~~~~~^~~~~
+src/components/UiSliderDialog.h:65:24: warning: narrowing conversion of '(int)safe.Rect::x' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+   65 |       ? fui::Rect{safe.x, static_cast<int16_t>(spec.sliderY - theme.rowHeight / 2),
+      |                   ~~~~~^
+src/components/UiSliderDialog.h:66:25: warning: narrowing conversion of '(int)safe.Rect::width' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+   66 |                    safe.width, theme.rowHeight}.inset(sideInset)
+      |                    ~~~~~^~~~~
+src/components/UiSliderDialog.h:109:26: warning: narrowing conversion of '(int)safe.Rect::x' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+  109 |         ? fui::Rect{safe.x, spec.hintLine1Y, safe.width, hintLh}
+      |                     ~~~~~^
+src/components/UiSliderDialog.h:109:51: warning: narrowing conversion of '(int)safe.Rect::width' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+  109 |         ? fui::Rect{safe.x, spec.hintLine1Y, safe.width, hintLh}
+      |                                              ~~~~~^~~~~
+src/components/UiSliderDialog.h:115:26: warning: narrowing conversion of '(int)safe.Rect::x' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+  115 |         ? fui::Rect{safe.x, spec.hintLine2Y, safe.width, hintLh}
+      |                     ~~~~~^
+src/components/UiSliderDialog.h:115:51: warning: narrowing conversion of '(int)safe.Rect::width' from 'int' to 'int16_t' {aka 'short int'} [-Wnarrowing]
+  115 |         ? fui::Rect{safe.x, spec.hintLine2Y, safe.width, hintLh}
+      |                                              ~~~~~^~~~~
+Compiling .pio/build/default/src/components/themes/BaseTheme.cpp.o
+Compiling .pio/build/default/src/components/themes/lyra/LyraTheme.cpp.o
+Compiling .pio/build/default/src/components/themes/minuta/quartum.cpp.o
+Compiling .pio/build/default/src/components/themes/minuta/solum.cpp.o
+Compiling .pio/build/default/src/main.cpp.o
+Compiling .pio/build/default/src/network/CrossPointWebServer.cpp.o
+Compiling .pio/build/default/src/network/FirmwareBoardTag.cpp.o
+Compiling .pio/build/default/src/network/FirmwareFlasher.cpp.o
+Compiling .pio/build/default/src/network/HttpDownloader.cpp.o
+Compiling .pio/build/default/src/network/OtaBootSwitch.cpp.o
+Compiling .pio/build/default/src/network/OtaUpdater.cpp.o
+Compiling .pio/build/default/src/network/WebDAVHandler.cpp.o
+Compiling .pio/build/default/src/platform/UsbSerialJtagHandoff.cpp.o
+Compiling .pio/build/default/src/platform/skip_efuse_blk_check.c.o
+Compiling .pio/build/default/src/util/BookCacheUtils.cpp.o
+Compiling .pio/build/default/src/util/BookmarkFile.cpp.o
+Compiling .pio/build/default/src/util/BookmarkUtil.cpp.o
+Compiling .pio/build/default/src/util/ButtonNavigator.cpp.o
+Compiling .pio/build/default/src/util/DictHtmlPages.cpp.o
+Compiling .pio/build/default/src/util/DictZip.cpp.o
+Compiling .pio/build/default/src/util/Dictionary.cpp.o
+Compiling .pio/build/default/src/util/DictionaryRegistry.cpp.o
+Compiling .pio/build/default/src/util/HtmlToPlainText.cpp.o
+Compiling .pio/build/default/src/util/NextBookFinder.cpp.o
+Compiling .pio/build/default/src/util/OpdsFilename.cpp.o
+Compiling .pio/build/default/src/util/QrUtils.cpp.o
+Compiling .pio/build/default/src/util/ScreenshotUtil.cpp.o
+Compiling .pio/build/default/src/util/StringUtils.cpp.o
+Compiling .pio/build/default/src/util/UrlUtils.cpp.o
+Compiling .pio/build/default/FrameworkArduino/ColorFormat.c.o
+Compiling .pio/build/default/FrameworkArduino/Esp.cpp.o
+Compiling .pio/build/default/FrameworkArduino/FirmwareMSC.cpp.o
+Compiling .pio/build/default/FrameworkArduino/FunctionalInterrupt.cpp.o
+Compiling .pio/build/default/FrameworkArduino/HEXBuilder.cpp.o
+Compiling .pio/build/default/FrameworkArduino/HWCDC.cpp.o
+Compiling .pio/build/default/FrameworkArduino/HardwareSerial.cpp.o
+Compiling .pio/build/default/FrameworkArduino/HashBuilder.cpp.o
+Compiling .pio/build/default/FrameworkArduino/IPAddress.cpp.o
+Compiling .pio/build/default/FrameworkArduino/MD5Builder.cpp.o
+Compiling .pio/build/default/FrameworkArduino/MacAddress.cpp.o
+Compiling .pio/build/default/FrameworkArduino/Print.cpp.o
+Compiling .pio/build/default/FrameworkArduino/Stream.cpp.o
+Compiling .pio/build/default/FrameworkArduino/StreamString.cpp.o
+Compiling .pio/build/default/FrameworkArduino/Tone.cpp.o
+Compiling .pio/build/default/FrameworkArduino/USB.cpp.o
+Compiling .pio/build/default/FrameworkArduino/USBCDC.cpp.o
+Compiling .pio/build/default/FrameworkArduino/USBMSC.cpp.o
+Compiling .pio/build/default/FrameworkArduino/WMath.cpp.o
+Compiling .pio/build/default/FrameworkArduino/WString.cpp.o
+Compiling .pio/build/default/FrameworkArduino/base64.cpp.o
+Compiling .pio/build/default/FrameworkArduino/cbuf.cpp.o
+Compiling .pio/build/default/FrameworkArduino/chip-debug-report.cpp.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-adc.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-bt.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-cpu.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-dac.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-gpio.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-hosted.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-i2c-ng.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-i2c-slave.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-i2c.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-ledc.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-log-wrapper.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-matrix.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-misc.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-periman.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-psram.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-rgb-led.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-rmt.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-sigmadelta.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-spi.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-time.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-timer.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-tinyusb.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-touch-ng.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-touch.c.o
+Compiling .pio/build/default/FrameworkArduino/esp32-hal-uart.c.o
+Compiling .pio/build/default/FrameworkArduino/firmware_msc_fat.c.o
+Compiling .pio/build/default/FrameworkArduino/freertos_stats.cpp.o
+Compiling .pio/build/default/FrameworkArduino/idf_openthread_mpool_wrapper.c.o
+Compiling .pio/build/default/FrameworkArduino/libb64/cdecode.c.o
+Compiling .pio/build/default/FrameworkArduino/libb64/cencode.c.o
+Compiling .pio/build/default/FrameworkArduino/main.cpp.o
+Compiling .pio/build/default/FrameworkArduino/stdlib_noniso.c.o
+Compiling .pio/build/default/FrameworkArduino/wiring_pulse.c.o
+Compiling .pio/build/default/FrameworkArduino/wiring_shift.c.o
+Archiving .pio/build/default/libFrameworkArduino.a
+Indexing .pio/build/default/libFrameworkArduino.a
+Linking .pio/build/default/firmware.elf
+                            Memory Type Usage Summary                             
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Memory Type/Section ┃ Used [bytes] ┃ Used [%] ┃ Remain [bytes] ┃ Total [bytes] ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Flash Data          │      2040836 │          │                │               │
+│    .rodata          │      2027304 │          │                │               │
+│    .eh_frame        │        13276 │          │                │               │
+│    .appdesc         │          256 │          │                │               │
+│ Flash Code          │      1965698 │          │                │               │
+│    .text            │      1965698 │          │                │               │
+│ DRAM                │       122765 │    38.21 │         198531 │        321296 │
+│    .text            │        66916 │    20.83 │                │               │
+│    .bss             │        35904 │    11.17 │                │               │
+│    .data            │        19945 │     6.21 │                │               │
+│ RTC SLOW            │         5544 │    67.68 │           2648 │          8192 │
+│    .rtc_noinit      │         5524 │    67.43 │                │               │
+│    .text            │           20 │     0.24 │                │               │
+└─────────────────────┴──────────────┴──────────┴────────────────┴───────────────┘
+Total image size: 4093415 bytes (.bin may be padded larger)
+Note: The reported total sizes may be smaller than those in the technical reference manual due to reserved memory and application configuration. The total flash size available for the application is not included by default, as it cannot be reliably determined due to the presence of other data like the bootloader, partition table, and application partition size.
+Retrieving maximum program size .pio/build/default/firmware.elf
+Checking size .pio/build/default/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [==        ]  17.0% (used 55852 bytes from 327680 bytes)
+Flash: [======    ]  62.3% (used 4079863 bytes from 6553600 bytes)
+Building .pio/build/default/firmware.bin
+esptool v5.1.2
+Creating ESP32C3 image...
+Merged 2 ELF sections.
+Successfully created ESP32C3 image.
+========================= [SUCCESS] Took 80.27 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+default        SUCCESS   00:01:20.269
+========================= 1 succeeded in 00:01:20.269 =========================

@@ -442,7 +442,6 @@ void EpubReaderActivity::loop() {
         openDictionaryWordSelect();
         return;
       case CrossPointSettings::LP_MENU_READER_MENU:
-      case CrossPointSettings::LP_MENU_DISABLED:
       default:
         break;
     }
@@ -472,7 +471,6 @@ void EpubReaderActivity::loop() {
       case CrossPointSettings::LP_MENU_READER_MENU:
         openReaderMenu();
         return;
-      case CrossPointSettings::LP_MENU_DISABLED:
       default:
         break;
     }
@@ -849,7 +847,6 @@ unsigned long EpubReaderActivity::confirmLongPressThreshold() const {
     case CrossPointSettings::LP_MENU_KOSYNC:
       return KOREADER_STORE.hasCredentials() ? ReaderUtils::GO_HOME_MS : 0;
     case CrossPointSettings::LP_MENU_READER_MENU:
-    case CrossPointSettings::LP_MENU_DISABLED:
     default:
       return 0;
   }
