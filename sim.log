@@ -1,0 +1,71 @@
+Processing simulator (platform: native)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+Language  Code  BCP47  Own  Fallback  Unused  Data (B)
+--------  ----  -----  ---  --------  ------  --------
+English   EN    en     442  0         50      7368    
+
+  Total: 442  |  Used in code: 392  |  Never used: 50
+  Flash:   7,368 B strings (deduped)  +     884 B offset tables  =    8,252 B
+
+  Stripping 50 unused string(s) from output.
+
+Code generation complete!
+  Languages: 1
+  String keys: 392
+Generated: src/network/html/FilesPageHtml.generated.h
+  Original: 223743 bytes
+  Minified: 219515 bytes (98.1%)
+  Compressed: 51336 bytes (22.9%)
+Generated: src/network/html/SettingsPageHtml.generated.h
+  Original: 25672 bytes
+  Minified: 25556 bytes (99.5%)
+  Compressed: 5790 bytes (22.6%)
+Generated: src/network/html/HomePageHtml.generated.h
+  Original: 4514 bytes
+  Minified: 4226 bytes (93.6%)
+  Compressed: 1446 bytes (32.0%)
+Generated: src/network/html/FontsPageHtml.generated.h
+  Original: 10940 bytes
+  Minified: 10772 bytes (98.5%)
+  Compressed: 3285 bytes (30.0%)
+Generated: src/network/html/js/jszip_minJs.generated.h
+  Original: 97630 bytes
+  Minified: 97630 bytes (100.0%)
+  Compressed: 28379 bytes (29.1%)
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ deep+, Compatibility ~ off
+Found 28 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- Crosspoint Simulator @ 1.0.0+sha.047527f
+|-- FreeInkUI @ 0.1.0
+|-- Icons @ 1.0.0
+|-- ArduinoJson @ 7.4.2
+|-- AnimatedGIF @ 2.2.0+sha.d01888f
+|-- Epub
+|-- Serialization
+|-- Logging
+|-- I18n
+|-- EpdFont
+|-- KOReaderSync
+|-- GfxRenderer
+|-- Memory
+|-- FsHelpers
+|-- Xtc
+|-- OpdsParser
+|-- expat @ 2.7.3
+|-- Txt
+|-- Utf8
+|-- MiniBidi
+|-- InflateReader
+|-- uzlib @ 2.9.8
+Building in release mode
+Compiling .pio/build/simulator/src/CrossPointSettings.o
+Linking .pio/build/simulator/program
+========================= [SUCCESS] Took 9.79 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+simulator      SUCCESS   00:00:09.791
+========================= 1 succeeded in 00:00:09.791 =========================

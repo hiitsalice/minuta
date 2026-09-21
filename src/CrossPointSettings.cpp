@@ -226,6 +226,16 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
       // old: 0 prev/next, 1 next/prev, 2 disabled
       sideButtonLayout = (old == 1) ? (uint8_t)NEXT_PREV : (uint8_t)PREV_NEXT;
     }
+    if (!doc["fontFamily"].isNull()) {
+      const uint8_t old = doc["fontFamily"] | (uint8_t)0;
+      // old: 0 Young Serif, 1 DM Sans (removed), 2+ SD-card fonts
+      fontFamily = (old <= 1) ? (uint8_t)YOUNGSERIF : (uint8_t)(old - 1);
+    }
+    if (!doc["fontFamily"].isNull()) {
+      const uint8_t old = doc["fontFamily"] | (uint8_t)0;
+      // old: 0 Young Serif, 1 DM Sans (removed), 2+ SD-card fonts
+      fontFamily = (old <= 1) ? (uint8_t)YOUNGSERIF : (uint8_t)(old - 1);
+    }
     needsResave = true;
   }
 
@@ -345,18 +355,6 @@ float CrossPointSettings::getReaderLineCompression() const {
         case EXTRA_WIDE:
           return 1.2f;
       }
-    case DMSANS:
-      switch (lineSpacing) {
-        case TIGHT:
-          return 0.90f;
-        case NORMAL:
-        default:
-          return 0.95f;
-        case WIDE:
-          return 1.0f;
-        case EXTRA_WIDE:
-          return 1.05f;
-      }
   }
 }
 
@@ -408,16 +406,15 @@ int CrossPointSettings::getReaderFontId() const {
   // in the page render loop) so rendering is correct even before it has run.
   const uint8_t pt =
       snapToNearestPointSize(BUILTIN_READER_POINT_SIZES, std::size(BUILTIN_READER_POINT_SIZES), fontPointSize);
-  const bool sans = (fontFamily == DMSANS);
   switch (pt) {
     case 12:
-      return sans ? DMSANS_12_FONT_ID : YOUNGSERIF_12_FONT_ID;
+      return YOUNGSERIF_12_FONT_ID;
     case 16:
-      return sans ? DMSANS_16_FONT_ID : YOUNGSERIF_16_FONT_ID;
+      return YOUNGSERIF_16_FONT_ID;
     case 18:
-      return sans ? DMSANS_18_FONT_ID : YOUNGSERIF_18_FONT_ID;
+      return YOUNGSERIF_18_FONT_ID;
     case 14:
     default:
-      return sans ? DMSANS_14_FONT_ID : YOUNGSERIF_14_FONT_ID;
+      return YOUNGSERIF_14_FONT_ID;
   }
 }
