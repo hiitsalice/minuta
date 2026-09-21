@@ -48,12 +48,6 @@ class MappedInputManager {
   void suppressRelease(Button button) const;
   bool isPressed(Button button) const;
   // The ordinary XTEINK X4 has no touchscreen.
-  constexpr bool hasTouch() const { return false; }
-  constexpr bool wasScreenTapped(int&, int&) const { return false; }
-  constexpr bool wasScreenTouchDown(int&, int&) const { return false; }
-  constexpr bool wasScreenLongPress(int&, int&) const { return false; }
-  constexpr bool isScreenTouchHeld(int&, int&) const { return false; }
-  constexpr bool wasScreenTouchReleased() const { return false; }
   constexpr bool wasTapInRect(int, int, int, int) const { return false; }
 
   enum class RowTouch : uint8_t { None, Down, Tap };
@@ -64,12 +58,8 @@ class MappedInputManager {
     return RowTouch::None;
   }
 
-  constexpr SwipeDir wasSwipe() const { return SwipeDir::None; }
   constexpr bool wasBackGesture() const { return false; }
-  constexpr bool wasHomeGesture() const { return false; }
-  constexpr bool wasHomeKeyHold() const { return false; }
   constexpr bool wasMenuGesture() const { return false; }
-  constexpr bool wasReaderMenuSwipeUp() const { return false; }
   bool wasAnyPressed() const;
   bool wasAnyReleased() const;
   unsigned long getHeldTime() const;

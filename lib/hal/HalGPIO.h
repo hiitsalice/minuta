@@ -43,20 +43,9 @@ class HalGPIO {
   unsigned long getHeldTime() const;
   unsigned long getPowerButtonHeldTime() const;
   // The ordinary XTEINK X4 has no touchscreen or capacitive Home key.
-  constexpr bool hasTouch() const { return false; }
   constexpr bool hasHomeKey() const { return false; }
   constexpr bool wasHomeKeyTapped() const { return false; }
   constexpr bool wasHomeKeyLongPressed() const { return false; }
-  constexpr bool wasTouchTap(float&, float&) const { return false; }
-  constexpr bool wasTouchDown(float&, float&) const { return false; }
-  constexpr bool wasTouchReleased() const { return false; }
-  constexpr bool isTouchTapCandidate(float&, float&, unsigned long&) const { return false; }
-  constexpr bool isTouchHeldAt(float&, float&) const { return false; }
-  constexpr bool wasTouchLongPress(float&, float&) const { return false; }
-  constexpr void suppressTouchContact() {}
-  constexpr unsigned long lastTouchHeldMs() const { return 0; }
-  constexpr bool wasSwipe(float&, float&, float&, float&) const { return false; }
-  constexpr bool wasTouchActivity() const { return false; }
   void setSharedConfirmPowerShortPressEmitsPower(bool enabled);
 
   // Verify that the physical power button remains held through input debounce.
