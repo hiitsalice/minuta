@@ -116,20 +116,6 @@ void DictionaryWordSelectActivity::extractWords() {
   }
 }
 
-// Index of the word whose box (with finger-sized slop) contains the touch
-// point; -1 when the touch lands on no word. Boxes never overlap after the
-// slop grows them, at worst they touch, so first hit wins.
-int DictionaryWordSelectActivity::wordAt(const int x, const int y) const {
-  constexpr int SLOP = 4;  // matches the highlight box (+2) plus finger error
-  for (int i = 0; i < static_cast<int>(words.size()); i++) {
-    const WordBox& word = words[i];
-    if (x >= word.x - SLOP && x < word.x + word.width + SLOP && y >= word.y - SLOP && y < word.y + lineHeight + SLOP) {
-      return i;
-    }
-  }
-  return -1;
-}
-
 // Index of the word in `row` whose horizontal center is closest to centerX;
 // -1 when the row has no words.
 int DictionaryWordSelectActivity::closestInRow(const uint16_t row, const int centerX) const {

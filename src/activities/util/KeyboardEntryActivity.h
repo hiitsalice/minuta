@@ -97,7 +97,6 @@ class KeyboardEntryActivity : public Activity {
 
   void onComplete(std::string text);
   void onCancel();
-  bool cursorPositionFromPoint(int x, int y, size_t& position) const;
   std::string displayTextForCurrentState() const;
   // Advance of s[start, end) measured in place by temporarily null-terminating
   // at `end` — avoids a substr temporary per measurement.
@@ -128,8 +127,6 @@ class KeyboardEntryActivity : public Activity {
 
   static constexpr uint16_t LONG_PRESS_MS = 500;
   static constexpr uint16_t DEL_LONG_PRESS_MS = 1500;
-  static constexpr uint16_t TOUCH_LONG_PRESS_MS = 350;
-  static constexpr uint16_t TOUCH_DEL_LONG_PRESS_MS = 900;
 
   // App-specific key id: toggles the URL snippet panel (URL fields only).
   static constexpr int16_t URL_PANEL_KEY = -3;

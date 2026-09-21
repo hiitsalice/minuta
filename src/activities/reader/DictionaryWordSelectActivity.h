@@ -43,7 +43,6 @@ class DictionaryWordSelectActivity final : public Activity {
 
   void extractWords();
   int closestInRow(uint16_t row, int centerX) const;
-  int wordAt(int x, int y) const;
   void moveVertical(int direction);
   void performLookup();
   bool drawHighlightWithSnapshot();
