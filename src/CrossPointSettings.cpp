@@ -203,7 +203,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
     if (!doc["shortPwrBtn"].isNull()) {
       const uint8_t old = doc["shortPwrBtn"] | (uint8_t)0;
       // old: 0 ignore, 1 sleep, 2 page turn, 3 refresh, 4 footnotes, 5 confirm
-      shortPwrBtn = (old == 0) ? (uint8_t)SLEEP : (uint8_t)(old - 1);
+      shortPwrBtn = (old == 0) ? (uint8_t)FORCE_REFRESH : (uint8_t)(old - 1);
       if (shortPwrBtn >= SHORT_PWRBTN_COUNT) shortPwrBtn = FORCE_REFRESH;
     }
     if (!doc["longPressButtonBehavior"].isNull()) {
