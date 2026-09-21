@@ -89,10 +89,7 @@ void ActivityManager::loop() {
   }
 
   if (currentActivity) {
-    if (!currentActivity->isHomeActivity() && mappedInput.wasHomeGesture()) {
-      if (currentActivity->handleHomeGesture()) {
-        return;
-      }
+    if (false) {
       goHome();
       return;
     }

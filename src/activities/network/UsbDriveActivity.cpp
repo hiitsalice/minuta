@@ -76,7 +76,7 @@ void UsbDriveActivity::loop() {
 
   const bool canExitWithInput = state == State::WaitingForHost || startFailed;
   if (canExitWithInput && (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
-                           mappedInput.wasPressed(MappedInputManager::Button::Power) || mappedInput.wasHomeGesture())) {
+                           mappedInput.wasPressed(MappedInputManager::Button::Power))) {
     restartToHome();
     return;
   }

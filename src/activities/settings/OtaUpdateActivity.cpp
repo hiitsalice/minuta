@@ -267,7 +267,7 @@ void OtaUpdateActivity::loop() {
   if (state == FAILED) {
     int x = 0;
     int y = 0;
-    if (mappedInput.wasPressed(MappedInputManager::Button::Back) || mappedInput.wasScreenTapped(x, y)) {
+    if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       finish();
     }
     return;
@@ -276,7 +276,7 @@ void OtaUpdateActivity::loop() {
   if (state == NO_UPDATE) {
     int x = 0;
     int y = 0;
-    if (mappedInput.wasPressed(MappedInputManager::Button::Back) || mappedInput.wasScreenTapped(x, y)) {
+    if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       finish();
     }
     return;

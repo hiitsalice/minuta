@@ -113,7 +113,7 @@ void KOReaderAuthActivity::loop() {
     int x = 0;
     int y = 0;
     if (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
-        mappedInput.wasPressed(MappedInputManager::Button::Confirm) || mappedInput.wasScreenTapped(x, y)) {
+        mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
       finish();
     }
   }

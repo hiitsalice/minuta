@@ -19,7 +19,7 @@ void QrDisplayActivity::loop() {
   int x = 0;
   int y = 0;
   if (mappedInput.wasReleased(MappedInputManager::Button::Back) ||
-      mappedInput.wasReleased(MappedInputManager::Button::Confirm) || mappedInput.wasScreenTapped(x, y)) {
+      mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     finish();
     return;
   }

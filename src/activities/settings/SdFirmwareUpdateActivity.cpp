@@ -202,7 +202,7 @@ void SdFirmwareUpdateActivity::loop() {
     int y = 0;
     // Only Back (button 1) is live on this screen per audit; Confirm must
     // not trigger the same action.
-    if (mappedInput.wasPressed(MappedInputManager::Button::Back) || mappedInput.wasScreenTapped(x, y)) {
+    if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       if (recoveryMode) {
         // Go back to picker so user can try a different .bin
         state = State::PICKING;

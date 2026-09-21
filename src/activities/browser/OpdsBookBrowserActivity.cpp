@@ -116,7 +116,7 @@ void OpdsBookBrowserActivity::loop() {
   if (state == BrowserState::ERROR) {
     int tx = 0;
     int ty = 0;
-    if (mappedInput.wasReleased(MappedInputManager::Button::Confirm) || mappedInput.wasScreenTapped(tx, ty)) {
+    if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
       if (WiFi.status() == WL_CONNECTED && WiFi.localIP() != IPAddress(0, 0, 0, 0)) {
         state = BrowserState::LOADING;
         statusMessage = tr(STR_LOADING);
