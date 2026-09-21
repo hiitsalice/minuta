@@ -149,29 +149,7 @@ void OpdsBookBrowserActivity::loop() {
       if (!searchTemplate.empty() && selectorIndex == 0) launchSearch();
     }
 
-    // Touch goes through the FreeInkApp: render() registered every tap target
-    // (rows, header search button); route the snapshot and let the registered
-    // handlers dispatch.
-    const auto route = routeTouch(mappedInput);
-    if (route.routed) {
-      // No pressed-state repaint: the render it triggers would drop a slow
-      // tap's release inside the uiReady window (tap-to-activate needed two
-      // taps), and it costs a second e-ink refresh per tap.
-      if (app.invalidated()) requestUpdate();
-      if (route) return;  // dispatched to onRowEvent/onSearchEvent
-      if (state != BrowserState::BROWSING) return;
-    }
-
     if (!entries.empty()) {
-      // Swipes scroll the viewport; the selection stays put (it may scroll
-      // off-screen) and button navigation pulls the view back to it.
-      const auto swipe = mappedInput.wasSwipe();
-      if (swipe == MappedInputManager::SwipeDir::Up || swipe == MappedInputManager::SwipeDir::Down) {
-        const int delta = swipe == MappedInputManager::SwipeDir::Up ? listNav.visibleRows : -listNav.visibleRows;
-        if (listNav.scrollBy(delta, static_cast<int>(entries.size()))) requestUpdate();
-        return;
-      }
-
       const auto moveSelection = [this](const int index) {
         selectorIndex = index;
         listNav.selected = index;
@@ -507,7 +485,6 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
           cancelDownload = true;
           goHomeAfterCancel = true;
         }
-        routeTouch(mappedInput);
         const int percent = total > 0 ? static_cast<int>(static_cast<uint64_t>(downloaded) * 100 / total) : 0;
         const unsigned long now = millis();
         if (percent >= 100 || lastRenderedPercent < 0 ||

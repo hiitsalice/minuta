@@ -59,12 +59,7 @@ bool UiListActivity::handleButtons() {
 bool UiListActivity::routeListTouch() {
   // Touch goes through the FreeInkApp: render() registered the row hit rects;
   // route the snapshot and let the action trampoline dispatch.
-  const auto route = UiAppHost::routeTouch(mappedInput, wantsTouchLongPress);
-  // No pressed-state repaint: the render it triggers would drop a slow tap's
-  // release inside the uiReady window (tap-to-activate needed two taps), and
-  // it costs a second e-ink refresh per tap.
-  if (route.routed && app.invalidated()) requestUpdate();
-  return static_cast<bool>(route);  // dispatched to the action handler
+  return false;
 }
 
 void UiListActivity::moveSelectionTo(const int index) {

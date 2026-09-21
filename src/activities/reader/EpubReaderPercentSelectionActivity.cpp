@@ -107,23 +107,6 @@ void EpubReaderPercentSelectionActivity::confirm() {
 }
 
 void EpubReaderPercentSelectionActivity::loop() {
-  // Touch goes through the FreeInkApp: render() registered the slider and -/+ hit
-  // rects; the slider follows the finger via InputDrag (dragPermille per held frame).
-  // Runs before the Back handler because the release of a drag can also register as a
-  // swipe (e.g. the left-edge rightward back gesture) — the drag must consume it so it
-  // can't cancel the dialog or step the percent.
-  const auto route = routeTouch(mappedInput, false, /*routeHeld=*/true);
-  if (route.routed && app.invalidated()) requestUpdate();
-  if (route) {
-    if (route.event.dragPermille >= 0) draggingSlider = true;
-    return;
-  }
-  if (routingReady() && draggingSlider) {
-    // Drag ended (possibly off the slider): swallow the tap/swipe events it produced.
-    if (!route.snap.touchHeld) draggingSlider = false;
-    return;
-  }
-
   // Back cancels, confirm selects, arrows adjust the percent.
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     cancel();

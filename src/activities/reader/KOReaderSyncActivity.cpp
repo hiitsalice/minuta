@@ -656,12 +656,6 @@ void KOReaderSyncActivity::loop() {
   }
 
   if (state == SHOWING_RESULT) {
-    // Touch goes through the FreeInkApp: render() registered the compare rows;
-    // route the snapshot and let onResultRow apply/upload on tap.
-    const auto route = routeTouch(mappedInput);
-    if (route.routed && app.invalidated()) requestUpdate();
-    if (route) return;  // dispatched to onResultRow
-
     // Navigate the two options with physical buttons.
     if (mappedInput.wasReleased(MappedInputManager::Button::Up) ||
         mappedInput.wasReleased(MappedInputManager::Button::Left) ||
@@ -682,11 +676,6 @@ void KOReaderSyncActivity::loop() {
   }
 
   if (state == NO_REMOTE_PROGRESS) {
-    // Touch goes through the FreeInkApp: render() registered the upload button.
-    const auto route = routeTouch(mappedInput);
-    if (route.routed && app.invalidated()) requestUpdate();
-    if (route) return;  // dispatched to onResultRow -> startUpload
-
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
       startUpload();
     }
