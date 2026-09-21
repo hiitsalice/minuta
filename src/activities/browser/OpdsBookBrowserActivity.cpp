@@ -472,13 +472,6 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
         // so the Cancel button or a Back press can abort mid-transfer.
         mappedInput.update();
         if (mappedInput.wasReleased(MappedInputManager::Button::Back)) cancelDownload = true;
-        // This update() consumes the one-shot home event before the central
-        // ActivityManager dispatch can see it, so honor it here: abort the
-        // download, then exit to home once the abort unwinds.
-        if (mappedInput.wasHomeGesture()) {
-          cancelDownload = true;
-          goHomeAfterCancel = true;
-        }
         const int percent = total > 0 ? static_cast<int>(static_cast<uint64_t>(downloaded) * 100 / total) : 0;
         const unsigned long now = millis();
         if (percent >= 100 || lastRenderedPercent < 0 ||

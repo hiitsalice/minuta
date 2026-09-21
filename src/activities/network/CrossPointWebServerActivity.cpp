@@ -380,10 +380,6 @@ void CrossPointWebServerActivity::loop() {
             finish();
             return;
           }
-          if (mappedInput.wasHomeGesture()) {
-            onGoHome();
-            return;
-          }
         }
       }
       lastHandleClientTime = millis();
@@ -392,10 +388,6 @@ void CrossPointWebServerActivity::loop() {
     // Also check outside the request-processing loop.
     if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       finish();
-      return;
-    }
-    if (mappedInput.wasHomeGesture()) {
-      onGoHome();
       return;
     }
   }

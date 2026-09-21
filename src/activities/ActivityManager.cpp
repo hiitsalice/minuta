@@ -89,11 +89,6 @@ void ActivityManager::loop() {
   }
 
   if (currentActivity) {
-    if (false) {
-      goHome();
-      return;
-    }
-
     // Note: do not hold a lock here, the loop() method must be responsible for acquire one if needed
     currentActivity->loop();
   }

@@ -460,13 +460,6 @@ void FontDownloadActivity::downloadFamily(ManifestFamily& family) {
               mappedInput.wasPressed(MappedInputManager::Button::Back)) {
             cancelRequested_ = true;
           }
-          // This update() consumes the one-shot home event before the central
-          // ActivityManager dispatch can see it, so honor it here: abort the
-          // download, then exit to home once the abort unwinds.
-          if (mappedInput.wasHomeGesture()) {
-            cancelRequested_ = true;
-            goHomeRequested_ = true;
-          }
           requestUpdate(true);
         },
         &cancelRequested_);
