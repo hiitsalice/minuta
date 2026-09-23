@@ -25,18 +25,22 @@ namespace {
 constexpr int homeMenuMargin = 20;
 constexpr int homeMarginTop = 30;
 constexpr int subtitleY = 738;
-constexpr int bookmarkStatusIconWidth = 16;
-constexpr int bookmarkStatusIconHeight = 14;
+constexpr int bookmarkStatusIconWidth = 32;
+constexpr int bookmarkStatusIconHeight = 28;
+constexpr int bookmarkStatusIconSourceWidth = 16;
+constexpr int bookmarkStatusIconSourceHeight = 14;
 constexpr int bookmarkStatusIconGap = 4;
 constexpr int bookmarkStatusIconTopCrop = 2;
 
 void drawBookmarkStatusIcon(const GfxRenderer& renderer, const int x, const int y) {
-  constexpr int bytesPerRow = bookmarkStatusIconWidth / 8;
-  for (int row = 0; row < bookmarkStatusIconHeight; ++row) {
-    for (int col = 0; col < bookmarkStatusIconWidth; ++col) {
+  constexpr int bytesPerRow = bookmarkStatusIconSourceWidth / 8;
+  for (int row = 0; row < bookmarkStatusIconSourceHeight; ++row) {
+    for (int col = 0; col < bookmarkStatusIconSourceWidth; ++col) {
       const uint8_t byte = BookmarkStatusIcon[(row + bookmarkStatusIconTopCrop) * bytesPerRow + col / 8];
       const uint8_t mask = 1U << (7 - (col % 8));
-      renderer.drawPixel(x + col, y + row, (byte & mask) != 0);
+      if ((byte & mask) != 0) {
+        renderer.fillRectDither(x + col * 2, y + row * 2, 2, 2, Color::LightGray);
+      }
     }
   }
 }
@@ -834,8 +838,8 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
   // Draw Bookmark
   if (showStatusBarTextLane && isPageBookmarked) {
     const int bookmarkGap = leftClusterWidth > 0 ? bookmarkStatusIconGap : 0;
-    const int bookmarkX = leftClusterX + leftClusterWidth + bookmarkGap;
-    const int bookmarkY = textY + 5;
+    const int bookmarkX = orientedMarginLeft + 3;
+    const int bookmarkY = orientedMarginTop + 3;
     drawBookmarkStatusIcon(renderer, bookmarkX, bookmarkY);
     leftClusterWidth += bookmarkStatusIconWidth + bookmarkGap;
   }
