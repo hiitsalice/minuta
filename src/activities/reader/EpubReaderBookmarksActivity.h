@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "../../BookmarkEntry.h"
+#include "../../HighlightEntry.h"
 #include "activities/UiListActivity.h"
 #include "components/OptionPopup.h"
 
@@ -16,13 +17,22 @@ class EpubReaderBookmarksActivity final : public UiListActivity {
   std::shared_ptr<Epub> epub;
   std::string epubPath;
   std::vector<BookmarkEntry> bookmarks;
-  // Row buffers derived from `bookmarks`, rebuilt only when it changes
+  std::vector<HighlightEntry> highlights;
+
+  struct SavedRow {
+    bool isHighlight;
+    int index;
+  };
+
+  std::vector<SavedRow> savedRows;
+
+  // Row buffers derived from saved items, rebuilt only when they change
   // (onEnter() load, post-delete) instead of on every repaint — buildScreen()
   // used to re-compose a percentage/chapter/TOC-title subtitle string per
   // bookmark on every render (cursor move, tap flash, ...).
-  std::vector<std::string> bookmarkSubtitles;
-  std::vector<freeink::ui::ListItem> bookmarkRowItems;
-  void rebuildBookmarkRowItems();
+  std::vector<std::string> savedSubtitles;
+  std::vector<freeink::ui::ListItem> savedRowItems;
+  void rebuildSavedRowItems();
   bool confirmingDelete = false;
   OptionPopup confirmPopup;
 
@@ -33,7 +43,7 @@ class EpubReaderBookmarksActivity final : public UiListActivity {
   void render(RenderLock&&) override;
 
  private:
-  int listCount() const override { return static_cast<int>(bookmarks.size()); }
+  int listCount() const override { return static_cast<int>(savedRows.size()); }
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
   void onRowLongPress(int index) override;
@@ -43,12 +53,12 @@ class EpubReaderBookmarksActivity final : public UiListActivity {
   bool handleButtons() override;
 
   // Open the selected bookmark: finishes with a ProgressChangeResult for the reader.
-  void openSelectedBookmark();
+  void openSelectedItem();
 
   // Opens the Cancel/Delete confirmation for the selected bookmark; shared by
   // the physical Confirm hold and the touch row long-press.
   void showDeleteConfirmation();
 
   // Delete the currently selected bookmark and persist the list
-  void deleteSelectedBookmark();
+  void deleteSelectedItem();
 };

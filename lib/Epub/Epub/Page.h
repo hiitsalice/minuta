@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "FootnoteEntry.h"
+#include "../../src/HighlightEntry.h"
 #include "blocks/ImageBlock.h"
 #include "blocks/TextBlock.h"
 
@@ -37,6 +38,8 @@ class PageLine final : public PageElement {
       : PageElement(xPos, yPos), block(std::move(block)) {}
   const std::shared_ptr<TextBlock>& getBlock() const { return block; }
   void render(GfxRenderer& renderer, int fontId, int xOffset, int yOffset) override;
+  void renderWithHighlights(GfxRenderer& renderer, int fontId, int xOffset, int yOffset,
+                            const std::vector<HighlightEntry>& highlights);
   bool serialize(HalFile& file) override;
   PageElementTag getTag() const override { return TAG_PageLine; }
   static std::unique_ptr<PageLine> deserialize(HalFile& file);
@@ -95,6 +98,8 @@ class Page {
   }
 
   void render(GfxRenderer& renderer, int fontId, int xOffset, int yOffset) const;
+  void renderWithHighlights(GfxRenderer& renderer, int fontId, int xOffset, int yOffset,
+                            const std::vector<HighlightEntry>& highlights) const;
   void renderImages(GfxRenderer& renderer, int fontId, int xOffset, int yOffset) const;
   void renderWithImagePlaceholders(GfxRenderer& renderer, int fontId, int xOffset, int yOffset) const;
   bool serialize(HalFile& file) const;

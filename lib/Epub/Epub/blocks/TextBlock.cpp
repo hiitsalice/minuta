@@ -10,6 +10,26 @@
 
 #include "../../../../src/fontIds.h"
 
+static uint32_t utf8Length(const char* text) {
+  uint32_t count = 0;
+  const unsigned char* ptr = reinterpret_cast<const unsigned char*>(text);
+
+  while (*ptr) {
+    if ((*ptr & 0x80) == 0) {
+      ptr += 1;
+    } else if ((*ptr & 0xE0) == 0xC0) {
+      ptr += 2;
+    } else if ((*ptr & 0xF0) == 0xE0) {
+      ptr += 3;
+    } else {
+      ptr += 4;
+    }
+    count++;
+  }
+
+  return count;
+}
+
 size_t TextBlock::arenaSize(const uint16_t wordCount, const bool hasFocus, const uint16_t textBytes) {
   // Layout documented in TextBlock.h: 16-bit arrays first, then 8-bit arrays, then text.
   size_t size = static_cast<size_t>(wordCount) * (sizeof(uint16_t) + sizeof(int16_t) + sizeof(uint8_t));
@@ -40,7 +60,8 @@ void TextBlock::bindArenaPointers() {
 
 TextBlock::TextBlock(const std::vector<std::string>& words, const std::vector<int16_t>& wordXpos,
                      const std::vector<EpdFontFamily::Style>& wordStyles, const std::vector<uint8_t>& focusBoundary,
-                     const std::vector<uint16_t>& focusSuffixX, const BlockStyle& blockStyle,
+                     const std::vector<uint16_t>& focusSuffixX,
+                     const std::vector<uint32_t>& wordVisibleOffsets, const BlockStyle& blockStyle,
                      std::vector<std::string> rubyTexts)
     : blockStyle(blockStyle), rubyTexts(std::move(rubyTexts)) {
   // Same invariant as deserialize(): a block never holds an all-empty rubyTexts, so a
@@ -54,7 +75,8 @@ TextBlock::TextBlock(const std::vector<std::string>& words, const std::vector<in
   // Focus annotations are optional: empty vectors mean no word in this block has a split.
   // When present, they must be sized in lockstep with words[].
   const bool hasFocus = !focusBoundary.empty();
-  if (words.size() != wordXpos.size() || words.size() != wordStyles.size() || words.size() > 10000 ||
+  if (words.size() != wordXpos.size() || words.size() != wordStyles.size() ||
+      words.size() != wordVisibleOffsets.size() || words.size() > 10000 ||
       (hasFocus && (words.size() != focusBoundary.size() || words.size() != focusSuffixX.size()))) {
     LOG_ERR("TXB", "Construction failed: size mismatch (words=%u, xpos=%u, styles=%u, boundary=%u, suffixX=%u)",
             static_cast<uint32_t>(words.size()), static_cast<uint32_t>(wordXpos.size()),
@@ -66,6 +88,7 @@ TextBlock::TextBlock(const std::vector<std::string>& words, const std::vector<in
 
   numWords = static_cast<uint16_t>(words.size());
   focusPresent = hasFocus;
+  this->wordVisibleOffsets = wordVisibleOffsets;
   if (numWords == 0) {
     return;  // valid empty block, no arena
   }
@@ -119,6 +142,10 @@ TextBlock::TextBlock(const std::vector<std::string>& words, const std::vector<in
   }
 }
 
+uint32_t TextBlock::wordVisibleEndOffset(const uint16_t i) const {
+  return wordVisibleOffsets[i] + utf8Length(wordText(i));
+}
+
 bool TextBlock::hasRuby() const {
   for (const auto& rt : rubyTexts) {
     if (!rt.empty()) return true;
@@ -126,7 +153,8 @@ bool TextBlock::hasRuby() const {
   return false;
 }
 
-void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int x, const int y) const {
+void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int x, const int y,
+                       const std::vector<HighlightEntry>* highlights) const {
   if (!isValid) {
     LOG_ERR("TXB", "Render skipped: invalid block");
     return;
@@ -223,6 +251,50 @@ void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int 
 
     const int drawX = wordX;
 
+    if (highlights != nullptr && !highlights->empty()) {
+      LOG_DBG("TXB", "Highlight render: %u entries word=%u offset=%u",
+              static_cast<uint32_t>(highlights->size()), i, wordVisibleOffset(i));
+
+      const uint32_t wordStart = wordVisibleOffset(i);
+      const uint32_t wordEnd = wordStart + utf8Length(word);
+
+      bool wordHighlighted = false;
+      bool highlightContinuesToNextWord = false;
+
+      for (const auto& highlight : *highlights) {
+        LOG_DBG("TXB", "Highlight range: %u-%u",
+                highlight.startVisibleTextOffset,
+                highlight.endVisibleTextOffset);
+
+        if (highlight.startVisibleTextOffset < wordEnd &&
+            highlight.endVisibleTextOffset > wordStart) {
+          wordHighlighted = true;
+
+          if (i + 1 < numWords &&
+              highlight.endVisibleTextOffset > wordVisibleOffset(i + 1)) {
+            highlightContinuesToNextWord = true;
+          }
+        }
+      }
+
+      if (wordHighlighted) {
+        LOG_DBG("TXB", "MATCH word=%u start=%u end=%u",
+                i, wordStart, wordEnd);
+
+        const int width = renderer.getTextAdvanceX(fontId, word, currentStyle);
+
+        const int highlightX = drawX - 2;
+        const int highlightY = wordY + 8;
+        const int highlightWidth =
+            (highlightContinuesToNextWord ? xposArr[i + 1] - xposArr[i] : width) + 4;
+        const int highlightHeight = renderer.getLineHeight(fontId) - 9;
+
+        renderer.fillRectDither(highlightX, highlightY,
+                                highlightWidth, highlightHeight,
+                                Color::LightGray);
+      }
+    }
+
     if (boundary > 0) {
       // Focus split: draw bold prefix, then the regular suffix at a pre-computed x offset.
       // The bold prefix is bounded to 9 codepoints by the clamp on targetBoldChars in
@@ -318,6 +390,10 @@ bool TextBlock::serialize(HalFile& file) const {
     }
   }
 
+  for (uint16_t i = 0; i < numWords; i++) {
+    serialization::writePod(file, wordVisibleOffsets[i]);
+  }
+
   // Ruby text data
   for (size_t i = 0; i < numWords; i++) {
     serialization::writeString(file, (i < rubyTexts.size()) ? rubyTexts[i] : std::string());
@@ -369,7 +445,6 @@ std::unique_ptr<TextBlock> TextBlock::deserialize(HalFile& file) {
   block->numWords = wc;
   block->textBytes = textBytes;
   block->focusPresent = hasFocus != 0;
-
   if (wc > 0) {
     const size_t size = arenaSize(wc, block->focusPresent, textBytes);
     block->arena = makeUniqueNoThrow<uint8_t[]>(size);
@@ -398,6 +473,11 @@ std::unique_ptr<TextBlock> TextBlock::deserialize(HalFile& file) {
         return nullptr;
       }
     }
+  }
+
+  block->wordVisibleOffsets.resize(wc);
+  for (uint16_t i = 0; i < wc; i++) {
+    serialization::readPod(file, block->wordVisibleOffsets[i]);
   }
 
   // Ruby text data. Ruby is a CJK feature, so for nearly every book every entry here

@@ -24,6 +24,13 @@ void PageLine::render(GfxRenderer& renderer, const int fontId, const int xOffset
   block->render(renderer, fontId, xPos + xOffset, yPos + yOffset);
 }
 
+void PageLine::renderWithHighlights(GfxRenderer& renderer, const int fontId, const int xOffset,
+                                    const int yOffset,
+                                    const std::vector<HighlightEntry>& highlights) {
+  LOG_DBG("PGE", "PageLine highlights: %u", static_cast<uint32_t>(highlights.size()));
+  block->render(renderer, fontId, xPos + xOffset, yPos + yOffset, &highlights);
+}
+
 bool PageLine::serialize(HalFile& file) {
   serialization::writePod(file, xPos);
   serialization::writePod(file, yPos);
@@ -122,6 +129,18 @@ std::unique_ptr<PageHorizontalRule> PageHorizontalRule::deserialize(HalFile& fil
 
 void Page::render(GfxRenderer& renderer, const int fontId, const int xOffset, const int yOffset) const {
   renderFilteredPageElements(elements, renderer, fontId, xOffset, yOffset, [](const PageElement&) { return true; });
+}
+
+void Page::renderWithHighlights(GfxRenderer& renderer, const int fontId, const int xOffset,
+                                const int yOffset,
+                                const std::vector<HighlightEntry>& highlights) const {
+  for (const auto& element : elements) {
+    if (element->getTag() == TAG_PageLine) {
+      static_cast<PageLine&>(*element).renderWithHighlights(renderer, fontId, xOffset, yOffset, highlights);
+    } else {
+      element->render(renderer, fontId, xOffset, yOffset);
+    }
+  }
 }
 
 void Page::renderImages(GfxRenderer& renderer, const int fontId, const int xOffset, const int yOffset) const {

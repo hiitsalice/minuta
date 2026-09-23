@@ -1816,6 +1816,13 @@ std::string GfxRenderer::truncatedText(const int fontId, const char* text, const
     utf8RemoveLastChar(item);
   }
 
+  // Prefer a whole-word boundary when truncating. If the first word itself
+  // is too wide, keep the existing character-level fallback.
+  const size_t lastSpace = item.find_last_of(' ');
+  if (lastSpace != std::string::npos) {
+    item.resize(lastSpace);
+  }
+
   return item.empty() ? ellipsis : item + ellipsis;
 }
 

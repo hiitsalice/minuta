@@ -7,8 +7,10 @@
 
 #include "BookmarkUtil.h"
 
-bool BookmarkFile::load(const std::string& bookPath, std::vector<BookmarkEntry>& bookmarks) {
+bool BookmarkFile::load(const std::string& bookPath, std::vector<BookmarkEntry>& bookmarks,
+                         std::vector<HighlightEntry>& highlights) {
   bookmarks.clear();
+  highlights.clear();
 
   // Read/write go through PersistableStoreBase so the JSON parser and
   // serializer stay instantiated once, in PersistableStore.cpp.
@@ -35,11 +37,27 @@ bool BookmarkFile::load(const std::string& bookPath, std::vector<BookmarkEntry>&
     }
   }
 
-  LOG_DBG("BKM", "Loaded %zu bookmarks from file", bookmarks.size());
+  JsonArray highlightArr = doc["highlights"].as<JsonArray>();
+  highlights.reserve(highlightArr.size());
+  for (JsonObject obj : highlightArr) {
+    highlights.emplace_back();
+    auto& highlight = highlights.back();
+    highlight.spineIndex = obj["si"] | static_cast<uint16_t>(0);
+    highlight.startVisibleTextOffset = obj["start"] | static_cast<uint32_t>(0);
+    highlight.endVisibleTextOffset = obj["end"] | static_cast<uint32_t>(0);
+    highlight.summary = obj["summary"] | "";
+    highlight.percentage = obj["percentage"] | 0.0f;
+    highlight.computedChapterPageCount = obj["pc"] | static_cast<uint16_t>(0);
+    highlight.computedChapterProgress = obj["pp"] | static_cast<uint16_t>(0);
+  }
+
+  LOG_DBG("BKM", "Loaded %zu bookmarks and %zu highlights from file",
+          bookmarks.size(), highlights.size());
   return true;
 }
 
-bool BookmarkFile::save(const std::string& bookPath, const std::vector<BookmarkEntry>& bookmarks) {
+bool BookmarkFile::save(const std::string& bookPath, const std::vector<BookmarkEntry>& bookmarks,
+                         const std::vector<HighlightEntry>& highlights) {
   JsonDocument doc;
   JsonArray arr = doc["bookmarks"].to<JsonArray>();
   LOG_DBG("BKM", "Saving %zu bookmarks to file", bookmarks.size());
@@ -54,6 +72,18 @@ bool BookmarkFile::save(const std::string& bookPath, const std::vector<BookmarkE
     if (bookmark.hasVisibleTextOffset) {
       obj["vo"] = bookmark.visibleTextOffset;
     }
+  }
+
+  JsonArray highlightArr = doc["highlights"].to<JsonArray>();
+  for (const auto& highlight : highlights) {
+    JsonObject obj = highlightArr.add<JsonObject>();
+    obj["si"] = highlight.spineIndex;
+    obj["start"] = highlight.startVisibleTextOffset;
+    obj["end"] = highlight.endVisibleTextOffset;
+    obj["summary"] = highlight.summary;
+    obj["percentage"] = highlight.percentage;
+    obj["pc"] = highlight.computedChapterPageCount;
+    obj["pp"] = highlight.computedChapterProgress;
   }
 
   // writeDocToFile ensures /.crosspoint; the bookmarks subdirectory is ours.

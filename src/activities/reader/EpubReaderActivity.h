@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "BookmarkEntry.h"
+#include "HighlightEntry.h"
 #include "EpubReaderMenuActivity.h"
 #include "ProgressMapper.h"
 #include "ReaderActivity.h"
@@ -47,6 +48,7 @@ class EpubReaderActivity final : public ReaderActivity {
   unsigned long lastRenderCompleteMs = 0;
   bool bookmarkRemoved = false;
   std::vector<BookmarkEntry> cachedBookmarks;
+  std::vector<HighlightEntry> cachedHighlights;
   bool recentsEntryRemoved = false;
   unsigned long bookmarkMessageTime = 0UL;
   bool pendingReadFolderMove = false;
@@ -91,6 +93,7 @@ class EpubReaderActivity final : public ReaderActivity {
   void onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction action);
   void openReaderMenu();
   void openDictionaryWordSelect();
+  void openHighlightWordSelect();
   bool launchKOReaderSync();
   unsigned long confirmLongPressThreshold() const;
   void toggleAutoPageTurn(uint8_t selectedPageTurnOption);

@@ -21,6 +21,7 @@
 #include "CrossPointSettings.h"
 #include "CrossPointState.h"
 #include "DictionaryWordSelectActivity.h"
+#include "HighlightWordSelectActivity.h"
 #include "EpubReaderBookmarksActivity.h"
 #include "EpubReaderChapterSelectionActivity.h"
 #include "EpubReaderFootnotesActivity.h"
@@ -250,7 +251,7 @@ void EpubReaderActivity::openReaderMenu() {
   const int bookProgressPercent = clampPercent(static_cast<int>(bookProgress + 0.5f));
   startActivityForResult(std::make_unique<EpubReaderMenuActivity>(
                              renderer, mappedInput, epub->getTitle(), currentPage, totalPages, bookProgressPercent,
-                             SETTINGS.orientation, !currentPageFootnotes.empty(), !cachedBookmarks.empty()),
+                             SETTINGS.orientation, !currentPageFootnotes.empty(), true),
                          [this](const ActivityResult& result) {
                            const auto& menu = std::get<MenuResult>(result.data);
                            if (SETTINGS.orientation != menu.orientation) {
@@ -297,6 +298,40 @@ void EpubReaderActivity::openDictionaryWordSelect() {
   startActivityForResult(std::make_unique<DictionaryWordSelectActivity>(renderer, mappedInput, std::move(page),
                                                                         orientedMarginLeft, orientedMarginTop),
                          [this](const ActivityResult&) { requestUpdate(); });
+}
+
+void EpubReaderActivity::openHighlightWordSelect() {
+  if (!section) return;
+  auto page = section->loadPage(section->currentPage);
+  if (!page) return;
+
+  int orientedMarginTop, orientedMarginRight, orientedMarginBottom, orientedMarginLeft;
+  renderer.getOrientedViewableTRBL(&orientedMarginTop, &orientedMarginRight, &orientedMarginBottom,
+                                   &orientedMarginLeft);
+  orientedMarginTop += SETTINGS.screenMargin;
+  orientedMarginLeft += SETTINGS.screenMargin;
+
+  startActivityForResult(
+      std::make_unique<HighlightWordSelectActivity>(
+          renderer, mappedInput, std::move(page), orientedMarginLeft, orientedMarginTop,
+          static_cast<uint16_t>(currentSpineIndex)),
+      [this](const ActivityResult& result) {
+        if (!result.isCancelled && std::holds_alternative<HighlightResult>(result.data)) {
+          auto highlight = std::get<HighlightResult>(result.data).highlight;
+          const int currentPage = section ? section->currentPage : nextPageNumber;
+          const int pageCount = section ? section->estimatedTotalPages() : cachedChapterTotalPageCount;
+          const SavedProgressPosition progress =
+              ProgressMapper::toSavedProgress(epub, getCurrentPosition());
+
+          highlight.percentage = progress.percentage;
+          highlight.computedChapterPageCount = static_cast<uint16_t>(std::max(0, pageCount));
+          highlight.computedChapterProgress = static_cast<uint16_t>(std::max(0, currentPage));
+
+          cachedHighlights.push_back(std::move(highlight));
+          BookmarkFile::save(epub->getPath(), cachedBookmarks, cachedHighlights);
+        }
+        requestUpdate();
+      });
 }
 
 void EpubReaderActivity::loop() {
@@ -749,6 +784,10 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
     }
     case EpubReaderMenuActivity::MenuAction::DICTIONARY: {
       openDictionaryWordSelect();
+      break;
+    }
+    case EpubReaderMenuActivity::MenuAction::HIGHLIGHT: {
+      openHighlightWordSelect();
       break;
     }
     case EpubReaderMenuActivity::MenuAction::DISPLAY_QR: {
@@ -1376,7 +1415,19 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
 
   auto* fcm = renderer.getFontCacheManager();
   auto scope = fcm->createPrewarmScope();
-  page->render(renderer, fontId, orientedMarginLeft, orientedMarginTop);
+
+  std::vector<HighlightEntry> pageHighlights;
+  for (const auto& highlight : cachedHighlights) {
+    if (highlight.spineIndex == static_cast<uint16_t>(currentSpineIndex)) {
+      pageHighlights.push_back(highlight);
+    }
+  }
+
+  LOG_DBG("RDR", "Cached highlights=%u page highlights=%u",
+          static_cast<uint32_t>(cachedHighlights.size()),
+          static_cast<uint32_t>(pageHighlights.size()));
+
+  page->renderWithHighlights(renderer, fontId, orientedMarginLeft, orientedMarginTop, pageHighlights);
   // Scan the status bar too: a CJK book/chapter title redirected to the SD
   // fallback font joins the page's single batch prewarm instead of triggering
   // its own SD pass after the scope ends.
@@ -1395,7 +1446,7 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
   const bool overlapRefresh = tiledGrayscale && renderer.supportsAsyncRefresh() && !pageHasImages;
   auto renderGrayscalePass = [&]() {
     if (needsTextGrayscale) {
-      page->render(renderer, fontId, orientedMarginLeft, orientedMarginTop);
+      page->renderWithHighlights(renderer, fontId, orientedMarginLeft, orientedMarginTop, pageHighlights);
     } else {
       page->renderImages(renderer, fontId, orientedMarginLeft, orientedMarginTop);
     }
@@ -1408,7 +1459,7 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
     renderer.clearScreen();
   }
 
-  page->render(renderer, fontId, orientedMarginLeft, orientedMarginTop);
+  page->renderWithHighlights(renderer, fontId, orientedMarginLeft, orientedMarginTop, pageHighlights);
   renderStatusBar();
   const auto tBwRender = millis();
 
@@ -1661,7 +1712,7 @@ void EpubReaderActivity::loadCachedBookmarks() {
     return;
   }
 
-  BookmarkFile::load(epub->getPath(), cachedBookmarks);
+  BookmarkFile::load(epub->getPath(), cachedBookmarks, cachedHighlights);
   updateBookmarkFlag();
 }
 
@@ -1715,7 +1766,7 @@ void EpubReaderActivity::addBookmark() {
     currentPageBookmarked = true;
   }
 
-  if (!BookmarkFile::save(epub->getPath(), cachedBookmarks)) {
+  if (!BookmarkFile::save(epub->getPath(), cachedBookmarks, cachedHighlights)) {
     LOG_ERR("ERS", "Failed to save bookmarks");
   }
   requestUpdate();

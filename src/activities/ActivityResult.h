@@ -7,6 +7,8 @@
 #include <utility>
 #include <variant>
 
+#include "HighlightEntry.h"
+
 struct WifiResult {
   bool connected = false;
   std::string ssid;
@@ -53,6 +55,10 @@ struct ProgressChangeResult {
   uint32_t visibleTextOffset = 0;
 };
 
+struct HighlightResult {
+  HighlightEntry highlight;
+};
+
 enum class NetworkMode;
 
 struct NetworkModeResult {
@@ -69,7 +75,7 @@ struct FilePathResult {
 
 using ResultVariant =
     std::variant<std::monostate, WifiResult, KeyboardResult, MenuResult, ChapterResult, PercentResult, IntervalResult,
-                 PageResult, ProgressChangeResult, NetworkModeResult, FootnoteResult, FilePathResult>;
+                 PageResult, ProgressChangeResult, HighlightResult, NetworkModeResult, FootnoteResult, FilePathResult>;
 
 struct ActivityResult {
   bool isCancelled = false;
