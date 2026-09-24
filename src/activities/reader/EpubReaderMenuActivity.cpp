@@ -90,6 +90,9 @@ void EpubReaderMenuActivity::activateIndex(const int index) {
     // result handler still detects the change and reflows.
     ReaderUtils::applyOrientation(renderer, pendingOrientation);
     app.setDevice(uiTarget.deviceContext());  // hit rects follow the new frame
+    // Landscape shows fewer rows than portrait; re-run the scroll-to-selected
+    // pass so the row being cycled (this one) stays visible after rotating.
+    nav.followOnBuild = true;
     requestUpdate(true);
     return;
   }
