@@ -160,15 +160,11 @@ void OpdsServerListActivity::handleSelection() {
     return;
   }
 
-  // "Filename format": picker like every other multi-option setting.
+  // "Filename format": cycle in place, no popup.
   if (nav.selected == serverCount + 2) {
-    static const StrId formatLabels[] = {StrId::STR_FMT_AUTHOR_TITLE, StrId::STR_FMT_TITLE_AUTHOR,
-                                         StrId::STR_FMT_TITLE};
-    optionPopup.show(StrId::STR_OPDS_FILENAME_FORMAT, formatLabels, static_cast<int>(OpdsFilenameFormat::Count),
-                     SETTINGS.opdsFilenameFormat, [this](int idx) {
-                       SETTINGS.opdsFilenameFormat = static_cast<uint8_t>(idx);
-                       SETTINGS.saveToFile();
-                     }, true);
+    SETTINGS.opdsFilenameFormat = static_cast<uint8_t>(
+        (SETTINGS.opdsFilenameFormat + 1) % static_cast<int>(OpdsFilenameFormat::Count));
+    SETTINGS.saveToFile();
     requestUpdate();
     return;
   }
