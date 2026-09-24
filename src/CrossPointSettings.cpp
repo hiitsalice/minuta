@@ -285,6 +285,10 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
   // Minuta always shows the main UI battery and percentage.
   hideBatteryPercentage = HIDE_NEVER;
 
+  // Image display mode is no longer a menu option — Minuta always shows
+  // images now. Force any existing Placeholder/Suppress save back to Display.
+  imageRendering = IMAGES_DISPLAY;
+
   if (needsResave) {
     LOG_DBG("CPS", "Resaving settings to update format");
     requestResave();
