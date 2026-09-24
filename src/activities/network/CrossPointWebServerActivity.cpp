@@ -406,7 +406,7 @@ void CrossPointWebServerActivity::render(RenderLock&&) {
                    isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_FILE_TRANSFER), nullptr);
 
     if (state == WebServerActivityState::SERVER_RUNNING) {
-      GUI.drawSubHeader(renderer, Rect{0, metrics.topPadding + metrics.headerHeight, pageWidth, metrics.tabBarHeight},
+      GUI.drawSubHeader(renderer, Rect{0, metrics.topPadding + metrics.headerHeight + 6, pageWidth, metrics.tabBarHeight - 6},
                         connectedSSID.c_str());
       renderServerRunning();
     } else {
@@ -424,7 +424,7 @@ void CrossPointWebServerActivity::renderServerRunning() const {
 
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight},
                  isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_FILE_TRANSFER), nullptr);
-  GUI.drawSubHeader(renderer, Rect{0, metrics.topPadding + metrics.headerHeight, pageWidth, metrics.tabBarHeight},
+  GUI.drawSubHeader(renderer, Rect{0, metrics.topPadding + metrics.headerHeight + 6, pageWidth, metrics.tabBarHeight - 6},
                     connectedSSID.c_str());
 
   if (!isApMode) {
@@ -435,24 +435,29 @@ void CrossPointWebServerActivity::renderServerRunning() const {
   int height10 = renderer.getLineHeight(UI_10_FONT_ID);
   if (isApMode) {
     // AP mode display
-    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, startY, tr(STR_CONNECT_WIFI_HINT), true,
+    const int wifiX = metrics.contentSidePadding;
+
+    // Temporary fixed positions for hotspot layout testing.
+    renderer.drawCenteredText(UI_10_FONT_ID, 160, "Connect your device to", true,
                       EpdFontFamily::BOLD);
-    startY += height10 + metrics.verticalSpacing * 2;
 
-    // Show QR code for Wifi
-    // follows spec at https://github.com/zxing/zxing/wiki/Barcode-Contents#wi-fi-network-config-android-ios-11
-    const std::string wifiConfig = std::string("WIFI:T:nopass;S:") + connectedSSID + ";;";
-    const Rect qrBoundsWifi(metrics.contentSidePadding, startY, QR_CODE_WIDTH, QR_CODE_HEIGHT);
-    QrUtils::drawQrCode(renderer, qrBoundsWifi, wifiConfig);
+    renderer.drawCenteredText(UI_10_FONT_ID, 184, connectedSSID.c_str());
 
-    // Show network name
-    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding + QR_CODE_WIDTH + metrics.verticalSpacing, startY + 80,
-                      connectedSSID.c_str());
+    // TEMPORARY SIMULATOR QR MOCKUP
+    constexpr int WIFI_QR_SIZE = 200;
+    const Rect qrBoundsWifi((pageWidth - WIFI_QR_SIZE) / 2, 212, WIFI_QR_SIZE, WIFI_QR_SIZE);
+    for (int y = 0; y < WIFI_QR_SIZE; y += 6) {
+      for (int x = 0; x < WIFI_QR_SIZE; x += 6) {
+        if (((x / 6) + (y / 6)) % 3 != 0) {
+          renderer.fillRect(qrBoundsWifi.x + x, qrBoundsWifi.y + y, 6, 6, Color::Black);
+        }
+      }
+    }
 
-    startY += QR_CODE_HEIGHT + 2 * metrics.verticalSpacing;
+    startY = 478;
 
     // Show primary URL (hostname)
-    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, startY, tr(STR_OPEN_URL_HINT), true,
+    renderer.drawCenteredText(UI_10_FONT_ID, 452, tr(STR_OPEN_URL_HINT), true,
                       EpdFontFamily::BOLD);
     startY += height10 + metrics.verticalSpacing * 2;
 
@@ -460,14 +465,19 @@ void CrossPointWebServerActivity::renderServerRunning() const {
     std::string ipUrl = tr(STR_OR_HTTP_PREFIX) + connectedIP + "/";
 
     // Show QR code for URL
-    const Rect qrBoundsUrl(metrics.contentSidePadding, startY, QR_CODE_WIDTH, QR_CODE_HEIGHT);
-    QrUtils::drawQrCode(renderer, qrBoundsUrl, hostnameUrl);
+    const Rect qrBoundsUrl((pageWidth - QR_CODE_WIDTH) / 2, 528, 200, 200);
+    // TEMPORARY SIMULATOR QR MOCKUP
+    for (int y = 0; y < QR_CODE_HEIGHT; y += 6) {
+      for (int x = 0; x < QR_CODE_WIDTH; x += 6) {
+        if (((x / 6) + (y / 6)) % 3 != 0) {
+          renderer.fillRect(qrBoundsUrl.x + x, qrBoundsUrl.y + y, 6, 6, Color::Black);
+        }
+      }
+    }
 
     // Show IP address as fallback
-    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding + QR_CODE_WIDTH + metrics.verticalSpacing, startY + 80,
-                      hostnameUrl.c_str());
-    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding + QR_CODE_WIDTH + metrics.verticalSpacing, startY + 100,
-                      ipUrl.c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, 476, hostnameUrl.c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, 500, ipUrl.c_str());
   } else {
     startY += metrics.verticalSpacing * 2;
 
