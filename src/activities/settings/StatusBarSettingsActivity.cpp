@@ -107,35 +107,20 @@ void StatusBarSettingsActivity::handleSelection() {
       SETTINGS.statusBarBookProgressPercentage = (SETTINGS.statusBarBookProgressPercentage + 1) % 2;
       break;
     case ITEM_PROGRESS_BAR:
-      optionPopup.show(StrId::STR_PROGRESS_BAR, progressBarNames, PROGRESS_BAR_ITEMS, SETTINGS.statusBarProgressBar,
-                       [this](int idx) {
-                         SETTINGS.statusBarProgressBar = idx;
-                         SETTINGS.saveToFile();
-                       });
-      return;
+      SETTINGS.statusBarProgressBar = (SETTINGS.statusBarProgressBar + 1) % PROGRESS_BAR_ITEMS;
+      break;
     case ITEM_PROGRESS_BAR_THICKNESS:
-      optionPopup.show(StrId::STR_PROGRESS_BAR_THICKNESS, progressBarThicknessNames, PROGRESS_BAR_THICKNESS_ITEMS,
-                       SETTINGS.statusBarProgressBarThickness, [this](int idx) {
-                         SETTINGS.statusBarProgressBarThickness = idx;
-                         SETTINGS.saveToFile();
-                       });
-      return;
+      SETTINGS.statusBarProgressBarThickness = (SETTINGS.statusBarProgressBarThickness + 1) % PROGRESS_BAR_THICKNESS_ITEMS;
+      break;
     case ITEM_TITLE:
-      optionPopup.show(StrId::STR_TITLE, titleNames, TITLE_ITEMS, SETTINGS.statusBarTitle, [this](int idx) {
-        SETTINGS.statusBarTitle = idx;
-        SETTINGS.saveToFile();
-      });
-      return;
+      SETTINGS.statusBarTitle = (SETTINGS.statusBarTitle + 1) % TITLE_ITEMS;
+      break;
     case ITEM_BATTERY:
       SETTINGS.statusBarBattery = (SETTINGS.statusBarBattery + 1) % 2;
       break;
     case ITEM_XTC_STATUS_BAR:
-      optionPopup.show(StrId::STR_XTC_STATUS_BAR, xtcStatusBarNames, XTC_STATUS_BAR_ITEMS, SETTINGS.xtcStatusBarMode,
-                       [this](int idx) {
-                         SETTINGS.xtcStatusBarMode = idx;
-                         SETTINGS.saveToFile();
-                       });
-      return;
+      SETTINGS.xtcStatusBarMode = (SETTINGS.xtcStatusBarMode + 1) % XTC_STATUS_BAR_ITEMS;
+      break;
     default:
       return;
   }
