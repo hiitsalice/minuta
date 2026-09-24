@@ -33,7 +33,6 @@ class EpubReaderBookmarksActivity final : public UiListActivity {
   std::vector<std::string> savedSubtitles;
   std::vector<freeink::ui::ListItem> savedRowItems;
   void rebuildSavedRowItems();
-  bool confirmingDelete = false;
   OptionPopup confirmPopup;
 
  public:
@@ -46,7 +45,6 @@ class EpubReaderBookmarksActivity final : public UiListActivity {
   int listCount() const override { return static_cast<int>(savedRows.size()); }
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
-  void onRowLongPress(int index) override;
   // Popup handling runs before everything else each pass.
   bool handleCustomInput() override;
   // Back cancels with a result; Confirm opens on RELEASE (a hold is "delete").
@@ -57,7 +55,6 @@ class EpubReaderBookmarksActivity final : public UiListActivity {
 
   // Opens the Cancel/Delete confirmation for the selected bookmark; shared by
   // the physical Confirm hold and the touch row long-press.
-  void showDeleteConfirmation();
 
   // Delete the currently selected bookmark and persist the list
   void deleteSelectedItem();

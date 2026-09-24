@@ -221,28 +221,7 @@ void EpubReaderBookmarksActivity::activateIndex(const int index) {
   openSelectedItem();
 }
 
-void EpubReaderBookmarksActivity::onRowLongPress(const int index) {
-  if (confirmPopup.isActive()) return;
-  if (index < 0 || index >= listCount()) return;
-  // The row is deleted; a lingering flash would gray an unrelated row on the
-  // next render.
-  app.clearTapFlash();
-  nav.selected = index;
-  // Touch long-press asks the same Cancel/Delete confirmation as the physical
-  // hold (the popup is tap-operable), matching the file browser's long-press
-  // delete flow. Does not open the bookmark.
-  showDeleteConfirmation();
-}
-
 bool EpubReaderBookmarksActivity::handleCustomInput() {
-  // Delete confirmation popup
-  if (confirmPopup.handleInput(mappedInput, [this] { requestUpdate(); })) return true;
-  if (confirmingDelete) {
-    // Popup dismissed without a selection (Back button or tap outside): cancel delete
-    confirmingDelete = false;
-    requestUpdate();
-    return true;
-  }
   return false;
 }
 
@@ -283,21 +262,6 @@ bool EpubReaderBookmarksActivity::handleButtons() {
   return false;
 }
 
-void EpubReaderBookmarksActivity::showDeleteConfirmation() {
-  if (savedRows.empty() || confirmPopup.isActive()) {
-    return;
-  }
-  confirmingDelete = true;
-  const char* options[] = {tr(STR_CANCEL), tr(STR_DELETE)};
-  confirmPopup.show(tr(STR_CONFIRM_DELETE_BOOKMARK), options, 2, 0, [this](int idx) {
-    confirmingDelete = false;
-    if (idx == 1) {
-      deleteSelectedItem();
-    }
-    requestUpdate();
-  });
-  requestUpdate();
-}
 
 void EpubReaderBookmarksActivity::deleteSelectedItem() {
   if (savedRows.empty()) {
