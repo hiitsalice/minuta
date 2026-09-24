@@ -285,18 +285,17 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
                            StrId::STR_LONG_PRESS_BEHAVIOR_ORIENTATION},
                           "longPressButtonBehavior", StrId::STR_CAT_CONTROLS),
         SettingInfo::Enum(StrId::STR_LONG_PRESS_BACK_DESTINATION, &CrossPointSettings::longPressBackDestination,
-                          {StrId::STR_SETTINGS_TITLE, StrId::STR_LIBRARY},
+                          {StrId::STR_LIBRARY, StrId::STR_SETTINGS_TITLE},
                           "longPressBackDestination", StrId::STR_CAT_CONTROLS),
         SettingInfo::Enum(StrId::STR_LONG_PRESS_MENU, &CrossPointSettings::longPressMenuFunction,
-                          buildLongPressMenuValues(), "longPressMenuFunction", StrId::STR_CAT_CONTROLS)
+                          {StrId::STR_DICTIONARY, StrId::STR_KOSYNC},
+                          "longPressMenuFunction", StrId::STR_CAT_CONTROLS)
             .withNoPopup(),
         SettingInfo::Enum(
             StrId::STR_SHORT_PWR_BTN, &CrossPointSettings::shortPwrBtn,
-            {StrId::STR_SLEEP, StrId::STR_PAGE_TURN, StrId::STR_FORCE_REFRESH, StrId::STR_FOOTNOTES},
+            {StrId::STR_FORCE_REFRESH, StrId::STR_SLEEP},
             "shortPwrBtn", StrId::STR_CAT_CONTROLS)
             .withNoPopup(),
-        SettingInfo::Toggle(StrId::STR_PWR_BTN_FOOTNOTE_BACK, &CrossPointSettings::pwrBtnFootnoteBack,
-                            "pwrBtnFootnoteBack", StrId::STR_CAT_CONTROLS),
         // --- System ---
         SettingInfo::Value(
             StrId::STR_TIME_TO_SLEEP, &CrossPointSettings::sleepTimeoutMinutes,

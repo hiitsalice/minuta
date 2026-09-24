@@ -125,11 +125,8 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
 
   // Short power button press actions
   enum SHORT_PWRBTN {
-    SLEEP = 0,
-    PAGE_TURN = 1,
-    FORCE_REFRESH = 2,
-    FOOTNOTES = 3,
-    PWR_CONFIRM = 4,
+    FORCE_REFRESH = 0,
+    SLEEP = 1,
     SHORT_PWRBTN_COUNT
   };
 
@@ -138,16 +135,14 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // value >= 2 and be appended at the END of the enumValues array in SettingsList.h, otherwise the
   // stored indices shift and existing saves are silently misinterpreted.
   enum LONG_PRESS_BACK_DESTINATION {
-  LONG_PRESS_BACK_SETTINGS = 0,
-  LONG_PRESS_BACK_LIBRARY = 1,
+  LONG_PRESS_BACK_LIBRARY = 0,
+  LONG_PRESS_BACK_SETTINGS = 1,
   LONG_PRESS_BACK_DESTINATION_COUNT
 };
 
 enum LONG_PRESS_MENU_FUNCTION {
-    LP_MENU_KOSYNC = 0,
-    LP_MENU_BOOKMARK = 1,
-    LP_MENU_DICTIONARY = 2,
-    LP_MENU_READER_MENU = 3,
+    LP_MENU_DICTIONARY = 0,
+    LP_MENU_KOSYNC = 1,
     LONG_PRESS_MENU_FUNCTION_COUNT
   };
 
@@ -215,8 +210,8 @@ enum LONG_PRESS_MENU_FUNCTION {
   uint8_t paragraphAlignment = JUSTIFIED;
   // Auto-sleep timeout setting (default 10 minutes). Legacy sleepTimeout enum values are migration-only.
   uint8_t sleepTimeoutMinutes = 10;
-  // E-ink refresh frequency (default 15 pages)
-  uint8_t refreshFrequency = REFRESH_15;
+  // E-ink refresh frequency (default 30 pages)
+  uint8_t refreshFrequency = REFRESH_30;
   uint8_t hyphenationEnabled = 0;
 
   // Reader screen margin settings
@@ -236,15 +231,13 @@ enum LONG_PRESS_MENU_FUNCTION {
   uint8_t hideBatteryPercentage = HIDE_NEVER;
   // Long-press page turn button behavior
   uint8_t longPressButtonBehavior = CHAPTER_SKIP;
-  // Long-press Confirm function in EPUB reader (cycles through LONG_PRESS_MENU_FUNCTION values).
-  // Defaults to Disabled so shortcut-based bookmark toggling remains opt-in.
+  // Long-press Confirm function in EPUB reader.
   uint8_t longPressMenuFunction = LP_MENU_DICTIONARY;
   // UI Theme
   uint8_t uiTheme = SOLUM;
   // Sunlight fading compensation
   uint8_t fadingFix = 0;
   // Power button return from footnotes (1 = enabled, 0 = disabled)
-  uint8_t pwrBtnFootnoteBack = 1;
   // Use book's embedded CSS styles for EPUB rendering (1 = enabled, 0 = disabled)
   uint8_t embeddedStyle = 0;
   // Focus Reading - emphasizes the first part of words with bold
@@ -263,7 +256,7 @@ enum LONG_PRESS_MENU_FUNCTION {
   uint8_t backShortToFileBrowser = 0;
 
   // Destination for a long-press of logical Back while reading.
-  // 0 = Settings, 1 = Library.
+  // 0 = Library, 1 = Settings.
   uint8_t longPressBackDestination = LONG_PRESS_BACK_LIBRARY;
   // Image rendering mode in EPUB reader
   uint8_t imageRendering = IMAGES_DISPLAY;

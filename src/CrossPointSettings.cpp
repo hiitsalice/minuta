@@ -107,7 +107,7 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
 
   // Version 1 places Light before Dark while preserving their stored meaning.
   doc["sleepScreenOrder"] = 1;
-  doc["controlsLayoutVersion"] = 1;
+  doc["controlsLayoutVersion"] = 2;
 }
 
 bool CrossPointSettings::fromJson(JsonVariantConst doc) {
@@ -196,46 +196,76 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
     sleepTimeoutMinutes = sleepTimeoutEnumToMinutes(legacyValue);
     needsResave = true;
   }
-  // One-time renumbering of Controls options (off/disabled/ignore removed).
+  // One-time renumbering of Controls options.
   // Reads the raw stored values, because the generic loop above has already clamped
   // the fields against the new, shorter lists.
   if (doc["controlsLayoutVersion"].isNull()) {
     if (!doc["shortPwrBtn"].isNull()) {
       const uint8_t old = doc["shortPwrBtn"] | (uint8_t)0;
       // old: 0 ignore, 1 sleep, 2 page turn, 3 refresh, 4 footnotes, 5 confirm
-      shortPwrBtn = (old == 0) ? (uint8_t)FORCE_REFRESH : (uint8_t)(old - 1);
-      if (shortPwrBtn >= SHORT_PWRBTN_COUNT) shortPwrBtn = FORCE_REFRESH;
+      shortPwrBtn = (old == 1) ? (uint8_t)SLEEP : (uint8_t)FORCE_REFRESH;
     }
+
     if (!doc["longPressButtonBehavior"].isNull()) {
       const uint8_t old = doc["longPressButtonBehavior"] | (uint8_t)1;
       // old: 0 off, 1 chapter skip, 2 orientation
-      longPressButtonBehavior = (old == 2) ? (uint8_t)ORIENTATION_CHANGE : (uint8_t)CHAPTER_SKIP;
+      longPressButtonBehavior =
+          (old == 2) ? (uint8_t)ORIENTATION_CHANGE : (uint8_t)CHAPTER_SKIP;
     }
+
     if (!doc["longPressMenuFunction"].isNull()) {
       const uint8_t old = doc["longPressMenuFunction"] | (uint8_t)3;
       // old: 0 kosync, 1 disabled, 2 bookmark, 3 dictionary, 4 reader menu
-      switch (old) {
-        case 0: longPressMenuFunction = LP_MENU_KOSYNC; break;
-        case 2: longPressMenuFunction = LP_MENU_DICTIONARY; break;
-        case 4: longPressMenuFunction = LP_MENU_READER_MENU; break;
-        default: longPressMenuFunction = LP_MENU_DICTIONARY; break;
-      }
+      longPressMenuFunction =
+          (old == 0) ? (uint8_t)LP_MENU_KOSYNC : (uint8_t)LP_MENU_DICTIONARY;
     }
+
     if (!doc["sideButtonLayout"].isNull()) {
       const uint8_t old = doc["sideButtonLayout"] | (uint8_t)0;
       // old: 0 prev/next, 1 next/prev, 2 disabled
-      sideButtonLayout = (old == 1) ? (uint8_t)NEXT_PREV : (uint8_t)PREV_NEXT;
+      sideButtonLayout =
+          (old == 1) ? (uint8_t)NEXT_PREV : (uint8_t)PREV_NEXT;
     }
+
+    if (!doc["longPressBackDestination"].isNull()) {
+      const uint8_t old = doc["longPressBackDestination"] | (uint8_t)0;
+      // old: 0 settings, 1 library
+      longPressBackDestination =
+          (old == 1) ? (uint8_t)LONG_PRESS_BACK_LIBRARY : (uint8_t)LONG_PRESS_BACK_SETTINGS;
+    }
+
     if (!doc["fontFamily"].isNull()) {
       const uint8_t old = doc["fontFamily"] | (uint8_t)0;
       // old: 0 Young Serif, 1 DM Sans (removed), 2+ SD-card fonts
       fontFamily = (old <= 1) ? (uint8_t)YOUNGSERIF : (uint8_t)(old - 1);
     }
-    if (!doc["fontFamily"].isNull()) {
-      const uint8_t old = doc["fontFamily"] | (uint8_t)0;
-      // old: 0 Young Serif, 1 DM Sans (removed), 2+ SD-card fonts
-      fontFamily = (old <= 1) ? (uint8_t)YOUNGSERIF : (uint8_t)(old - 1);
+
+    needsResave = true;
+  } else if ((doc["controlsLayoutVersion"] | (uint8_t)0) < 2) {
+    // Version 1 -> version 2.
+    if (!doc["shortPwrBtn"].isNull()) {
+      const uint8_t old = doc["shortPwrBtn"] | (uint8_t)0;
+      // v1: 0 sleep, 1 refresh
+      shortPwrBtn =
+          (old == 1) ? (uint8_t)FORCE_REFRESH : (uint8_t)SLEEP;
     }
+
+    if (!doc["longPressMenuFunction"].isNull()) {
+      const uint8_t old = doc["longPressMenuFunction"] | (uint8_t)0;
+      // v1: 0 kosync, 2 dictionary, 3 reader menu
+      // v2: 0 dictionary, 1 sync
+      longPressMenuFunction =
+          (old == 0) ? (uint8_t)LP_MENU_KOSYNC : (uint8_t)LP_MENU_DICTIONARY;
+    }
+
+    if (!doc["longPressBackDestination"].isNull()) {
+      const uint8_t old = doc["longPressBackDestination"] | (uint8_t)0;
+      // v1: 0 settings, 1 library
+      // v2: 0 library, 1 settings
+      longPressBackDestination =
+          (old == 1) ? (uint8_t)LONG_PRESS_BACK_LIBRARY : (uint8_t)LONG_PRESS_BACK_SETTINGS;
+    }
+
     needsResave = true;
   }
 
