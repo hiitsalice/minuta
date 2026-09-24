@@ -360,7 +360,6 @@ void EpubReaderBookmarksActivity::buildScreen(UiScreen& screen) {
   props.subtitleText = screen.theme().smallText;
   props.subtitleText.maxLines = 1;
   props.subtitleText.lineGap = 1;
-  props.subtitleText.italic = true;
   props.subtitleText.align = fui::TextAlign::Right;
   props.subtitleText.bold = false;
   props.subtitleText.font = fui::GfxRendererTarget::FONT_SMALL;
