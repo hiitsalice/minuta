@@ -17,7 +17,6 @@
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
 #include "components/UiAppHelpers.h"
-#include "components/icons/bookmark.h"
 #include "fontIds.h"
 
 // Internal constants
@@ -25,25 +24,6 @@ namespace {
 constexpr int homeMenuMargin = 20;
 constexpr int homeMarginTop = 30;
 constexpr int subtitleY = 738;
-constexpr int bookmarkStatusIconWidth = 32;
-constexpr int bookmarkStatusIconHeight = 28;
-constexpr int bookmarkStatusIconSourceWidth = 16;
-constexpr int bookmarkStatusIconSourceHeight = 14;
-constexpr int bookmarkStatusIconGap = 4;
-constexpr int bookmarkStatusIconTopCrop = 2;
-
-void drawBookmarkStatusIcon(const GfxRenderer& renderer, const int x, const int y) {
-  constexpr int bytesPerRow = bookmarkStatusIconSourceWidth / 8;
-  for (int row = 0; row < bookmarkStatusIconSourceHeight; ++row) {
-    for (int col = 0; col < bookmarkStatusIconSourceWidth; ++col) {
-      const uint8_t byte = BookmarkStatusIcon[(row + bookmarkStatusIconTopCrop) * bytesPerRow + col / 8];
-      const uint8_t mask = 1U << (7 - (col % 8));
-      if ((byte & mask) != 0) {
-        renderer.fillRectDither(x + col * 2, y + row * 2, 2, 2, Color::LightGray);
-      }
-    }
-  }
-}
 
 }  // namespace
 
@@ -833,15 +813,6 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
     }
 
     leftClusterWidth += batteryWidth;
-  }
-
-  // Draw Bookmark
-  if (showStatusBarTextLane && isPageBookmarked) {
-    const int bookmarkGap = leftClusterWidth > 0 ? bookmarkStatusIconGap : 0;
-    const int bookmarkX = orientedMarginLeft + 3;
-    const int bookmarkY = orientedMarginTop + 3;
-    drawBookmarkStatusIcon(renderer, bookmarkX, bookmarkY);
-    leftClusterWidth += bookmarkStatusIconWidth + bookmarkGap;
   }
 
   // Draw Title

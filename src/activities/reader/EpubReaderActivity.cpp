@@ -462,12 +462,6 @@ void EpubReaderActivity::loop() {
   const bool confirmReleased = mappedInput.wasReleased(MappedInputManager::Button::Confirm);
   if (confirmLongPressed) {
     switch (SETTINGS.longPressMenuFunction) {
-      case CrossPointSettings::LP_MENU_BOOKMARK:
-        addBookmark();
-        showBookmarkMessage = true;
-        bookmarkMessageTime = millis();
-        requestUpdate();
-        break;
       case CrossPointSettings::LP_MENU_KOSYNC:
         if (launchKOReaderSync()) {
           return;
@@ -842,16 +836,11 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
           progressChangeResultHandler);
       break;
     }
-    case EpubReaderMenuActivity::MenuAction::TOGGLE_BOOKMARK: {
-      addBookmark();
-      break;
-    }
   }
 }
 
 unsigned long EpubReaderActivity::confirmLongPressThreshold() const {
   switch (SETTINGS.longPressMenuFunction) {
-    case CrossPointSettings::LP_MENU_BOOKMARK:
     case CrossPointSettings::LP_MENU_DICTIONARY:
       return ReaderUtils::BOOKMARK_HOLD_MS;
     case CrossPointSettings::LP_MENU_KOSYNC:

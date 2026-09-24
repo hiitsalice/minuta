@@ -85,88 +85,42 @@ void EpubReaderBookmarksActivity::rebuildSavedRowItems() {
     return subtitle;
   };
 
-  savedRows.reserve(bookmarks.size() + highlights.size());
-  savedSubtitles.reserve(bookmarks.size() + highlights.size());
-  savedRowItems.reserve(bookmarks.size() + highlights.size());
-
-  for (size_t i = 0; i < bookmarks.size(); i++) {
-    savedRows.push_back({false, static_cast<int>(i)});
-  }
+  savedRows.reserve(highlights.size());
+  savedSubtitles.reserve(highlights.size());
+  savedRowItems.reserve(highlights.size());
 
   for (size_t i = 0; i < highlights.size(); i++) {
     savedRows.push_back({true, static_cast<int>(i)});
   }
 
   std::stable_sort(savedRows.begin(), savedRows.end(), [this](const SavedRow& a, const SavedRow& b) {
-    const uint16_t aSpine = a.isHighlight
-                                ? highlights[a.index].spineIndex
-                                : bookmarks[a.index].computedSpineIndex;
-    const uint16_t bSpine = b.isHighlight
-                                ? highlights[b.index].spineIndex
-                                : bookmarks[b.index].computedSpineIndex;
+    const auto& aHighlight = highlights[a.index];
+    const auto& bHighlight = highlights[b.index];
 
-    if (aSpine != bSpine) {
-      return aSpine < bSpine;
+    if (aHighlight.spineIndex != bHighlight.spineIndex) {
+      return aHighlight.spineIndex < bHighlight.spineIndex;
     }
 
-    const uint16_t aPage = a.isHighlight
-                               ? highlights[a.index].computedChapterProgress
-                               : bookmarks[a.index].computedChapterProgress;
-    const uint16_t bPage = b.isHighlight
-                               ? highlights[b.index].computedChapterProgress
-                               : bookmarks[b.index].computedChapterProgress;
-
-    if (aPage != bPage) {
-      return aPage < bPage;
+    if (aHighlight.computedChapterProgress != bHighlight.computedChapterProgress) {
+      return aHighlight.computedChapterProgress < bHighlight.computedChapterProgress;
     }
 
-    // On the same page, bookmarks always come before highlights.
-    if (a.isHighlight != b.isHighlight) {
-      return !a.isHighlight;
-    }
-
-    // Highlights on the same page are ordered by where their text starts.
-    if (a.isHighlight) {
-      return highlights[a.index].startVisibleTextOffset <
-             highlights[b.index].startVisibleTextOffset;
-    }
-
-    // Keep the original order for bookmarks at the same page.
-    return false;
+    return aHighlight.startVisibleTextOffset < bHighlight.startVisibleTextOffset;
   });
 
   for (const auto& row : savedRows) {
-    const std::string* summary = nullptr;
-    std::string subtitle;
+    const auto& highlight = highlights[row.index];
+    const auto tocIndex = epub->getTocIndexForSpineIndex(highlight.spineIndex);
+    const auto tocTitle = (tocIndex >= 0) ? epub->getTocItem(tocIndex).title : tr(STR_UNNAMED);
 
-    if (row.isHighlight) {
-      const auto& highlight = highlights[row.index];
-      const auto tocIndex = epub->getTocIndexForSpineIndex(highlight.spineIndex);
-      const auto tocTitle = (tocIndex >= 0) ? epub->getTocItem(tocIndex).title : tr(STR_UNNAMED);
-
-      subtitle = makeSubtitle(
-          tocTitle,
-          highlight.percentage,
-          highlight.computedChapterProgress,
-          highlight.computedChapterPageCount);
-      summary = &highlight.summary;
-    } else {
-      const auto& bookmark = bookmarks[row.index];
-      const auto tocIndex = epub->getTocIndexForSpineIndex(bookmark.computedSpineIndex);
-      const auto tocTitle = (tocIndex >= 0) ? epub->getTocItem(tocIndex).title : tr(STR_UNNAMED);
-
-      subtitle = makeSubtitle(
-          tocTitle,
-          bookmark.percentage,
-          bookmark.computedChapterProgress,
-          bookmark.computedChapterPageCount);
-      summary = &bookmark.summary;
-    }
-
-    savedSubtitles.push_back(std::move(subtitle));
+    savedSubtitles.push_back(makeSubtitle(
+        tocTitle,
+        highlight.percentage,
+        highlight.computedChapterProgress,
+        highlight.computedChapterPageCount));
 
     fui::ListItem item;
-    item.label = summary->c_str();
+    item.label = highlight.summary.c_str();
     item.subtitle = savedSubtitles.back().c_str();
     item.actionValue = static_cast<int16_t>(savedRowItems.size());
     savedRowItems.push_back(item);

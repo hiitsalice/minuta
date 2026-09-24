@@ -216,7 +216,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
       // old: 0 kosync, 1 disabled, 2 bookmark, 3 dictionary, 4 reader menu
       switch (old) {
         case 0: longPressMenuFunction = LP_MENU_KOSYNC; break;
-        case 2: longPressMenuFunction = LP_MENU_BOOKMARK; break;
+        case 2: longPressMenuFunction = LP_MENU_DICTIONARY; break;
         case 4: longPressMenuFunction = LP_MENU_READER_MENU; break;
         default: longPressMenuFunction = LP_MENU_DICTIONARY; break;
       }

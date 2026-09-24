@@ -43,7 +43,6 @@ void EpubReaderMenuActivity::buildMenuItems(std::vector<MenuItem>& items, bool h
   items.reserve(MAX_MENU_ITEMS);
 
   items.push_back({MenuAction::DICTIONARY, StrId::STR_LOOKUP});
-  items.push_back({MenuAction::TOGGLE_BOOKMARK, StrId::STR_BOOKMARK_OPTION});
   items.push_back({MenuAction::HIGHLIGHT, StrId::STR_HIGHLIGHT});
   items.push_back({MenuAction::BOOKMARKS, StrId::STR_SAVED});
   items.push_back({MenuAction::SELECT_CHAPTER, StrId::STR_SELECT_CHAPTER});
