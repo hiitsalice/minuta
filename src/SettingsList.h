@@ -151,6 +151,7 @@ inline SettingInfo buildDictionarySetting(const std::vector<DictionaryEntry>& di
   s.enumStringValues.push_back(I18N.get(StrId::STR_NONE_OPT));
   s.enumStringValues.insert(s.enumStringValues.end(), folderNames.begin(), folderNames.end());
   s.category = StrId::STR_CAT_READER;
+  s.noPopup = true;  // Always cycle in place, even with 3+ dictionary choices.
 
   s.valueGetter = [folderNames]() -> uint8_t {
     for (size_t i = 0; i < folderNames.size(); i++) {
@@ -262,11 +263,6 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
         SettingInfo::Toggle(StrId::STR_HYPHENATION, &CrossPointSettings::hyphenationEnabled, "hyphenationEnabled",
                             StrId::STR_CAT_READER)
             .withTextSettings(),
-        SettingInfo::Enum(
-            StrId::STR_ORIENTATION, &CrossPointSettings::orientation,
-            {StrId::STR_PORTRAIT, StrId::STR_LANDSCAPE_CW, StrId::STR_ORIENTATION_INVERTED, StrId::STR_LANDSCAPE_CCW},
-            "orientation", StrId::STR_CAT_READER)
-            .withNoPopup(),
         SettingInfo::Toggle(StrId::STR_EXTRA_SPACING, &CrossPointSettings::extraParagraphSpacing,
                             "extraParagraphSpacing", StrId::STR_CAT_READER)
             .withTextSettings(),
