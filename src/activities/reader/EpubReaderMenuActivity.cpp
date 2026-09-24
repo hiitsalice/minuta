@@ -84,26 +84,18 @@ void EpubReaderMenuActivity::activateIndex(const int index) {
 
   const auto selectedAction = menuItems[index].action;
   if (selectedAction == MenuAction::ROTATE_SCREEN) {
-    optionPopup.show(StrId::STR_ORIENTATION, orientationLabels.data(), static_cast<int>(orientationLabels.size()),
-                     pendingOrientation, [this](int idx) {
-                       pendingOrientation = idx;
-                       // Rotate the menu immediately. Only the renderer turns;
-                       // SETTINGS.orientation stays unchanged so the reader's
-                       // result handler still detects the change and reflows.
-                       ReaderUtils::applyOrientation(renderer, pendingOrientation);
-                       app.setDevice(uiTarget.deviceContext());  // hit rects follow the new frame
-                       requestUpdate(true);
-                     });
-    requestUpdate();
+    pendingOrientation = (pendingOrientation + 1) % static_cast<int>(orientationLabels.size());
+    // Rotate the menu immediately. Only the renderer turns;
+    // SETTINGS.orientation stays unchanged so the reader's
+    // result handler still detects the change and reflows.
+    ReaderUtils::applyOrientation(renderer, pendingOrientation);
+    app.setDevice(uiTarget.deviceContext());  // hit rects follow the new frame
+    requestUpdate(true);
     return;
   }
 
   if (selectedAction == MenuAction::AUTO_PAGE_TURN) {
-    optionPopup.show(I18N.get(StrId::STR_AUTO_TURN_PAGES_PER_MIN), pageTurnLabels.data(),
-                     static_cast<int>(pageTurnLabels.size()), selectedPageTurnOption, [this](int idx) {
-                       selectedPageTurnOption = idx;
-                       requestUpdate();
-                     });
+    selectedPageTurnOption = (selectedPageTurnOption + 1) % static_cast<int>(pageTurnLabels.size());
     requestUpdate();
     return;
   }
