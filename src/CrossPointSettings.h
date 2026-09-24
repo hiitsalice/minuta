@@ -242,6 +242,8 @@ enum LONG_PRESS_MENU_FUNCTION {
   uint8_t embeddedStyle = 0;
   // Focus Reading - emphasizes the first part of words with bold
   uint8_t focusReadingEnabled = 0;
+  // Highlight marker - shows visible blocks behind highlighted words (1 = on, 0 = off)
+  uint8_t highlightMarkerEnabled = 1;
   // SD card font family name (empty = use built-in fontFamily)
   char sdFontFamilyName[32] = "";
   // Dictionary folder name under /dictionaries (empty = no dictionary)

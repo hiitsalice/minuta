@@ -21,6 +21,7 @@ class EpubReaderMenuActivity final : public UiListActivity {
     BOOKMARKS,
     TOGGLE_BOOKMARK,
     HIGHLIGHT,
+    HIGHLIGHT_MARKER,
     SCREENSHOT,
     DISPLAY_QR,
     GO_HOME,

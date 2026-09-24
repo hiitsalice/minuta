@@ -9,6 +9,7 @@
 #include <cstring>
 
 #include "../../../../src/fontIds.h"
+#include "../../../../src/CrossPointSettings.h"
 
 static uint32_t utf8Length(const char* text) {
   uint32_t count = 0;
@@ -277,7 +278,7 @@ void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int 
         }
       }
 
-      if (wordHighlighted) {
+      if (wordHighlighted && SETTINGS.highlightMarkerEnabled) {
         LOG_DBG("TXB", "MATCH word=%u start=%u end=%u",
                 i, wordStart, wordEnd);
 

@@ -44,7 +44,8 @@ void EpubReaderMenuActivity::buildMenuItems(std::vector<MenuItem>& items, bool h
 
   items.push_back({MenuAction::DICTIONARY, StrId::STR_LOOKUP});
   items.push_back({MenuAction::HIGHLIGHT, StrId::STR_HIGHLIGHT});
-  items.push_back({MenuAction::BOOKMARKS, StrId::STR_SAVED});
+  items.push_back({MenuAction::HIGHLIGHT_MARKER, StrId::STR_HIGHLIGHT_MARKER});
+  items.push_back({MenuAction::BOOKMARKS, StrId::STR_HIGHLIGHT_LIST});
   items.push_back({MenuAction::SELECT_CHAPTER, StrId::STR_SELECT_CHAPTER});
 
   if (hasFootnotes) {
@@ -93,6 +94,13 @@ void EpubReaderMenuActivity::activateIndex(const int index) {
     // pass so the row being cycled (this one) stays visible after rotating.
     nav.followOnBuild = true;
     requestUpdate(true);
+    return;
+  }
+
+  if (selectedAction == MenuAction::HIGHLIGHT_MARKER) {
+    SETTINGS.highlightMarkerEnabled = SETTINGS.highlightMarkerEnabled ? 0 : 1;
+    SETTINGS.saveToFile();
+    requestUpdate();
     return;
   }
 
@@ -166,7 +174,9 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   // buildMenuRowItems()); only rows with live values need refreshing here.
   for (size_t i = 0; i < menuItems.size(); i++) {
     const auto action = menuItems[i].action;
-    if (action == MenuAction::ROTATE_SCREEN) {
+    if (action == MenuAction::HIGHLIGHT_MARKER) {
+      menuRowItems[i].value = SETTINGS.highlightMarkerEnabled ? "On" : "Off";
+    } else if (action == MenuAction::ROTATE_SCREEN) {
       menuRowItems[i].value = I18N.get(orientationLabels[pendingOrientation]);
     } else if (action == MenuAction::AUTO_PAGE_TURN) {
       menuRowItems[i].value = pageTurnLabels[selectedPageTurnOption];
