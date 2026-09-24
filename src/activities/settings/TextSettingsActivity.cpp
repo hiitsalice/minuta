@@ -278,8 +278,7 @@ const char* TextSettingsActivity::confirmLabelText() const {
   }
   switch (tab_) {
     case Tab::Layout:
-      // Extra Paragraph Spacing toggles; the rest open a picker
-      return ringPos() - 1 == static_cast<int>(LayoutRow::ParaSpacing) ? tr(STR_TOGGLE) : tr(STR_SELECT);
+      return tr(STR_TOGGLE);
     case Tab::Style:
       return tr(STR_TOGGLE);
     default:
@@ -405,30 +404,25 @@ void TextSettingsActivity::confirmLayoutRow(int row) {
       requestUpdate();
       break;
     case LayoutRow::LineSpacing:
-      optionPopup_.show(StrId::STR_LINE_SPACING, LINE_SPACING_IDS, static_cast<int>(std::size(LINE_SPACING_IDS)),
-                        SETTINGS.lineSpacing, [](int idx) {
-                          SETTINGS.lineSpacing = static_cast<uint8_t>(idx);
-                          SETTINGS.saveToFile();
-                        });
+      SETTINGS.lineSpacing =
+          (SETTINGS.lineSpacing + 1) % static_cast<uint8_t>(std::size(LINE_SPACING_IDS));
+      SETTINGS.saveToFile();
       requestUpdate();
       break;
     case LayoutRow::Alignment:
-      optionPopup_.show(StrId::STR_ALIGNMENT, ALIGNMENT_IDS, static_cast<int>(std::size(ALIGNMENT_IDS)),
-                        SETTINGS.paragraphAlignment, [](int idx) {
-                          SETTINGS.paragraphAlignment = static_cast<uint8_t>(idx);
-                          SETTINGS.saveToFile();
-                        });
+      SETTINGS.paragraphAlignment =
+          (SETTINGS.paragraphAlignment + 1) % static_cast<uint8_t>(std::size(ALIGNMENT_IDS));
+      SETTINGS.saveToFile();
       requestUpdate();
       break;
     case LayoutRow::ScreenMargin: {
-      std::vector<std::string> options;
-      options.reserve((MARGIN_MAX - MARGIN_MIN) / MARGIN_STEP + 1);
-      for (int m = MARGIN_MIN; m <= MARGIN_MAX; m += MARGIN_STEP) options.push_back(std::to_string(m));
-      const int cur = (std::clamp<int>(SETTINGS.screenMargin, MARGIN_MIN, MARGIN_MAX) - MARGIN_MIN) / MARGIN_STEP;
-      optionPopup_.show(StrId::STR_SCREEN_MARGIN, options, cur, [](int idx) {
-        SETTINGS.screenMargin = static_cast<uint8_t>(MARGIN_MIN + idx * MARGIN_STEP);
-        SETTINGS.saveToFile();
-      });
+      const int current = std::clamp<int>(SETTINGS.screenMargin, MARGIN_MIN, MARGIN_MAX);
+      if (current + MARGIN_STEP > MARGIN_MAX) {
+        SETTINGS.screenMargin = MARGIN_MIN;
+      } else {
+        SETTINGS.screenMargin = static_cast<uint8_t>(current + MARGIN_STEP);
+      }
+      SETTINGS.saveToFile();
       requestUpdate();
       break;
     }
