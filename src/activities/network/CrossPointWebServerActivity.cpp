@@ -443,17 +443,6 @@ void CrossPointWebServerActivity::renderServerRunning() const {
 
     renderer.drawCenteredText(UI_10_FONT_ID, 184, connectedSSID.c_str());
 
-    // TEMPORARY SIMULATOR QR MOCKUP
-    constexpr int WIFI_QR_SIZE = 200;
-    const Rect qrBoundsWifi((pageWidth - WIFI_QR_SIZE) / 2, 212, WIFI_QR_SIZE, WIFI_QR_SIZE);
-    for (int y = 0; y < WIFI_QR_SIZE; y += 6) {
-      for (int x = 0; x < WIFI_QR_SIZE; x += 6) {
-        if (((x / 6) + (y / 6)) % 3 != 0) {
-          renderer.fillRect(qrBoundsWifi.x + x, qrBoundsWifi.y + y, 6, 6, Color::Black);
-        }
-      }
-    }
-
     startY = 478;
 
     // Show primary URL (hostname)
@@ -466,15 +455,6 @@ void CrossPointWebServerActivity::renderServerRunning() const {
 
     // Show QR code for URL
     const Rect qrBoundsUrl((pageWidth - QR_CODE_WIDTH) / 2, 528, 200, 200);
-    // TEMPORARY SIMULATOR QR MOCKUP
-    for (int y = 0; y < QR_CODE_HEIGHT; y += 6) {
-      for (int x = 0; x < QR_CODE_WIDTH; x += 6) {
-        if (((x / 6) + (y / 6)) % 3 != 0) {
-          renderer.fillRect(qrBoundsUrl.x + x, qrBoundsUrl.y + y, 6, 6, Color::Black);
-        }
-      }
-    }
-
     // Show IP address as fallback
     renderer.drawCenteredText(UI_10_FONT_ID, 476, hostnameUrl.c_str());
     renderer.drawCenteredText(UI_10_FONT_ID, 500, ipUrl.c_str());
