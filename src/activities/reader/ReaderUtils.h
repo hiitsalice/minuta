@@ -42,9 +42,8 @@ struct PageTurnResult {
 
 inline PageTurnResult detectPageTurn(const MappedInputManager& input) {
   const bool usePress = false;  // long press is always active now (Off option removed)
-  const bool swapFront = input.isNavDirectionSwapped();
-  const auto prevButton = swapFront ? MappedInputManager::Button::Right : MappedInputManager::Button::Left;
-  const auto nextButton = swapFront ? MappedInputManager::Button::Left : MappedInputManager::Button::Right;
+  const auto prevButton = MappedInputManager::Button::Left;
+  const auto nextButton = MappedInputManager::Button::Right;
   const auto pageButtonTriggered = [&](const MappedInputManager::Button button) {
     if (usePress) return input.wasPressed(button);
     return input.wasLongPressed(button, SKIP_HOLD_MS) || input.wasReleased(button);

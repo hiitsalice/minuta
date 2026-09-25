@@ -62,12 +62,6 @@ class MappedInputManager {
   // Returns the raw front button index that was released this frame (or -1 if none).
   int getReleasedFrontButton() const;
 
-  // True when the control axis is flipped relative to the physical buttons: the user opted into
-  // orientation-following front buttons AND the screen is *currently rendered* rotated (INVERTED /
-  // LANDSCAPE_CCW). Keyed on the live renderer orientation rather than the persisted reader setting,
-  // so portrait UI (home, settings) never swaps while the reader and its menus do.
-  [[nodiscard]] bool isNavDirectionSwapped() const;
-
  private:
   HalGPIO& gpio;
   // Logical-to-physical button mapping depends on what the user is actually looking at: when the
