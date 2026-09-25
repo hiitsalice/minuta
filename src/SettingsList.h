@@ -243,17 +243,20 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
         SettingInfo::Enum(StrId::STR_LINE_SPACING, &CrossPointSettings::lineSpacing,
                           {StrId::STR_TIGHT, StrId::STR_NORMAL, StrId::STR_WIDE, StrId::STR_EXTRA_WIDE}, "lineSpacing",
                           StrId::STR_CAT_READER)
-            .withTextSettings(),
+            .withTextSettings()
+            .withNoPopup(),
         SettingInfo::Value(StrId::STR_SCREEN_MARGIN, &CrossPointSettings::screenMargin,
                            {CrossPointSettings::SCREEN_MARGIN_MIN, CrossPointSettings::SCREEN_MARGIN_MAX,
                             CrossPointSettings::SCREEN_MARGIN_STEP},
                            "screenMargin", StrId::STR_CAT_READER)
-            .withTextSettings(),
+            .withTextSettings()
+            .withNoPopup(),
         SettingInfo::Enum(StrId::STR_PARA_ALIGNMENT, &CrossPointSettings::paragraphAlignment,
                           {StrId::STR_JUSTIFY, StrId::STR_ALIGN_LEFT, StrId::STR_CENTER, StrId::STR_ALIGN_RIGHT,
                            StrId::STR_BOOK_S_STYLE},
                           "paragraphAlignment", StrId::STR_CAT_READER)
-            .withTextSettings(),
+            .withTextSettings()
+            .withNoPopup(),
         SettingInfo::Toggle(StrId::STR_EMBEDDED_STYLE, &CrossPointSettings::embeddedStyle, "embeddedStyle",
                             StrId::STR_CAT_READER)
             .withTextSettings(),
