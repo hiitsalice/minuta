@@ -105,9 +105,8 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   // compatibility with existing installations.
   doc["language"] = (language < getLanguageCount()) ? LANGUAGE_CODES[language] : "EN";
 
-  // Version 1 places Light before Dark while preserving their stored meaning.
-  doc["sleepScreenOrder"] = 1;
   doc["controlsLayoutVersion"] = 2;
+  doc["sleepScreenModeVersion"] = 1;
 }
 
 bool CrossPointSettings::fromJson(JsonVariantConst doc) {
@@ -115,6 +114,28 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
   bool needsResave = false;
 
   auto clamp = [](uint8_t val, uint8_t maxVal, uint8_t def) -> uint8_t { return val < maxVal ? val : def; };
+
+  // Sleep Screen modes were reduced from eight values to Default, Custom and Cover.
+  // Migrate the old stored values before the generic settings loader clamps them.
+  if (doc["sleepScreenModeVersion"].isNull() && !doc["sleepScreen"].isNull()) {
+    const uint8_t legacySleepScreen = doc["sleepScreen"] | (uint8_t)SLEEP_SCREEN_MODE::DEFAULT;
+    switch (legacySleepScreen) {
+      case 2:
+        s.sleepScreen = SLEEP_SCREEN_MODE::CUSTOM;
+        break;
+      case 3:
+      case 4:
+        s.sleepScreen = SLEEP_SCREEN_MODE::COVER;
+        break;
+      case 7:
+        s.sleepScreen = SLEEP_SCREEN_MODE::CUSTOM;
+        break;
+      default:
+        s.sleepScreen = SLEEP_SCREEN_MODE::DEFAULT;
+        break;
+    }
+    needsResave = true;
+  }
 
   for (const auto& info : getSettingsList()) {
     if (!info.key) continue;
@@ -177,17 +198,14 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
     }
   }
 
-  // Older settings stored Dark as 0 and Light as 1. Preserve that choice
-  // after changing the menu order to Light first.
-  if (doc["sleepScreenOrder"].isNull() && !doc["sleepScreen"].isNull()) {
-    const uint8_t legacySleepScreen = doc["sleepScreen"] | (uint8_t)SLEEP_SCREEN_MODE_COUNT;
-    if (legacySleepScreen == 0) {
-      sleepScreen = DARK;
-      needsResave = true;
-    } else if (legacySleepScreen == 1) {
-      sleepScreen = LIGHT;
-      needsResave = true;
-    }
+  // These Display options are fixed in Minuta and no longer exposed in Settings.
+  if (quickResumeSleepScreen != QUICK_RESUME_NEVER ||
+      sleepScreenCoverFilter != BLACK_AND_WHITE ||
+      sleepScreenCoverMode != FIT) {
+    quickResumeSleepScreen = QUICK_RESUME_NEVER;
+    sleepScreenCoverFilter = BLACK_AND_WHITE;
+    sleepScreenCoverMode = FIT;
+    needsResave = true;
   }
 
   if (doc["sleepTimeoutMinutes"].isNull() && !doc["sleepTimeout"].isNull()) {

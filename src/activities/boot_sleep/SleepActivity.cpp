@@ -498,29 +498,13 @@ void SleepActivity::onEnter() {
   display.setInverted(false);
 
   const bool renderQuickResume =
-      SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::QUICK_RESUME ||
-      (fromTimeout &&
-       SETTINGS.quickResumeSleepScreen == CrossPointSettings::QUICK_RESUME_SLEEP_SCREEN::QUICK_RESUME_AFTER_TIMEOUT);
+      fromTimeout &&
+      SETTINGS.quickResumeSleepScreen == CrossPointSettings::QUICK_RESUME_SLEEP_SCREEN::QUICK_RESUME_AFTER_TIMEOUT;
 
   if (renderQuickResume) {
     return renderLastScreenSleepScreen();
   }
 
-  if (SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::TRANSPARENT_CUSTOM) {
-    // Transparent mode retains the current framebuffer. Materialize any
-    // output-level inversion first so the retained content keeps its visible
-    // polarity after the display driver returns to normal.
-    if (frameWasInverted) renderer.invertScreen();
-    if (APP_STATE.lastSleepFromReader) {
-      ReaderUtils::applyOrientation(renderer, SETTINGS.orientation);
-    }
-    drawSleepPopupPreservingFrame(renderer);
-    if (APP_STATE.lastSleepFromReader) {
-      renderer.setOrientation(GfxRenderer::Orientation::Portrait);
-    }
-    releaseSdFontCachesForDecode(renderer);
-    return renderTransparentCustomSleepScreen();
-  }
 
   // Show popup with reader orientation only when going to sleep from reader
   if (APP_STATE.lastSleepFromReader) {
@@ -532,18 +516,10 @@ void SleepActivity::onEnter() {
   }
 
   switch (SETTINGS.sleepScreen) {
-    case (CrossPointSettings::SLEEP_SCREEN_MODE::BLANK):
-      return renderBlankSleepScreen();
     case (CrossPointSettings::SLEEP_SCREEN_MODE::CUSTOM):
       return renderCustomSleepScreen();
     case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER):
       return renderCoverSleepScreen();
-    case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM):
-      if (APP_STATE.lastSleepFromReader) {
-        return renderCoverSleepScreen();
-      } else {
-        return renderCustomSleepScreen();
-      }
     default:
       return renderDefaultSleepScreen();
   }
@@ -620,7 +596,7 @@ void SleepActivity::renderDefaultSleepScreen() const {
   renderer.drawCenteredText(UI_10_FONT_ID, statusY, tr(STR_SLEEPING), true, EpdFontFamily::ITALIC);
 
   // Make sleep screen dark unless light is selected in settings
-  if (SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::LIGHT) {
+  if (SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::DEFAULT) {
     renderer.invertScreen();
   }
 
@@ -766,15 +742,7 @@ void SleepActivity::renderTransparentCustomSleepScreen() const {
 }
 
 void SleepActivity::renderCoverSleepScreen() const {
-  void (SleepActivity::*renderNoCoverSleepScreen)() const;
-  switch (SETTINGS.sleepScreen) {
-    case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM):
-      renderNoCoverSleepScreen = &SleepActivity::renderCustomSleepScreen;
-      break;
-    default:
-      renderNoCoverSleepScreen = &SleepActivity::renderDefaultSleepScreen;
-      break;
-  }
+  auto renderNoCoverSleepScreen = &SleepActivity::renderDefaultSleepScreen;
 
   if (APP_STATE.openEpubPath.empty()) {
     return (this->*renderNoCoverSleepScreen)();

@@ -14,14 +14,9 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
 
  public:
   enum SLEEP_SCREEN_MODE {
-    LIGHT = 0,
-    DARK = 1,
-    CUSTOM = 2,
-    COVER = 3,
-    COVER_CUSTOM = 4,
-    BLANK = 5,
-    QUICK_RESUME = 6,
-    TRANSPARENT_CUSTOM = 7,
+    DEFAULT = 0,
+    CUSTOM = 1,
+    COVER = 2,
     SLEEP_SCREEN_MODE_COUNT
   };
   enum SLEEP_SCREEN_COVER_MODE { FIT = 0, CROP = 1, SLEEP_SCREEN_COVER_MODE_COUNT };
@@ -169,11 +164,11 @@ enum LONG_PRESS_MENU_FUNCTION {
   };
 
   // Sleep screen settings
-  uint8_t sleepScreen = LIGHT;
+  uint8_t sleepScreen = DEFAULT;
   // Sleep screen cover mode settings
   uint8_t sleepScreenCoverMode = FIT;
   // Sleep screen cover filter
-  uint8_t sleepScreenCoverFilter = NO_FILTER;
+  uint8_t sleepScreenCoverFilter = BLACK_AND_WHITE;
   // Status bar settings
   uint8_t statusBarChapterPageCount = 1;
   uint8_t statusBarBookProgressPercentage = 0;
