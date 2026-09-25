@@ -815,12 +815,12 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   screen.setContentMargin(fui::Insets{
       // Tighter gap between the MAC subheader and the first row (12px
       // instead of the default verticalSpacing), scoped to this screen only.
-      static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight + 6),
+      static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight + 9),
       // Highlight box extended 9px beyond the header-aligned edges on each
       // side, for visible padding around the row content (sidePadding and
       // valueInset below pull the text back 3px to partially offset it).
       static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width) - metrics.headerSidePadding + 5),
-      static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + metrics.verticalSpacing * 2),
+      static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + 48),
       static_cast<int16_t>(safe.x - 12)});
 
   if (networks.empty()) {
@@ -839,6 +839,7 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   props.valueInset = 1;  // air between the signal bars and the row edge
   props.valueSignalYOffset = 2;  // raise only the signal bars
   props.sidePadding = 11;  // air between the row edge and the name text
+  props.rowInset = 33;
   // Long SSIDs wrap onto a second line inside the row (two body lines always
   // fit the theme row height) instead of truncating; the trailing value is
   // just the short status glyphs, so skip the balanced 60%-band wrap cap.
@@ -847,7 +848,8 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   props.labelYOffset = 1;
   props.balanceWrappedLabelWithValue = false;
   listNav.selected = static_cast<int>(selectedNetworkIndex);
-  const int16_t rowHeight = metrics.listRowHeight;
+  const int16_t lineHeight = screen.target().lineHeight(fui::GfxRendererTarget::FONT_BODY);
+  const int16_t rowHeight = static_cast<int16_t>(lineHeight + 18);
   props.rowHeight = rowHeight;
   listNav.syncToProps(screen.body(), rowHeight, screen.theme().listRowGap, static_cast<int>(networks.size()), props);
   screen.list(props);
@@ -867,9 +869,20 @@ void WifiSelectionActivity::renderNetworkList(const Rect* screen, const ThemeMet
     return;
   }
 
-  GUI.drawHelpText(renderer,
-                   Rect{screen->x, screen->y + screen->height - metrics->contentSidePadding - 15, screen->width, 20},
-                   tr(STR_NETWORK_LEGEND));
+  const char* legendText = tr(STR_NETWORK_LEGEND);
+  const int legendLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
+  const int legendTextHeight = renderer.getTextHeight(UI_10_FONT_ID);
+  const int legendTextWidth = renderer.getTextWidth(UI_10_FONT_ID, legendText);
+  const int legendX = (renderer.getScreenWidth() - legendTextWidth) / 2;
+  const int legendY = screen->y + screen->height - metrics->contentSidePadding - 15 - 12;
+
+  constexpr int boxPadding = 6;
+  renderer.fillRectDither(legendX - boxPadding,
+                          legendY - boxPadding,
+                          legendTextWidth + boxPadding * 2,
+                          legendTextHeight + boxPadding * 2,
+                          Color::LightGray);
+  renderer.drawText(UI_10_FONT_ID, legendX, legendY, legendText, true, EpdFontFamily::REGULAR);
 
   const bool hasSavedPassword = !networks.empty() && networks[selectedNetworkIndex].hasSavedPassword;
   const char* forgetLabel = hasSavedPassword ? tr(STR_FORGET_BUTTON) : "";

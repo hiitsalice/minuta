@@ -621,8 +621,8 @@ void FontDownloadActivity::buildScreen(UiScreen& screen) {
   // Content below the GUI.drawHeader band, above the button hints. Top
   // trimmed slightly, bottom trimmed substantially (list rows no longer
   // need the full button-hints band reserved above them).
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 2), 0,
-                                      static_cast<int16_t>(metrics.buttonHintsHeight - 8), 0});
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
+                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
 
   if (state_ == FAMILY_LIST && filteredIndices_.empty()) {
@@ -652,7 +652,7 @@ void FontDownloadActivity::buildScreen(UiScreen& screen) {
   props.subtitleGap = 6;  // air between the font name and its description (includes 1px lower shift)
   props.labelYOffset = static_cast<int16_t>(state_ == FAMILY_LIST ? 2 : 0);  // FAMILY_LIST: 2px, GROUP_LIST: 0px
   const int16_t lineHeight = screen.target().lineHeight(fui::GfxRendererTarget::FONT_BODY);
-  props.rowHeight = static_cast<int16_t>(state_ == FAMILY_LIST ? lineHeight * 2 + 26 : lineHeight + 18);
+  props.rowHeight = static_cast<int16_t>(state_ == FAMILY_LIST ? lineHeight * 2 + 26 : lineHeight + 12);
   syncListViewport(screen, props, /*hasSubtitle=*/state_ == FAMILY_LIST);
   screen.list(props);
 }
@@ -683,9 +683,13 @@ void FontDownloadActivity::rebuildGroupRowItems() {
   rowItems_.reserve(listSize);
   for (int rowIndex = 0; rowIndex < listSize; rowIndex++) {
     fui::ListItem item;
-    item.label = rowIndex == 0 ? tr(STR_ALL_FONTS) : scriptGroupLabels_[rowIndex - 1].c_str();
-    const int memberCount = rowIndex == 0 ? static_cast<int>(families_.size()) : groupMemberCount(rowIndex - 1);
-    rowLabels_[rowIndex] = std::to_string(memberCount);
+    if (rowIndex == 0) {
+      item.label = tr(STR_ALL_FONTS);
+      rowLabels_[rowIndex] = std::to_string(families_.size());
+    } else if (rowIndex - 1 < static_cast<int>(scriptGroupLabels_.size())) {
+      item.label = scriptGroupLabels_[rowIndex - 1].c_str();
+      rowLabels_[rowIndex] = std::to_string(groupMemberCount(rowIndex - 1));
+    }
     item.value = rowLabels_[rowIndex].c_str();
     item.actionValue = static_cast<int16_t>(rowIndex);
     rowItems_.push_back(item);
