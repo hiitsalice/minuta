@@ -105,6 +105,7 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   // compatibility with existing installations.
   doc["language"] = (language < getLanguageCount()) ? LANGUAGE_CODES[language] : "EN";
 
+  doc["settingsVersion"] = 1;
   doc["controlsLayoutVersion"] = 2;
   doc["sleepScreenModeVersion"] = 1;
 }
@@ -112,6 +113,16 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
 bool CrossPointSettings::fromJson(JsonVariantConst doc) {
   CrossPointSettings& s = *this;
   bool needsResave = false;
+  bool sleepScreenMigrated = false;
+
+  const uint8_t storedSettingsVersion = doc["settingsVersion"] | (uint8_t)0;
+  if (storedSettingsVersion < 1) {
+    CrossPointSettings defaults;
+    JsonDocument defaultsDoc;
+    defaults.toJson(defaultsDoc);
+    requestResave();
+    return fromJson(defaultsDoc.as<JsonVariantConst>());
+  }
 
   auto clamp = [](uint8_t val, uint8_t maxVal, uint8_t def) -> uint8_t { return val < maxVal ? val : def; };
 
@@ -135,6 +146,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
         break;
     }
     needsResave = true;
+    sleepScreenMigrated = true;
   }
 
   for (const auto& info : getSettingsList()) {
@@ -182,6 +194,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
         }
       }
     } else {
+      if (sleepScreenMigrated && strcmp(info.key, "sleepScreen") == 0) continue;
       const uint8_t fieldDefault = s.*(info.valuePtr);  // struct-initializer default, read before we overwrite it
       uint8_t v = doc[info.key] | fieldDefault;
       if (info.type == SettingType::ENUM) {
