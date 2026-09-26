@@ -129,7 +129,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
   // Sleep Screen modes were reduced from eight values to Default, Custom and Cover.
   // Migrate the old stored values before the generic settings loader clamps them.
   if (doc["sleepScreenModeVersion"].isNull() && !doc["sleepScreen"].isNull()) {
-    const uint8_t legacySleepScreen = doc["sleepScreen"] | (uint8_t)SLEEP_SCREEN_MODE::DEFAULT;
+    const uint8_t legacySleepScreen = doc["sleepScreen"] | (uint8_t)SLEEP_SCREEN_MODE::DEFAULT_SCREEN;
     switch (legacySleepScreen) {
       case 2:
         s.sleepScreen = SLEEP_SCREEN_MODE::CUSTOM;
@@ -142,7 +142,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
         s.sleepScreen = SLEEP_SCREEN_MODE::CUSTOM;
         break;
       default:
-        s.sleepScreen = SLEEP_SCREEN_MODE::DEFAULT;
+        s.sleepScreen = SLEEP_SCREEN_MODE::DEFAULT_SCREEN;
         break;
     }
     needsResave = true;

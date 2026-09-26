@@ -14,7 +14,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
 
  public:
   enum SLEEP_SCREEN_MODE {
-    DEFAULT = 0,
+    DEFAULT_SCREEN = 0,
     CUSTOM = 1,
     COVER = 2,
     SLEEP_SCREEN_MODE_COUNT
