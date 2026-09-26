@@ -220,6 +220,12 @@ OtaUpdater::OtaUpdaterError OtaUpdater::installUpdate(ProgressCallback onProgres
     return INTERNAL_UPDATE_ERROR;
   }
 
+  if (Storage.exists("/.crosspoint/settings.json") &&
+      !Storage.remove("/.crosspoint/settings.json")) {
+    LOG_ERR("OTA", "failed to reset user settings");
+    return INTERNAL_UPDATE_ERROR;
+  }
+
   esp_err = esp_ota_set_boot_partition(updatePartition);
   if (esp_err != ESP_OK) {
     LOG_ERR("OTA", "esp_ota_set_boot_partition failed: %s", esp_err_to_name(esp_err));
