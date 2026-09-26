@@ -365,7 +365,7 @@ void setup() {
       return;
     }
 
-    if (!esp_ota_mark_app_valid_cancel_rollback()) {
+    if (esp_ota_mark_app_valid_cancel_rollback() != ESP_OK) {
       LOG_ERR("OTA", "failed to confirm firmware");
       return;
     }
