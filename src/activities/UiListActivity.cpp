@@ -11,9 +11,8 @@
 
 namespace fui = freeink::ui;
 
-UiListActivity::UiListActivity(const char* name, GfxRenderer& renderer, MappedInputManager& mappedInput,
-                               const bool wantsTouchLongPress)
-    : Activity(name, renderer, mappedInput), UiAppHost(renderer), wantsTouchLongPress(wantsTouchLongPress) {}
+UiListActivity::UiListActivity(const char* name, GfxRenderer& renderer, MappedInputManager& mappedInput)
+    : Activity(name, renderer, mappedInput), UiAppHost(renderer) {}
 
 void UiListActivity::onEnter() {
   Activity::onEnter();

@@ -25,8 +25,7 @@ class UiListActivity : public Activity, protected UiAppHost {
   static constexpr freeink::ui::ActionId ACTION_ROW = 1;
   static constexpr freeink::ui::ActionId ACTION_USER = 2;
 
-  UiListActivity(const char* name, GfxRenderer& renderer, MappedInputManager& mappedInput,
-                 bool wantsTouchLongPress = false);
+  UiListActivity(const char* name, GfxRenderer& renderer, MappedInputManager& mappedInput);
 
   // --- subclass contract -----------------------------------------------------
   // Current number of list rows (re-read every loop pass; may change).
@@ -39,7 +38,6 @@ class UiListActivity : public Activity, protected UiAppHost {
   // can't gray an unrelated element on the next render.
   virtual void activateIndex(int index) = 0;
   // Touch long-press on a row; only fires when the subclass opted in via the
-  // wantsTouchLongPress constructor flag (rows must also carry InputLongPress).
   virtual void onRowLongPress(int index) {}
   // The selection/viewport state the loop, sync, and row dispatch operate on.
   // Default is the single `nav` member; UiTabListActivity redirects it to the
@@ -88,5 +86,4 @@ class UiListActivity : public Activity, protected UiAppHost {
   // Named apart from UiAppHost::routeTouch so the host overload stays visible
   // (not name-hidden) to subclasses with extra touch surfaces.
 
-  const bool wantsTouchLongPress;
 };
