@@ -27,7 +27,6 @@ void PageLine::render(GfxRenderer& renderer, const int fontId, const int xOffset
 void PageLine::renderWithHighlights(GfxRenderer& renderer, const int fontId, const int xOffset,
                                     const int yOffset,
                                     const std::vector<HighlightEntry>& highlights) {
-  LOG_DBG("PGE", "PageLine highlights: %u", static_cast<uint32_t>(highlights.size()));
   block->render(renderer, fontId, xPos + xOffset, yPos + yOffset, &highlights);
 }
 

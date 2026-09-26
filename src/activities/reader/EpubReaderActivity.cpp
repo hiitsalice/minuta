@@ -1388,16 +1388,24 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
 
   std::vector<HighlightEntry> pageHighlights;
   for (const auto& highlight : cachedHighlights) {
-    if (highlight.spineIndex == static_cast<uint16_t>(currentSpineIndex)) {
+    if (highlight.spineIndex == static_cast<uint16_t>(currentSpineIndex) &&
+        highlight.startVisibleTextOffset < page->visibleTextEndOffset &&
+        highlight.endVisibleTextOffset > page->visibleTextOffset) {
       pageHighlights.push_back(highlight);
     }
   }
 
-  LOG_DBG("RDR", "Cached highlights=%u page highlights=%u",
-          static_cast<uint32_t>(cachedHighlights.size()),
-          static_cast<uint32_t>(pageHighlights.size()));
+  const bool hasHighlights = !pageHighlights.empty();
 
-  page->renderWithHighlights(renderer, fontId, orientedMarginLeft, orientedMarginTop, pageHighlights);
+  auto renderPage = [&]() {
+    if (hasHighlights) {
+      page->renderWithHighlights(renderer, fontId, orientedMarginLeft, orientedMarginTop, pageHighlights);
+    } else {
+      page->render(renderer, fontId, orientedMarginLeft, orientedMarginTop);
+    }
+  };
+
+  renderPage();
   // Scan the status bar too: a CJK book/chapter title redirected to the SD
   // fallback font joins the page's single batch prewarm instead of triggering
   // its own SD pass after the scope ends.
@@ -1416,7 +1424,7 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
   const bool overlapRefresh = tiledGrayscale && renderer.supportsAsyncRefresh() && !pageHasImages;
   auto renderGrayscalePass = [&]() {
     if (needsTextGrayscale) {
-      page->renderWithHighlights(renderer, fontId, orientedMarginLeft, orientedMarginTop, pageHighlights);
+      renderPage();
     } else {
       page->renderImages(renderer, fontId, orientedMarginLeft, orientedMarginTop);
     }
@@ -1429,7 +1437,7 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
     renderer.clearScreen();
   }
 
-  page->renderWithHighlights(renderer, fontId, orientedMarginLeft, orientedMarginTop, pageHighlights);
+  renderPage();
   renderStatusBar();
   const auto tBwRender = millis();
 

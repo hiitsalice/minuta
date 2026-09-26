@@ -731,6 +731,10 @@ std::unique_ptr<Page> Section::loadPageDuringBuild(const int page) {
   file.seek(writePos);
   if (p) {
     p->visibleTextOffset = build_->lut[page].visibleTextOffset;
+    p->visibleTextEndOffset =
+        page + 1 < static_cast<int>(build_->lut.size())
+            ? build_->lut[page + 1].visibleTextOffset
+            : UINT32_MAX;
   }
   return p;
 }
@@ -768,6 +772,15 @@ std::unique_ptr<Page> Section::loadPageAt(const int page) const {
   auto p = Page::deserialize(f);
   if (p) {
     p->visibleTextOffset = visibleTextOffset;
+
+    uint32_t nextVisibleTextOffset = UINT32_MAX;
+    if (page + 1 < pageCount &&
+        visibleLutOffset >= HEADER_SIZE &&
+        visibleLutOffset + sizeof(uint32_t) * static_cast<uint32_t>(page + 1) + sizeof(uint32_t) <= f.size()) {
+      f.seek(visibleLutOffset + sizeof(uint32_t) * static_cast<uint32_t>(page + 1));
+      serialization::readPod(f, nextVisibleTextOffset);
+    }
+    p->visibleTextEndOffset = nextVisibleTextOffset;
   }
   return p;
   // No f.close() needed -- DESTRUCTOR_CLOSES_FILE=1 handles it at scope exit

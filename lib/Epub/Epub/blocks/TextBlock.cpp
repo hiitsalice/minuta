@@ -253,9 +253,6 @@ void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int 
     const int drawX = wordX;
 
     if (highlights != nullptr && !highlights->empty()) {
-      LOG_DBG("TXB", "Highlight render: %u entries word=%u offset=%u",
-              static_cast<uint32_t>(highlights->size()), i, wordVisibleOffset(i));
-
       const uint32_t wordStart = wordVisibleOffset(i);
       const uint32_t wordEnd = wordStart + utf8Length(word);
 
@@ -263,10 +260,6 @@ void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int 
       bool highlightContinuesToNextWord = false;
 
       for (const auto& highlight : *highlights) {
-        LOG_DBG("TXB", "Highlight range: %u-%u",
-                highlight.startVisibleTextOffset,
-                highlight.endVisibleTextOffset);
-
         if (highlight.startVisibleTextOffset < wordEnd &&
             highlight.endVisibleTextOffset > wordStart) {
           wordHighlighted = true;
@@ -279,9 +272,6 @@ void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int 
       }
 
       if (wordHighlighted && SETTINGS.highlightMarkerEnabled) {
-        LOG_DBG("TXB", "MATCH word=%u start=%u end=%u",
-                i, wordStart, wordEnd);
-
         const int width = renderer.getTextAdvanceX(fontId, word, currentStyle);
 
         const int highlightX = drawX - 2;
