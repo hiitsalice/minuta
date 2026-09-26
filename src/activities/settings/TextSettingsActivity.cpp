@@ -293,7 +293,8 @@ void TextSettingsActivity::render(RenderLock&&) {
 
   const auto pageWidth = renderer.getScreenWidth();
 
-  GUI.drawHeader(renderer, Rect{0, metrics_.topPadding - 6, pageWidth, metrics_.headerHeight}, tr(STR_TEXT_SETTINGS));
+  GUI.drawHeader(renderer, Rect{0, metrics_.topPadding - 6, pageWidth, metrics_.headerHeight},
+                 tr(STR_TEXT_SETTINGS), nullptr, false, false);
 
   // Centre the sample between the header's bold bottom line and the tab bar.
   const int previewTop =

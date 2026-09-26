@@ -200,7 +200,7 @@ void StatusBarSettingsActivity::render(RenderLock&&) {
   // Header via GUI.drawHeader (already FreeInkUI-themed) for the battery
   // indicator; the list renders through the app; the preview stays raw.
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight},
-                 tr(STR_CUSTOMISE_STATUS_BAR));
+                 tr(STR_CUSTOMISE_STATUS_BAR), nullptr, false, false);
 
   renderUi();
 

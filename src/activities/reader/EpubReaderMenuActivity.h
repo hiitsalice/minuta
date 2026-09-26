@@ -14,6 +14,7 @@ class EpubReaderMenuActivity final : public UiListActivity {
   enum class MenuAction {
     SELECT_CHAPTER,
     FOOTNOTES,
+    STATUS_BAR,
     TEXT_SETTINGS,
     GO_TO_PERCENT,
     AUTO_PAGE_TURN,

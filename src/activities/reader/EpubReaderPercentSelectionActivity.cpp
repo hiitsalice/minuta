@@ -169,7 +169,7 @@ void EpubReaderPercentSelectionActivity::render(RenderLock&&) {
   Rect screen = theme.getScreenSafeArea(renderer, true, false);
 
   GUI.drawHeader(renderer, Rect{screen.x, screen.y + metrics.topPadding, screen.width, metrics.headerHeight},
-                 tr(STR_GO_TO_PERCENT));
+                 tr(STR_GO_TO_PERCENT), nullptr, false, false);
 
   // Percent readout, slider, and hints render through the app so the slider and its
   // -/+ zones register touch hit rects.
