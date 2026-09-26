@@ -164,7 +164,7 @@ enum LONG_PRESS_MENU_FUNCTION {
   };
 
   // Sleep screen settings
-  uint8_t sleepScreen = DEFAULT;
+  uint8_t sleepScreen = DEFAULT_SCREEN;
   // Sleep screen cover mode settings
   uint8_t sleepScreenCoverMode = FIT;
   // Sleep screen cover filter

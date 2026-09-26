@@ -8,6 +8,9 @@
 #include <HalGPIO.h>
 #include <HalPowerManager.h>
 #include <HalStorage.h>
+#ifndef SIMULATOR
+#include <esp_ota_ops.h>
+#endif
 #include <HalSystem.h>
 #include <I18n.h>
 #include <Logging.h>
@@ -46,6 +49,21 @@ static unsigned long allowSleepAt = 0;
 // A wake hold must never become an in-app power-button action.  Boot may continue
 // while the button is held; swallow the one release that ends that wake gesture.
 static bool wakePowerReleasePending = false;
+#ifndef SIMULATOR
+static bool freshFirmwareInstall = false;
+
+bool verifyRollbackLater() {
+  const esp_partition_t* running = esp_ota_get_running_partition();
+  esp_ota_img_states_t otaState;
+
+  if (esp_ota_get_state_partition(running, &otaState) == ESP_OK &&
+      otaState == ESP_OTA_IMG_PENDING_VERIFY) {
+    freshFirmwareInstall = true;
+  }
+
+  return true;
+}
+#endif
 
 // Fonts
 EpdFont youngserif14RegularFont(&youngserif_14_regular);
@@ -337,6 +355,24 @@ void setup() {
   }
 
   HalSystem::checkPanic();
+
+#ifndef SIMULATOR
+  if (freshFirmwareInstall) {
+    if (Storage.exists("/.crosspoint/settings.json") &&
+        !Storage.remove("/.crosspoint/settings.json")) {
+      LOG_ERR("SETTINGS", "failed to reset user settings");
+      esp_ota_mark_app_invalid_rollback_and_reboot();
+      return;
+    }
+
+    if (!esp_ota_mark_app_valid_cancel_rollback()) {
+      LOG_ERR("OTA", "failed to confirm firmware");
+      return;
+    }
+
+    freshFirmwareInstall = false;
+  }
+#endif
 
   APP_STATE.loadFromFile();
   const bool isSleepWake = wakeupReason == HalGPIO::WakeupReason::PowerButton;

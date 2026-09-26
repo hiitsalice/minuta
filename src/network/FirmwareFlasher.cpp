@@ -347,10 +347,12 @@ Result flashFromSdPath(const char* sdPath, ProgressCb onProgress, void* ctx, boo
   }
   file.close();
 
-  if (Storage.exists("/.crosspoint/settings.json") &&
-      !Storage.remove("/.crosspoint/settings.json")) {
-    LOG_ERR("FLASH", "failed to reset user settings");
-    return Result::OTADATA_FAIL;
+  if (Storage.exists("/.crosspoint/settings.json")) {
+    if (!Storage.remove("/.crosspoint/settings.json") ||
+        Storage.exists("/.crosspoint/settings.json")) {
+      LOG_ERR("FLASH", "failed to reset user settings");
+      return Result::OTADATA_FAIL;
+    }
   }
 
   if (!ota_boot::switchTo(dest)) {
