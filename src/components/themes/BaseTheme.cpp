@@ -227,7 +227,7 @@ void BaseTheme::drawSideButtonHints(const GfxRenderer& renderer, const char* top
 }
 
 void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* title, const char* subtitle,
-                           const bool centerTitle) const {
+                           const bool centerTitle, const bool showBattery) const {
   // Every activity header renders through the FreeInkUI header + battery
   // indicator components, styled by the active theme's tokens (padding,
   // centering, underline). Non-interactive frame: no hit rects registered.
@@ -263,11 +263,14 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
       static_cast<int16_t>(metrics.batteryHeight + (metrics.headerBatteryDetached ? 3 : 0));
   const int16_t headerBatteryGap = static_cast<int16_t>(metrics.headerBatteryDetached ? 5 : batteryPercentSpacing);
 
-  int16_t batteryReserve = static_cast<int16_t>(headerBatteryWidth + batteryNubWidth);
-  if (showBatteryPercentage) {
-    batteryReserve = static_cast<int16_t>(
-        batteryReserve + headerBatteryGap +
-        ui.target.measureText(fui::GfxRendererTarget::FONT_SMALL, percentText, tokens.smallText).width);
+  int16_t batteryReserve = 0;
+  if (showBattery) {
+    batteryReserve = static_cast<int16_t>(headerBatteryWidth + batteryNubWidth);
+    if (showBatteryPercentage) {
+      batteryReserve = static_cast<int16_t>(
+          batteryReserve + headerBatteryGap +
+          ui.target.measureText(fui::GfxRendererTarget::FONT_SMALL, percentText, tokens.smallText).width);
+    }
   }
 
   fui::HeaderProps props;
@@ -300,7 +303,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
     const int titleLineHeight = ui.target.lineHeight(fui::GfxRendererTarget::FONT_TITLE);
     const int titleTop = static_cast<int>(band.height) - tokens.headerUnderline - tokens.spaceMd - titleLineHeight;
     props.titleOffsetY = static_cast<int16_t>(titleTop - (static_cast<int>(band.height) - titleLineHeight) / 2);
-  } else {
+  } else if (showBattery) {
     const int16_t reserve = static_cast<int16_t>(batteryReserve + tokens.spaceMd);
     if (batteryLeft) {
       props.leftReserve = reserve;
@@ -316,8 +319,9 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   }
   fui::header(ui.frame, band, props);
 
-  fui::BatteryIndicatorProps battery;
-  battery.percent = static_cast<uint8_t>(percentage > 100 ? 100 : percentage);
+  if (showBattery) {
+    fui::BatteryIndicatorProps battery;
+    battery.percent = static_cast<uint8_t>(percentage > 100 ? 100 : percentage);
   battery.charging = gpio.isUsbConnected();
   battery.label = showBatteryPercentage ? percentText : nullptr;
   battery.text = tokens.smallText;
@@ -355,6 +359,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
                           iconOnly);
   } else {
     fui::batteryIndicator(ui.frame, fui::Rect{batteryX, band.y, batteryReserve, batteryH}, battery);
+  }
   }
 
   if (manualRightLabel) {

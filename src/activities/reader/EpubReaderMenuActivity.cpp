@@ -206,7 +206,7 @@ void EpubReaderMenuActivity::drawChrome() {
   // Header via GUI.drawHeader (already FreeInkUI-themed) for the battery
   // indicator; the rest of the screen renders through the app.
   GUI.drawHeader(renderer, Rect{screen.x, screen.y + metrics.topPadding, screen.width, metrics.headerHeight},
-                 title.c_str());
+                 title.c_str(), nullptr, false, false);
 }
 
 void EpubReaderMenuActivity::render(RenderLock&&) {
