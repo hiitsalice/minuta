@@ -31,7 +31,7 @@ Updating new gallery...
 
 Minuta is intentionally built around XTEINK X4 only. Removing unused device support, inaccessible hardware features, extra language data, and serial logging keeps the firmware smaller and leaves more room for the reader itself.
 
-## Firmware Size Optimization
+### Firmware Size Optimization
 
 | Version    | Firmware Size            | Space Saved (vs previous) | Size Reduction (vs Baseline) |
 |------------|---------------------------|----------------------------|-------------------------------|
