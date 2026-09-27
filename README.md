@@ -31,14 +31,24 @@ Updating new gallery...
 
 Minuta is intentionally built around XTEINK X4 only. Removing unused device support, inaccessible hardware features, extra language data, and serial logging keeps the firmware smaller and leaves more room for the reader itself.
 
-| Measure | Result |
-| --- | --- |
-| Starting firmware size | 4,507,904 bytes |
-| Minuta 1.1 firmware size | 4,005,200 bytes |
-| Total space saved | 502,704 bytes / 490.9 KiB |
-| Total size reduction | 11.15% |
-| Free app-partition space | 2,548,400 bytes / 2.43 MiB |
-| RAM used | 55,836 bytes / 17.0% |
+## Firmware Size Optimization
+
+| Version    | Firmware Size            | Space Saved (vs previous) | Size Reduction (vs Baseline) |
+|------------|---------------------------|----------------------------|-------------------------------|
+| Baseline   | 4,507,904 bytes / 4.30 MiB | —                           | —                              |
+| Minuta 1.0 | 4,031,767 bytes / 3.84 MiB | -476,137 bytes / -465.0 KiB | -10.56%                        |
+| Minuta 1.1 | 4,033,219 bytes / 3.85 MiB | +1,452 bytes / +1.4 KiB     | -10.53%                        |
+| Minuta 1.2 | 4,005,049 bytes / 3.82 MiB | -28,170 bytes / -27.5 KiB   | -11.15%                        |
+| Minuta 1.3 | 3,608,981 bytes / 3.44 MiB | -396,068 bytes / -386.8 KiB | -19.94%                        |
+
+Baseline refers to the firmware size of the CrossPoint build Minuta was forked from.
+
+### Current resource usage (Minuta 1.3)
+
+| Measure                   | Result                          |
+|----------------------------|----------------------------------|
+| Free app-partition space   | 2,958,171 bytes / 2.82 MiB      |
+| RAM used                   | 55,652 bytes / 17.0%            |
 
 These are firmware-size measurements rather than promises about page-turn speed or battery life. Minuta was made smaller so the X4 has less unnecessary firmware to carry around.
 
