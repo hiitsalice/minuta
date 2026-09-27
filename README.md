@@ -70,8 +70,8 @@ These are firmware-size measurements rather than promises about page-turn speed 
 ## Themes
 
 <p align="center">
-  <a href="docs/gallery/home-solum.png">
-    <img src="docs/gallery/home-solum.png" alt="Solum home screen" width="320">
+  <a href="docs/gallery/solum.png">
+    <img src="docs/gallery/solum.png" width="240">
   </a>
 </p>
 
@@ -82,8 +82,8 @@ Solum is a one-cover theme. It shows the cover of your most recently opened book
 It is meant to feel calm, simple, and focused.
 
 <p align="center">
-  <a href="docs/gallery/home-quartum.gif">
-    <img src="docs/gallery/home-quartum.gif" alt="Quartum home screen" width="320">
+  <a href="docs/gallery/quartum.gif">
+    <img src="docs/gallery/quartum.gif" width="240">
   </a>
 </p>
 
