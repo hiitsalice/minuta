@@ -435,13 +435,16 @@ void CrossPointWebServerActivity::renderServerRunning() const {
   int height10 = renderer.getLineHeight(UI_10_FONT_ID);
   if (isApMode) {
     // AP mode display
-    const int wifiX = metrics.contentSidePadding;
-
-    // Temporary fixed positions for hotspot layout testing.
+    // Hotspot layout.
     renderer.drawCenteredText(UI_10_FONT_ID, 160, "Connect your device to", true,
                       EpdFontFamily::BOLD);
 
     renderer.drawCenteredText(UI_10_FONT_ID, 184, connectedSSID.c_str());
+
+    // Show QR code for Wi-Fi connection.
+    const std::string wifiConfig = std::string("WIFI:T:nopass;S:") + connectedSSID + ";;";
+    const Rect qrBoundsWifi((pageWidth - QR_CODE_WIDTH) / 2, 212, QR_CODE_WIDTH, QR_CODE_HEIGHT);
+    QrUtils::drawQrCode(renderer, qrBoundsWifi, wifiConfig);
 
     startY = 478;
 
@@ -453,8 +456,9 @@ void CrossPointWebServerActivity::renderServerRunning() const {
     std::string hostnameUrl = std::string("http://") + AP_HOSTNAME + ".local/";
     std::string ipUrl = tr(STR_OR_HTTP_PREFIX) + connectedIP + "/";
 
-    // Show QR code for URL
-    const Rect qrBoundsUrl((pageWidth - QR_CODE_WIDTH) / 2, 528, 200, 200);
+    // Show QR code for URL.
+    const Rect qrBoundsUrl((pageWidth - QR_CODE_WIDTH) / 2, 528, QR_CODE_WIDTH, QR_CODE_HEIGHT);
+    QrUtils::drawQrCode(renderer, qrBoundsUrl, hostnameUrl);
     // Show IP address as fallback
     renderer.drawCenteredText(UI_10_FONT_ID, 476, hostnameUrl.c_str());
     renderer.drawCenteredText(UI_10_FONT_ID, 500, ipUrl.c_str());
