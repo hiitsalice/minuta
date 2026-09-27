@@ -16,7 +16,22 @@ Minuta is imagined as a sunlit mythical forest filled with cute little creatures
 
 ## Gallery
 
-Updating new gallery...
+<table>
+  <tr>
+    <td><img src="docs/gallery/Main%20Menu.png" width="180"></td>
+    <td><img src="docs/gallery/Library.png" width="180"></td>
+    <td><img src="docs/gallery/Settings.gif" width="180"></td>
+    <td><img src="docs/gallery/Status%20Bar.png" width="180"></td>
+    <td><img src="docs/gallery/Text%20Settings.png" width="180"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/gallery/Font%20Browser.png" width="180"></td>
+    <td><img src="docs/gallery/Reader.png" width="180"></td>
+    <td><img src="docs/gallery/Reader%20Menu.png" width="180"></td>
+    <td><img src="docs/gallery/Dictionary.png" width="180"></td>
+    <td><img src="docs/gallery/Highlight.png" width="180"></td>
+  </tr>
+</table>
 
 ## Support
 
