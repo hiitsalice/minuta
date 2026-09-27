@@ -30,3 +30,4 @@ lib/EpdFont/scripts/output/
 /dependencies.lock
 /sdkconfig.*
 flake.*
+minuta-*.bin
