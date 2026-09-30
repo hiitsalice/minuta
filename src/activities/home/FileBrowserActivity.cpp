@@ -20,6 +20,7 @@ namespace fui = freeink::ui;
 
 namespace {
 constexpr unsigned long GO_HOME_MS = 1000;
+constexpr unsigned long DELETE_MS = 500;
 constexpr size_t NAME_BUFFER_SIZE = 500;
 }  // namespace
 
@@ -251,7 +252,7 @@ void FileBrowserActivity::onRowLongPress(const int index) {
   activateSelected(/*forceDelete=*/true);
 }
 
-void FileBrowserActivity::activateSelected(const bool forceDelete) {
+void FileBrowserActivity::activateSelected(const bool forceDelete, const bool immediateDelete) {
   if (files.empty()) return;
   // A touch activation can carry a row index captured before a delete/reload
   // shrank the list; the next render re-registers the rows.
@@ -304,9 +305,15 @@ void FileBrowserActivity::activateSelected(const bool forceDelete) {
       }
     };
 
-    std::string heading = tr(STR_DELETE) + std::string("? ");
+    if (immediateDelete) {
+      ActivityResult confirmed;
+      confirmed.isCancelled = false;
+      handler(confirmed);
+    } else {
+      std::string heading = tr(STR_DELETE) + std::string("? ");
 
-    startActivityForResult(std::make_unique<ConfirmationActivity>(renderer, mappedInput, heading, entry), handler);
+      startActivityForResult(std::make_unique<ConfirmationActivity>(renderer, mappedInput, heading, entry), handler);
+    }
     return;
   } else {
     // --- SHORT PRESS ACTION: OPEN/NAVIGATE ---
@@ -354,6 +361,12 @@ bool FileBrowserActivity::handleCustomInput() {
 }
 
 bool FileBrowserActivity::handleButtons() {
+  if (mode == Mode::Books &&
+      mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, DELETE_MS)) {
+    activateSelected(/*forceDelete=*/true, /*immediateDelete=*/true);
+    return true;
+  }
+
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     activateSelected();
     return true;
@@ -421,8 +434,8 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
-                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 7), 0,
+                                      static_cast<int16_t>(metrics.buttonHintsHeight + 3), 0});
   screen.spacer(static_cast<int16_t>(
       metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
@@ -434,7 +447,7 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
     // Lift the entire footer band 3px: separator and path move together.
     const fui::Rect band{
         pathBand.x,
-        static_cast<int16_t>(pathBand.y - 6),
+        static_cast<int16_t>(pathBand.y + 1),
         pathBand.width,
         pathBand.height};
     screen.target().fill(fui::Rect{band.x, band.y, band.width, 3}, fui::Paint::solid(fui::Color::Black));
@@ -501,18 +514,15 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   // smallText fails textStyleUnset and Screen::list() would substitute
   // bodyText back (FONT_SLOT_SMALL is 0).
   fui::TextStyle label = screen.theme().smallText;
-  label.maxLines = 2;
+  label.maxLines = 1;
   label.align = fui::TextAlign::Center;
   props.labelText = label;
-  // The trailing value here is just the short extension: skip the balanced
-  // 60%-band wrap cap and let both name lines run the full width before it.
+  // The trailing value here is just the short extension: let the name stay
+  // on a single line across the available width.
   props.balanceWrappedLabelWithValue = false;
-  // Wrapped two-line names shrink how many rows fit a page, so the last row
-  // of a page can end up in leftover space: draw it as a partial preview so
-  // files past the fold are visibly present, not silently absent.
   props.partialTrailingRow = false;
-  syncListViewport(screen, props);
-  screen.list(props);
+  syncListViewport(screen, props, false, 48);
+  screen.list(props, static_cast<int16_t>(screen.body().height - 48));
 }
 
 void FileBrowserActivity::drawChrome() {
@@ -530,14 +540,26 @@ void FileBrowserActivity::drawChrome() {
 
 void FileBrowserActivity::drawFooter() {
   const char* backLabel = (basepath == "/") ? (mode == Mode::PickFirmware ? tr(STR_BACK) : tr(STR_HOME)) : tr(STR_BACK);
-  // In PickFirmware mode, Confirm on a .bin returns the path to the caller (not "open"); show
-  // STR_SELECT instead. Directories in the same picker still descend, so keep STR_OPEN there.
-  const bool selectingFirmwareFile = mode == Mode::PickFirmware && !files.empty() && nav.selected >= 0 &&
-                                     nav.selected < listCount() && files[nav.selected].back() != '/';
-  const char* confirmLabel = files.empty() ? "" : (selectingFirmwareFile ? tr(STR_SELECT) : tr(STR_OPEN));
+  const char* confirmLabel = files.empty() ? "" : tr(STR_SELECT);
   const auto labels = mappedInput.mapLabels(backLabel, confirmLabel, files.empty() ? "" : tr(STR_DIR_UP),
                                             files.empty() ? "" : tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+
+  const char* helpText = "Hold SELECT to delete";
+  const int helpLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
+  const int textHeight = renderer.getTextHeight(UI_10_FONT_ID);
+  const int hintTop = renderer.getScreenHeight() - UITheme::getInstance().getMetrics().buttonHintsHeight;
+  const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, helpText);
+  const int textX = (renderer.getScreenWidth() - textWidth) / 2;
+  const int textY = hintTop - 15 - helpLineHeight - 40;
+
+  constexpr int boxPadding = 6;
+  renderer.fillRectDither(textX - boxPadding,
+                          textY - boxPadding,
+                          textWidth + boxPadding * 2,
+                          textHeight + boxPadding * 2,
+                          Color::LightGray);
+  renderer.drawText(UI_10_FONT_ID, textX, textY, helpText, true, EpdFontFamily::REGULAR);
 }
 
 size_t FileBrowserActivity::findEntry(const std::string& name) const {

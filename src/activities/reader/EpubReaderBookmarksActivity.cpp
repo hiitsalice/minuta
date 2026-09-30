@@ -251,13 +251,20 @@ void EpubReaderBookmarksActivity::deleteSelectedItem() {
   requestUpdate(true);
 }
 
+void EpubReaderBookmarksActivity::drawChrome() {
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  GUI.drawHeader(renderer,
+                 Rect{0, metrics.topPadding - 6, renderer.getScreenWidth(), metrics.headerHeight},
+                 "Highlight");
+}
+
 void EpubReaderBookmarksActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
-  // Saved has no header, so the first row starts at the top content area.
-  screen.setContentMargin(fui::Insets{12,
+  // Content below the Highlight header, above the delete hint and button hints.
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight + 16),
                                       static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
-                                      static_cast<int16_t>(15 + metrics.buttonHintsHeight),
+                                      static_cast<int16_t>(63 + metrics.buttonHintsHeight),
                                       static_cast<int16_t>(safe.x)});
 
   if (savedRows.empty()) {
@@ -308,6 +315,7 @@ void EpubReaderBookmarksActivity::render(RenderLock&&) {
   const int contentY = isPortraitInverted ? 50 : 0;
 
   renderUi();
+  drawChrome();
 
   if (confirmPopup.processRender(renderer, mappedInput)) return;
 
@@ -321,7 +329,7 @@ void EpubReaderBookmarksActivity::render(RenderLock&&) {
   const int hintTop = renderer.getScreenHeight() - UITheme::getInstance().getMetrics().buttonHintsHeight;
   const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, helpText);
   const int textX = (renderer.getScreenWidth() - textWidth) / 2;
-  const int textY = hintTop - 15 - helpLineHeight;
+  const int textY = hintTop - 15 - helpLineHeight - 12;
 
   constexpr int boxPadding = 6;
   renderer.fillRectDither(textX - boxPadding,

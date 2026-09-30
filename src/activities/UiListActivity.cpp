@@ -88,7 +88,7 @@ void UiListActivity::navigateButtons() {
       [this, count, &n] { moveSelectionTo(ButtonNavigator::previousPageIndex(n.selected, count, n.pageRows())); });
 }
 
-void UiListActivity::syncListViewport(UiScreen& screen, fui::ListProps& props, const bool hasSubtitle) {
+void UiListActivity::syncListViewport(UiScreen& screen, fui::ListProps& props, const bool hasSubtitle, const int16_t bottomInset) {
   // Respect caller-supplied geometry. Minuta's roomy 12pt menus need
   // scrolling calculations to use the same dimensions the list actually draws.
   int16_t rowHeight =
@@ -105,8 +105,12 @@ void UiListActivity::syncListViewport(UiScreen& screen, fui::ListProps& props, c
   const int16_t rowGap =
       props.rowGap > 0 ? props.rowGap : screen.theme().listRowGap;
 
+  fui::Rect listBody = screen.body();
+  if (bottomInset > 0 && listBody.height > bottomInset)
+    listBody.height = static_cast<int16_t>(listBody.height - bottomInset);
+
   activeNav().syncToProps(
-      screen.body(), rowHeight, rowGap, listCount(), props);
+      listBody, rowHeight, rowGap, listCount(), props);
 }
 
 void UiListActivity::drawChrome() {

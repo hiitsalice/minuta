@@ -44,6 +44,7 @@ class EpubReaderBookmarksActivity final : public UiListActivity {
  private:
   int listCount() const override { return static_cast<int>(savedRows.size()); }
   void buildScreen(UiScreen& screen) override;
+  void drawChrome() override;
   void activateIndex(int index) override;
   // Popup handling runs before everything else each pass.
   bool handleCustomInput() override;

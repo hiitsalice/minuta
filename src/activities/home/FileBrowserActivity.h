@@ -52,7 +52,7 @@ class FileBrowserActivity final : public UiListActivity {
   void drawFooter() override;
   // forceDelete routes the touch long-press to the delete branch; button
   // navigation leaves it false and relies on getHeldTime() instead.
-  void activateSelected(bool forceDelete = false);
+  void activateSelected(bool forceDelete = false, bool immediateDelete = false);
 
   // Data loading
   void loadFiles();
