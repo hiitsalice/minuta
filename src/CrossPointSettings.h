@@ -145,13 +145,6 @@ enum LONG_PRESS_MENU_FUNCTION {
   // Hide battery percentage
   enum HIDE_BATTERY_PERCENTAGE { HIDE_NEVER = 0, HIDE_READER = 1, HIDE_ALWAYS = 2, HIDE_BATTERY_PERCENTAGE_COUNT };
 
-  // Page turn button long press behavior
-  enum LONG_PRESS_BUTTON_BEHAVIOR {
-    CHAPTER_SKIP = 0,
-    ORIENTATION_CHANGE = 1,
-    LONG_PRESS_BUTTON_BEHAVIOR_COUNT
-  };
-
   // UI Theme
   enum UI_THEME { SOLUM = 0, QUARTUM = 1 };
 
@@ -224,8 +217,6 @@ enum LONG_PRESS_MENU_FUNCTION {
   uint8_t opdsFilenameFormat = 0;
   // Hide battery percentage
   uint8_t hideBatteryPercentage = HIDE_NEVER;
-  // Long-press page turn button behavior
-  uint8_t longPressButtonBehavior = CHAPTER_SKIP;
   // Long-press Confirm function in EPUB reader.
   uint8_t longPressMenuFunction = LP_MENU_DICTIONARY;
   // UI Theme

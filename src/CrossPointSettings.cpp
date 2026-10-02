@@ -237,11 +237,11 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
       shortPwrBtn = (old == 1) ? (uint8_t)SLEEP : (uint8_t)FORCE_REFRESH;
     }
 
+    // Legacy longPressButtonBehavior is intentionally ignored.
+    // Long press is now always chapter skip. The old stored value must never
+    // affect behaviour after upgrading or flashing Minuta.
     if (!doc["longPressButtonBehavior"].isNull()) {
-      const uint8_t old = doc["longPressButtonBehavior"] | (uint8_t)1;
-      // old: 0 off, 1 chapter skip, 2 orientation
-      longPressButtonBehavior =
-          (old == 2) ? (uint8_t)ORIENTATION_CHANGE : (uint8_t)CHAPTER_SKIP;
+      needsResave = true;
     }
 
     if (!doc["longPressMenuFunction"].isNull()) {

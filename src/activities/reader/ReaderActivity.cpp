@@ -104,7 +104,7 @@ void ReaderActivity::loop() {
   if (!prevTriggered && !nextTriggered) return;
 
   const unsigned long heldMs = mappedInput.getHeldTime();
-  const bool skip = SETTINGS.longPressButtonBehavior == SETTINGS.CHAPTER_SKIP && heldMs >= ReaderUtils::SKIP_HOLD_MS;
+  const bool skip = heldMs >= ReaderUtils::SKIP_HOLD_MS;
 
   if (prevTriggered) {
     if (skip) {

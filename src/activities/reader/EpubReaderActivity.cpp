@@ -540,17 +540,8 @@ void EpubReaderActivity::loop() {
 
   const unsigned long heldMs = mappedInput.getHeldTime();
   const bool longPress = heldMs >= ReaderUtils::SKIP_HOLD_MS;
-  if (longPress && SETTINGS.longPressButtonBehavior == SETTINGS.CHAPTER_SKIP) {
+  if (longPress) {
     skipPages(nextTriggered ? 1 : -1);
-    requestUpdate();
-    return;
-  }
-
-  if (longPress && SETTINGS.longPressButtonBehavior == SETTINGS.ORIENTATION_CHANGE) {
-    const uint8_t newOrientation =
-        nextTriggered ? (SETTINGS.orientation - 1 + SETTINGS.ORIENTATION_COUNT) % SETTINGS.ORIENTATION_COUNT
-                      : (SETTINGS.orientation + 1) % SETTINGS.ORIENTATION_COUNT;
-    applyOrientation(newOrientation);
     requestUpdate();
     return;
   }
