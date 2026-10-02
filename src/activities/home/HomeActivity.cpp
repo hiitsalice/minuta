@@ -248,6 +248,11 @@ void HomeActivity::loop() {
       return;
     }
 
+    if (mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, 500)) {
+      onRecentsOpen();
+      return;
+    }
+
     if (bookCount > 0) {
       if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
         // Quartum's Read button may only open one of the visible books.
@@ -308,6 +313,11 @@ void HomeActivity::loop() {
     // MappedInputManager translates these through the user's remapping.
     if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       activityManager.goToBrowseMenu();
+      return;
+    }
+
+    if (mappedInput.wasLongPressed(MappedInputManager::Button::Right, 500)) {
+      onRecentsOpen();
       return;
     }
 

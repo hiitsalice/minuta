@@ -504,16 +504,16 @@ void SettingsActivity::render(RenderLock&&) {
   renderUi();
 
   if (selectedCategoryIndex == 2) {
-    const char* noteLines[2] = {"Click POWER to refresh", "Hold POWER to sleep"};
+    const char* noteLines[3] = {"Hold READ for recents", "Click POWER to refresh", "Hold POWER to sleep"};
     const int helpLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
     const int textHeight = renderer.getTextHeight(UI_10_FONT_ID);
     const int hintTop = renderer.getScreenHeight() - metrics.buttonHintsHeight;
     const int bottomY = hintTop - 15 - helpLineHeight - 12;
     constexpr int boxPadding = 6;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
       const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, noteLines[i]);
       const int textX = (renderer.getScreenWidth() - textWidth) / 2;
-      const int textY = bottomY - (1 - i) * 36;
+      const int textY = bottomY - (2 - i) * 36;
       renderer.fillRectDither(textX - boxPadding, textY - boxPadding, textWidth + boxPadding * 2,
                               textHeight + boxPadding * 2, Color::LightGray);
       renderer.drawText(UI_10_FONT_ID, textX, textY, noteLines[i], true, EpdFontFamily::REGULAR);

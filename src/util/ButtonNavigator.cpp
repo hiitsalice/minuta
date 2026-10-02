@@ -54,23 +54,31 @@ void ButtonNavigator::onRelease(const Buttons& buttons, const Callback& callback
 }
 
 void ButtonNavigator::onContinuous(const Buttons& buttons, const Callback& callback) {
-  const bool isPressed = std::any_of(buttons.begin(), buttons.end(), [this](const MappedInputManager::Button button) {
-    return mappedInput != nullptr && mappedInput->isPressed(button) && shouldNavigateContinuously();
-  });
+  if (mappedInput == nullptr) return;
 
-  if (isPressed) {
+  bool shouldFire = false;
+  for (const auto button : buttons) {
+    const auto slot = static_cast<uint8_t>(button) & 0x0F;
+    if (!mappedInput->isPressed(button)) {
+      pressSeenTime[slot] = 0;
+      continue;
+    }
+    // Count the hold from when this screen first saw the button down, so a button
+    // already held when the screen opened gets the same pause as a fresh press.
+    if (pressSeenTime[slot] == 0) pressSeenTime[slot] = millis();
+    if (shouldNavigateContinuously(pressSeenTime[slot])) shouldFire = true;
+  }
+
+  if (shouldFire) {
     callback();
     lastContinuousNavTime = millis();
   }
 }
 
-bool ButtonNavigator::shouldNavigateContinuously() const {
-  if (!mappedInput) return false;
-
-  const bool buttonHeldLongEnough = mappedInput->getHeldTime() > continuousStartMs;
-  const bool navigationIntervalElapsed = (millis() - lastContinuousNavTime) > continuousIntervalMs;
-
-  return buttonHeldLongEnough && navigationIntervalElapsed;
+bool ButtonNavigator::shouldNavigateContinuously(const uint32_t pressSeen) const {
+  const bool heldLongEnough = (millis() - pressSeen) > continuousStartMs;
+  const bool intervalElapsed = (millis() - lastContinuousNavTime) > continuousIntervalMs;
+  return heldLongEnough && intervalElapsed;
 }
 
 int ButtonNavigator::nextIndex(const int currentIndex, const int totalItems) {

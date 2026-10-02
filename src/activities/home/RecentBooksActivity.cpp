@@ -5,6 +5,7 @@
 #include <I18n.h>
 
 #include <algorithm>
+#include <functional>
 #include <memory>
 
 #include "MappedInputManager.h"
@@ -17,7 +18,7 @@ namespace fui = freeink::ui;
 
 namespace {
 // Hold threshold for the long-press "remove from list" action (firmware convention).
-constexpr unsigned long LONG_PRESS_MS = 1000;
+constexpr unsigned long LONG_PRESS_MS = 500;
 }  // namespace
 
 RecentBooksActivity::RecentBooksActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
@@ -37,8 +38,6 @@ void RecentBooksActivity::rebuildRowItems() {
   for (const auto& book : recentBooks) {
     fui::ListItem item;
     item.label = book.title.c_str();
-    if (!book.author.empty()) item.subtitle = book.author.c_str();
-    item.icon = listIconFor(UITheme::getFileIcon(book.path), 32);  // subtitle rows carry the larger icon
     item.actionValue = static_cast<int16_t>(rowItems.size());
     rowItems.push_back(item);
   }
@@ -101,6 +100,12 @@ void RecentBooksActivity::onRowLongPress(const int index) {
 }
 
 bool RecentBooksActivity::handleButtons() {
+  if (!recentBooks.empty() && nav.selected < listCount() &&
+      mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, LONG_PRESS_MS)) {
+    promptRemoveBook(recentBooks[nav.selected].path, recentBooks[nav.selected].title);
+    return true;
+  }
+
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     if (!recentBooks.empty() && nav.selected < listCount()) {
       if (mappedInput.getHeldTime() >= LONG_PRESS_MS) {
@@ -127,6 +132,13 @@ void RecentBooksActivity::promptRemoveBook(const std::string& path, const std::s
       return;
     }
     if (RECENT_BOOKS.removeByPath(path)) {
+      // Also drop the book's cache so it reopens at page one. Highlights live
+      // in /.crosspoint/bookmarks/ and are not touched.
+      const std::string pathHash = std::to_string(std::hash<std::string>{}(path));
+      for (const char* prefix : {"/.crosspoint/epub_", "/.crosspoint/txt_"}) {
+        const std::string cacheDir = std::string(prefix) + pathHash;
+        if (Storage.exists(cacheDir.c_str())) Storage.removeDir(cacheDir.c_str());
+      }
       LOG_DBG("RBA", "Removed from recents: %s", path.c_str());
       // The interaction table still indexes the pre-removal rows; stop routing
       // touches against it until the next render republishes.
@@ -142,47 +154,61 @@ void RecentBooksActivity::promptRemoveBook(const std::string& path, const std::s
     }
   };
 
-  startActivityForResult(
-      std::make_unique<ConfirmationActivity>(renderer, mappedInput, tr(STR_REMOVE_FROM_RECENTS), title),
-      std::move(handler));
+  (void)title;
+  ActivityResult res;
+  res.isCancelled = false;
+  handler(res);
 }
 
 void RecentBooksActivity::buildScreen(UiScreen& screen) {
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
+
   const auto& metrics = UITheme::getInstance().getMetrics();
-  // Content below the GUI.drawHeader band, above the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight), 0,
-                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  // Same margins and spacing as the Library.
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 7), 0,
+                                      static_cast<int16_t>(metrics.buttonHintsHeight + 3), 0});
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
+  screen.spacer(10);
 
   if (recentBooks.empty()) {
-    screen.centeredText(tr(STR_NO_RECENT_BOOKS), screen.theme().bodyText);
+    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_NO_RECENT_BOOKS));
     return;
   }
 
-  // rowItems is built in loadRecentBooks() (see rebuildRowItems()) and
-  // reused here on every repaint.
   fui::ListProps props;
   props.items = rowItems.data();
   props.count = static_cast<uint16_t>(rowItems.size());
   props.action = ACTION_ROW;
-  // Tap opens; long-press prompts removal (physical buttons stay in loop()).
-  // Titles in the small font so more of a long title fits on the line; the row
-  // height stays on the theme cadence. Bold keeps the title/author hierarchy
-  // and doubles as the caller-owned marker: an all-default smallText fails
-  // textStyleUnset and Screen::list() would substitute bodyText back
-  // (FONT_SLOT_SMALL is 0). No maxLines=2 here: on subtitle rows the label
-  // band is one line tall and a wrapped title would collide with the author.
   fui::TextStyle label = screen.theme().smallText;
-  label.bold = true;
+  label.maxLines = 1;
+  label.align = fui::TextAlign::Center;
   props.labelText = label;
-  syncListViewport(screen, props, /*hasSubtitle=*/true);
-  screen.list(props);
+  props.balanceWrappedLabelWithValue = false;
+  props.partialTrailingRow = false;
+  syncListViewport(screen, props, false, 48);
+  screen.list(props, static_cast<int16_t>(screen.body().height - 48));
 }
 
 void RecentBooksActivity::drawFooter() {
-  // No rows: blank the row-action hints, same as FileBrowserActivity.
   const bool empty = recentBooks.empty();
-  const auto labels = mappedInput.mapLabels(tr(STR_HOME), empty ? "" : tr(STR_OPEN), empty ? "" : tr(STR_DIR_UP),
+  const auto labels = mappedInput.mapLabels(tr(STR_HOME), empty ? "" : tr(STR_SELECT), empty ? "" : tr(STR_DIR_UP),
                                             empty ? "" : tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  if (empty) return;
+
+  // Same box and position as "Hold SELECT to delete" in the highlight list.
+  const char* helpText = "Hold SELECT to delete";
+  const int helpLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
+  const int textHeight = renderer.getTextHeight(UI_10_FONT_ID);
+  const int hintTop = renderer.getScreenHeight() - UITheme::getInstance().getMetrics().buttonHintsHeight;
+  const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, helpText);
+  const int textX = (renderer.getScreenWidth() - textWidth) / 2;
+  const int textY = hintTop - 15 - helpLineHeight - 12;
+
+  constexpr int boxPadding = 6;
+  renderer.fillRectDither(textX - boxPadding, textY - boxPadding, textWidth + boxPadding * 2,
+                          textHeight + boxPadding * 2, Color::LightGray);
+  renderer.drawText(UI_10_FONT_ID, textX, textY, helpText, true, EpdFontFamily::REGULAR);
 }
