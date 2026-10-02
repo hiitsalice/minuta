@@ -19,8 +19,8 @@
 namespace fui = freeink::ui;
 
 namespace {
-constexpr unsigned long GO_HOME_MS = 1000;
-constexpr unsigned long DELETE_MS = 500;
+constexpr unsigned long GO_HOME_MS = 700;
+constexpr unsigned long DELETE_MS = 700;
 constexpr size_t NAME_BUFFER_SIZE = 500;
 }  // namespace
 

@@ -15,7 +15,7 @@
 namespace fui = freeink::ui;
 
 namespace {
-constexpr int ENTER_DELETE_MODE_MS = 500;
+constexpr int ENTER_DELETE_MODE_MS = 700;
 }  // namespace
 
 EpubReaderBookmarksActivity::EpubReaderBookmarksActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,

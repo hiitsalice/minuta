@@ -248,7 +248,7 @@ void HomeActivity::loop() {
       return;
     }
 
-    if (mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, 500)) {
+    if (mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, 700)) {
       onRecentsOpen();
       return;
     }
@@ -316,7 +316,7 @@ void HomeActivity::loop() {
       return;
     }
 
-    if (mappedInput.wasLongPressed(MappedInputManager::Button::Right, 500)) {
+    if (mappedInput.wasLongPressed(MappedInputManager::Button::Right, 700)) {
       onRecentsOpen();
       return;
     }

@@ -124,8 +124,8 @@ class KeyboardEntryActivity : public Activity {
 
   freeink::ui::Rect keyboardRect() const;
 
-  static constexpr uint16_t LONG_PRESS_MS = 500;
-  static constexpr uint16_t DEL_LONG_PRESS_MS = 1500;
+  static constexpr uint16_t LONG_PRESS_MS = 700;
+  static constexpr uint16_t DEL_LONG_PRESS_MS = 700;
 
   // App-specific key id: toggles the URL snippet panel (URL fields only).
   static constexpr int16_t URL_PANEL_KEY = -3;

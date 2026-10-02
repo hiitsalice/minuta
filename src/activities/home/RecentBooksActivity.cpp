@@ -18,7 +18,7 @@ namespace fui = freeink::ui;
 
 namespace {
 // Hold threshold for the long-press "remove from list" action (firmware convention).
-constexpr unsigned long LONG_PRESS_MS = 500;
+constexpr unsigned long LONG_PRESS_MS = 700;
 }  // namespace
 
 RecentBooksActivity::RecentBooksActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
