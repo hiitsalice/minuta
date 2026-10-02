@@ -463,11 +463,16 @@ void EpubReaderActivity::loop() {
   const bool confirmReleased = mappedInput.wasReleased(MappedInputManager::Button::Confirm);
   if (confirmLongPressed) {
     switch (SETTINGS.longPressMenuFunction) {
-      case CrossPointSettings::LP_MENU_KOSYNC:
-        if (launchKOReaderSync()) {
-          return;
+      case CrossPointSettings::LP_MENU_HIGHLIGHT:
+        openHighlightWordSelect();
+        return;
+      case CrossPointSettings::LP_MENU_SCREENSHOT:
+        {
+          RenderLock lock;
+          pendingScreenshot = true;
         }
-        break;
+        requestUpdate();
+        return;
       case CrossPointSettings::LP_MENU_DICTIONARY:
         openDictionaryWordSelect();
         return;
@@ -825,8 +830,9 @@ unsigned long EpubReaderActivity::confirmLongPressThreshold() const {
   switch (SETTINGS.longPressMenuFunction) {
     case CrossPointSettings::LP_MENU_DICTIONARY:
       return ReaderUtils::BOOKMARK_HOLD_MS;
-    case CrossPointSettings::LP_MENU_KOSYNC:
-      return KOREADER_STORE.hasCredentials() ? ReaderUtils::GO_HOME_MS : 0;
+    case CrossPointSettings::LP_MENU_HIGHLIGHT:
+    case CrossPointSettings::LP_MENU_SCREENSHOT:
+      return ReaderUtils::BOOKMARK_HOLD_MS;
     default:
       return 0;
   }

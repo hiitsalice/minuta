@@ -248,7 +248,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
       const uint8_t old = doc["longPressMenuFunction"] | (uint8_t)3;
       // old: 0 kosync, 1 disabled, 2 bookmark, 3 dictionary, 4 reader menu
       longPressMenuFunction =
-          (old == 0) ? (uint8_t)LP_MENU_KOSYNC : (uint8_t)LP_MENU_DICTIONARY;
+          (old == 0) ? (uint8_t)LP_MENU_DICTIONARY : (uint8_t)LP_MENU_DICTIONARY;
     }
 
     if (!doc["sideButtonLayout"].isNull()) {
@@ -286,7 +286,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
       // v1: 0 kosync, 2 dictionary, 3 reader menu
       // v2: 0 dictionary, 1 sync
       longPressMenuFunction =
-          (old == 0) ? (uint8_t)LP_MENU_KOSYNC : (uint8_t)LP_MENU_DICTIONARY;
+          (old == 0) ? (uint8_t)LP_MENU_DICTIONARY : (uint8_t)LP_MENU_DICTIONARY;
     }
 
     if (!doc["longPressBackDestination"].isNull()) {

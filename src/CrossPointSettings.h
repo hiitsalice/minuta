@@ -137,7 +137,8 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
 
 enum LONG_PRESS_MENU_FUNCTION {
     LP_MENU_DICTIONARY = 0,
-    LP_MENU_KOSYNC = 1,
+    LP_MENU_HIGHLIGHT = 1,
+    LP_MENU_SCREENSHOT = 2,
     LONG_PRESS_MENU_FUNCTION_COUNT
   };
 
@@ -272,7 +273,7 @@ enum LONG_PRESS_MENU_FUNCTION {
   void* sdFontResolverCtx = nullptr;
 
   uint16_t getPowerButtonDuration() const {
-    return (shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::SLEEP) ? 10 : 400;
+    return 400;
   }
   int getReaderFontId() const;
 
