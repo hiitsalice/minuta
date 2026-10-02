@@ -618,7 +618,7 @@ Available options include:
 - **Footnotes** – Navigate to the footnotes for the current section *(only shown in books that contain footnotes)*.
 - **Look Up** – Select a word on the current page and show its dictionary definition (see [docs/dictionary.md](docs/dictionary.md)). Requires a dictionary to be selected in **Settings → Reader → Dictionary**.
 - **Reading Orientation** – Cycle through screen orientations without leaving the reader.
-- **Auto Turn (Seconds Per Page)** – Cycle through automatic page turn speed options for hands-free reading.
+- **Auto Turn (sec/page)** – Cycle through automatic page turn speed options for hands-free reading.
 - **Go to %** – Jump to a specific position in the book by percentage.
 - **Take screenshot** – Save a screenshot of the current page to the `screenshots/` folder.
 - **Show page as QR** – Display a QR code encoding the current reading position.

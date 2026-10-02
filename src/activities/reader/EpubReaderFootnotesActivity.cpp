@@ -5,6 +5,7 @@
 
 #include "MappedInputManager.h"
 #include "components/UITheme.h"
+#include "fontIds.h"
 
 namespace fui = freeink::ui;
 
@@ -65,7 +66,7 @@ void EpubReaderFootnotesActivity::buildScreen(UiScreen& screen) {
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
 
   if (footnotes.empty()) {
-    screen.centeredText(tr(STR_NO_FOOTNOTES), screen.theme().bodyText);
+    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_NO_FOOTNOTES));
     return;
   }
 

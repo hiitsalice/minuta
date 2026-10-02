@@ -17,3 +17,19 @@ struct FootnoteEntry {
     href[0] = '\0';
   }
 };
+
+// True if a link's text looks like a note marker ("1", "12", "a", "*", a superscript
+// digit) rather than a cross-reference such as "see Chapter 3".
+inline bool isFootnoteMarkerText(const char* text) {
+  const size_t len = strlen(text);
+  if (len == 0 || len > 6) return false;
+  int letterRun = 0;
+  for (size_t i = 0; i < len; i++) {
+    const unsigned char c = static_cast<unsigned char>(text[i]);
+    if (c == ' ' || c == '\t' || c == '\n' || c == '\r') return false;
+    const bool isLetter = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+    letterRun = isLetter ? letterRun + 1 : 0;
+    if (letterRun >= 3) return false;
+  }
+  return true;
+}
