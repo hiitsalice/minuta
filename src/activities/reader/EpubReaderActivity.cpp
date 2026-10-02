@@ -49,7 +49,7 @@ namespace {
 // X4 overlays require a half refresh after grayscale page rendering.
 bool xteinkClassPanel() { return gpio.isXteinkDevice(); }
 
-constexpr int PAGE_TURN_RATES[] = {1, 1, 3, 6, 12};
+constexpr int PAGE_TURN_SECONDS[] = {1, 60, 20, 10, 5};
 constexpr size_t initialBookmarkCacheCapacity = 16;
 constexpr float bookmarkProgressEpsilon = 0.0001f;
 
@@ -907,13 +907,13 @@ void EpubReaderActivity::applyOrientation(const uint8_t orientation) {
 }
 
 void EpubReaderActivity::toggleAutoPageTurn(const uint8_t selectedPageTurnOption) {
-  if (selectedPageTurnOption == 0 || selectedPageTurnOption >= std::size(PAGE_TURN_RATES)) {
+  if (selectedPageTurnOption == 0 || selectedPageTurnOption >= std::size(PAGE_TURN_SECONDS)) {
     automaticPageTurnActive = false;
     return;
   }
 
   lastPageTurnTime = millis();
-  pageTurnDuration = (1UL * 60 * 1000) / PAGE_TURN_RATES[selectedPageTurnOption];
+  pageTurnDuration = 1000UL * PAGE_TURN_SECONDS[selectedPageTurnOption];
   automaticPageTurnActive = true;
 
   const uint8_t statusBarHeight = UITheme::getInstance().getStatusBarHeight();
@@ -1606,7 +1606,7 @@ void EpubReaderActivity::renderStatusBar() const {
   const auto sb = SETTINGS.statusBarSpec();
 
   if (automaticPageTurnActive) {
-    title = tr(STR_AUTO_TURN_ENABLED) + std::to_string(60 * 1000 / pageTurnDuration);
+    title = tr(STR_AUTO_TURN_ENABLED) + std::to_string(pageTurnDuration / 1000);
     const uint8_t statusBarHeight = UITheme::getInstance().getStatusBarHeight();
     if (statusBarHeight == 0 || statusBarHeight == UITheme::getInstance().getProgressBarHeight()) {
       textYOffset += UITheme::getInstance().getMetrics().statusBarVerticalMargin;
