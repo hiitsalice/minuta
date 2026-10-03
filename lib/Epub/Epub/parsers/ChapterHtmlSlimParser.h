@@ -130,6 +130,8 @@ class ChapterHtmlSlimParser {
   FootnoteEntry currentFootnote = {};
   int currentFootnoteLinkTextLen = 0;
   std::vector<std::pair<int, FootnoteEntry>> pendingFootnotes;  // <wordIndex, entry>
+  std::vector<std::pair<int, std::string>> pendingInlineAnchors;  // <wordIndex, id> for <a id=...> targets
+  std::string currentLinkAnchorId;  // id of the open <a>, recorded at its closing tag
   int wordsExtractedInBlock = 0;
 
   // Resumable parse state. The one-shot parseAndBuildPages() drives these

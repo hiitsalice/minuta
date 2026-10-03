@@ -33,3 +33,30 @@ inline bool isFootnoteMarkerText(const char* text) {
   }
   return true;
 }
+
+// Builds the label shown in the Endnotes list: "Endnote N". N is the link's own text
+// (e.g. "3", "*") or, for back-arrow links (U+21A9 / U+2191, which the UI font can't draw),
+// the trailing digits of the link's anchor.
+inline void normalizeFootnoteLabel(char* number, const char* href) {
+  char marker[FOOTNOTE_NUMBER_LEN];
+  marker[0] = '\0';
+  const unsigned char* p = reinterpret_cast<const unsigned char*>(number);
+  const bool isBackArrow = p[0] == 0xE2 && p[1] == 0x86 && (p[2] == 0xA9 || p[2] == 0x91);
+  if (isBackArrow) {
+    const size_t end = strlen(href);
+    size_t start = end;
+    while (start > 0 && href[start - 1] >= '0' && href[start - 1] <= '9') start--;
+    if (start < end && end - start <= 8) {
+      memcpy(marker, href + start, end - start);
+      marker[end - start] = '\0';
+    }
+  } else {
+    strncpy(marker, number, sizeof(marker) - 1);
+    marker[sizeof(marker) - 1] = '\0';
+  }
+  strcpy(number, "Endnote");
+  if (marker[0] != '\0') {
+    strcat(number, " ");
+    strncat(number, marker, FOOTNOTE_NUMBER_LEN - 1 - strlen(number));
+  }
+}

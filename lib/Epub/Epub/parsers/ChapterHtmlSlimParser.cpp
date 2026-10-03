@@ -713,10 +713,16 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
           // never trigger startNewTextBlock, so fn1 gets silently overwritten. That leaves
           // fn1 missing from the anchor map -> getPageForAnchor returns nullopt -> reader
           // lands at page 0 (section start) instead of the footnote.
-          if (!self->pendingAnchorId.empty()) {
-            self->flushPendingAnchor();
+          if (!isTocAnchor && strcmp(name, "a") == 0) {
+            // Link target inside a paragraph: its page is only known once the line holding it is
+            // laid out, so it is recorded at </a> (see pendingInlineAnchors).
+            self->currentLinkAnchorId = idValue;
+          } else {
+            if (!self->pendingAnchorId.empty()) {
+              self->flushPendingAnchor();
+            }
+            self->pendingAnchorId = idValue;
           }
-          self->pendingAnchorId = idValue;
         }
       } else if (strcmp(atts[i], "dir") == 0) {
         dirAttr = atts[i + 1];
@@ -1290,6 +1296,16 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
       entry.depth = self->depth;
       entry.hasTextDecoration = true;
       entry.textDecoration = CssTextDecoration::Underline;
+      // Note references and their back-links stand out: bold + italic on top of the underline.
+      const char* roleAttr = getAttribute(atts, "role");
+      const char* epubTypeAttr = getAttribute(atts, "epub:type");
+      if ((roleAttr && (strstr(roleAttr, "doc-noteref") || strstr(roleAttr, "doc-backlink"))) ||
+          (epubTypeAttr && (strstr(epubTypeAttr, "noteref") || strstr(epubTypeAttr, "backlink")))) {
+        entry.hasBold = true;
+        entry.bold = true;
+        entry.hasItalic = true;
+        entry.italic = true;
+      }
       applyDirectionToEntry(entry, cssStyle);
       self->inlineStyleStack.push_back(entry);
       self->updateEffectiveInlineStyle();
@@ -1488,7 +1504,7 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
   self->depth += 1;
 }
 
-void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char* s, const int len) {
+void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char* s, int len) {
   auto* self = static_cast<ChapterHtmlSlimParser*>(userData);
   const bool countVisibleOffsets = self->insideBody && self->nonVisibleTextDepth == 0 && !self->syntheticCharacterData;
   const uint32_t callbackVisibleOffset = self->visibleTextOffset;
@@ -1571,8 +1587,29 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
     self->currentFootnote.number[self->currentFootnoteLinkTextLen] = '\0';
   }
 
+  // Back-arrow glyphs (U+21A9 / U+2191) are missing from the UI font and draw as boxes:
+  // show a plain "<<" marker instead.
+  if (self->insideFootnoteLink && len >= 3 && static_cast<uint8_t>(s[0]) == 0xE2 &&
+      static_cast<uint8_t>(s[1]) == 0x86 &&
+      (static_cast<uint8_t>(s[2]) == 0xA9 || static_cast<uint8_t>(s[2]) == 0x91)) {
+    s = "<<";
+    len = 2;
+  }
+
   uint32_t nextCodepointOffset = callbackVisibleOffset;
   for (int i = 0; i < len; i++) {
+    // Zero-width joiners (U+2060 word joiner, U+FEFF) are invisible but missing from the font
+    // and draw as boxes: drop them (they still count as one codepoint for offsets).
+    if (len - i >= 3) {
+      const uint8_t b0 = static_cast<uint8_t>(s[i]);
+      const uint8_t b1 = static_cast<uint8_t>(s[i + 1]);
+      const uint8_t b2 = static_cast<uint8_t>(s[i + 2]);
+      if ((b0 == 0xE2 && b1 == 0x81 && b2 == 0xA0) || (b0 == 0xEF && b1 == 0xBB && b2 == 0xBF)) {
+        if (countVisibleOffsets) nextCodepointOffset++;
+        i += 2;
+        continue;
+      }
+    }
     const uint32_t codepointOffset = nextCodepointOffset;
     if (countVisibleOffsets && (static_cast<uint8_t>(s[i]) & 0xC0) != 0x80) {
       nextCodepointOffset++;
@@ -1843,6 +1880,18 @@ void XMLCALL ChapterHtmlSlimParser::endElement(void* userData, const XML_Char* n
 
   self->depth -= 1;
 
+  // Record an <a id=...> target against the page of its own word.
+  if (!self->currentLinkAnchorId.empty() && strcmp(name, "a") == 0) {
+    if (self->partWordBufferIndex > 0) {
+      self->flushPartWordBuffer();
+      self->nextWordContinues = true;
+    }
+    const int anchorWordIndex =
+        self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0);
+    self->pendingInlineAnchors.push_back({anchorWordIndex, std::move(self->currentLinkAnchorId)});
+    self->currentLinkAnchorId.clear();
+  }
+
   // Closing a footnote link — create entry from collected text and href
   if (self->insideFootnoteLink && self->depth == self->footnoteLinkDepth) {
     if (self->currentFootnote.number[0] != '\0' && self->currentFootnote.href[0] != '\0' &&
@@ -1852,6 +1901,7 @@ void XMLCALL ChapterHtmlSlimParser::endElement(void* userData, const XML_Char* n
       entry.number[sizeof(entry.number) - 1] = '\0';
       strncpy(entry.href, self->currentFootnote.href, sizeof(entry.href) - 1);
       entry.href[sizeof(entry.href) - 1] = '\0';
+      normalizeFootnoteLabel(entry.number, entry.href);
       int wordIndex =
           self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0);
       self->pendingFootnotes.push_back({wordIndex, entry});
@@ -2122,6 +2172,16 @@ void ChapterHtmlSlimParser::addLineToPage(std::shared_ptr<TextBlock> line, const
   }
   pendingFootnotes.erase(pendingFootnotes.begin(), footnoteIt);
 
+  // Anchors recorded at </a> take the page of the line holding their word.
+  auto anchorIt = pendingInlineAnchors.begin();
+  while (anchorIt != pendingInlineAnchors.end() && anchorIt->first <= wordsExtractedInBlock) {
+    if (anchorData.size() < MAX_ANCHORS_PER_CHAPTER) {
+      anchorData.push_back({std::move(anchorIt->second), static_cast<uint16_t>(completedPageCount)});
+    }
+    ++anchorIt;
+  }
+  pendingInlineAnchors.erase(pendingInlineAnchors.begin(), anchorIt);
+
   // Apply horizontal left inset (margin + padding) as x position offset
   const int16_t xOffset = line->getBlockStyle().leftInset();
   currentPage->elements.push_back(std::make_shared<PageLine>(line, xOffset, currentPageNextY));
@@ -2169,6 +2229,15 @@ void ChapterHtmlSlimParser::makePages() {
     }
     pendingFootnotes.clear();
   }
+
+  // Anchors that never reached a laid-out line (e.g. an empty target at the end of the block)
+  // take the current page.
+  for (auto& [idx, id] : pendingInlineAnchors) {
+    if (anchorData.size() < MAX_ANCHORS_PER_CHAPTER) {
+      anchorData.push_back({std::move(id), static_cast<uint16_t>(completedPageCount)});
+    }
+  }
+  pendingInlineAnchors.clear();
 
   // Apply bottom spacing after the paragraph (stored in pixels)
   if (blockStyle.marginBottom > 0) {

@@ -76,6 +76,10 @@ void EpubReaderFootnotesActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems.data();
   props.count = static_cast<uint16_t>(rowItems.size());
   props.action = ACTION_ROW;
+  fui::TextStyle label = screen.theme().bodyText;
+  label.align = fui::TextAlign::Center;
+  props.labelText = label;
+  props.labelYOffset = 1;
   syncListViewport(screen, props);
   screen.list(props);
 }
