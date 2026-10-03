@@ -1134,7 +1134,7 @@ bool ParsedText::hyphenateWordAtIndex(const size_t wordIndex, const int availabl
   // Collect candidate breakpoints (byte offsets and hyphen requirements). Focus emphasis is a byte
   // annotation, so the hyphenator sees the whole word and every legal break is reachable.
   auto breakInfos = Hyphenator::breakOffsets(word, allowFallbackBreaks);
-  if (breakInfos.empty()) {
+  if (breakInfos.empty() && !allowFallbackBreaks) {
     return false;
   }
 
@@ -1159,6 +1159,26 @@ bool ParsedText::hyphenateWordAtIndex(const size_t wordIndex, const int availabl
     chosenWidth = prefixWidth;
     chosenOffset = offset;
     chosenNeedsHyphen = needsHyphen;
+  }
+
+  if (chosenWidth < 0 && allowFallbackBreaks) {
+    // Last resort for a word wider than a whole line with no fitting break point (e.g. a long
+    // hyphenated URL, where the explicit-hyphen rules only offer breaks that are still too wide):
+    // split at the widest codepoint boundary whose prefix fits, without inserting a hyphen.
+    const unsigned char* base = reinterpret_cast<const unsigned char*>(word.data());
+    const unsigned char* ptr = base;
+    const unsigned char* wordEnd = base + word.size();
+    while (ptr < wordEnd) {
+      utf8NextCodepoint(&ptr);
+      const size_t next = static_cast<size_t>(ptr - base);
+      if (next >= word.size()) break;  // leave at least one codepoint for the remainder
+      const int prefixWidth = measureFocusWordWidth(renderer, fontId, word.substr(0, next), style,
+                                                    focusBoundaryBefore(focusBoundary, next), false);
+      if (prefixWidth > availableWidth) break;
+      chosenWidth = prefixWidth;
+      chosenOffset = next;
+      chosenNeedsHyphen = false;
+    }
   }
 
   if (chosenWidth < 0) {
