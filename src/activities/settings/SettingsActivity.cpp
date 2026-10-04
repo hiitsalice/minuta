@@ -32,15 +32,33 @@
 
 namespace fui = freeink::ui;
 
-const StrId SettingsActivity::categoryNames[categoryCount] = {StrId::STR_CAT_DISPLAY, StrId::STR_CAT_READER,
-                                                              StrId::STR_CAT_CONTROLS, StrId::STR_CAT_SYSTEM};
+const char* const SettingsActivity::categoryNames[categoryCount] = {
+    "Device",
+    "Controls",
+    "System",
+};
+
+namespace {
+
+constexpr size_t DEVICE_DISPLAY_START = 0;
+constexpr size_t DEVICE_DISPLAY_END = 3;
+constexpr size_t DEVICE_APPEARANCE_START = 3;
+constexpr size_t DEVICE_APPEARANCE_END = 5;
+constexpr size_t DEVICE_READING_START = 5;
+constexpr size_t DEVICE_READING_END = 7;
+
+constexpr size_t SYSTEM_NETWORK_START = 0;
+constexpr size_t SYSTEM_NETWORK_END = 4;
+constexpr size_t SYSTEM_UPDATE_START = 4;
+constexpr size_t SYSTEM_UPDATE_END = 6;
+
+}  // namespace
 
 SettingsActivity::SettingsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
     : UiTabListActivity("Settings", renderer, mappedInput) {}
 
 void SettingsActivity::rebuildSettingsLists() {
-  displaySettings.clear();
-  readerSettings.clear();
+  deviceSettings.clear();
   controlsSettings.clear();
   systemSettings.clear();
 
@@ -53,64 +71,101 @@ void SettingsActivity::rebuildSettingsLists() {
   std::vector<DictionaryEntry> dictionaries;
   DictionaryRegistry::discover(dictionaries);
 
-  for (auto& setting : getSettingsList(&sdFontSystem.registry(), &dictionaries)) {
-    if (setting.category == StrId::STR_NONE_OPT) continue;
-    if (setting.category == StrId::STR_CAT_DISPLAY) {
-      displaySettings.push_back(setting);
-    } else if (setting.category == StrId::STR_CAT_READER) {
-      // Settings merged into "Text Settings"
-      // (they stay in the shared list for the web settings API)
-      if (setting.inTextSettings) continue;
-      readerSettings.push_back(setting);
-    } else if (setting.category == StrId::STR_CAT_CONTROLS) {
+  const auto allSettings = getSettingsList(&sdFontSystem.registry(), &dictionaries);
+
+  const auto appendSetting = [&](std::vector<SettingInfo>& destination, const StrId nameId) {
+    const auto it =
+        std::find_if(allSettings.begin(), allSettings.end(),
+                     [nameId](const SettingInfo& setting) { return setting.nameId == nameId; });
+    if (it != allSettings.end()) {
+      destination.push_back(*it);
+    }
+  };
+
+  // Device -> Display
+  appendSetting(deviceSettings, StrId::STR_TIME_TO_SLEEP);
+  appendSetting(deviceSettings, StrId::STR_SLEEP_SCREEN);
+  appendSetting(deviceSettings, StrId::STR_REFRESH_FREQ);
+
+  // Device -> Appearance
+  appendSetting(deviceSettings, StrId::STR_UI_THEME);
+  appendSetting(deviceSettings, StrId::STR_SUNLIGHT_FADING_FIX);
+
+  // Device -> Reading
+  deviceSettings.push_back(SettingInfo::Action(StrId::STR_FONT_BROWSER, SettingAction::DownloadFonts));
+  appendSetting(deviceSettings, StrId::STR_DICTIONARY);
+
+  // Controls remains the existing flat list.
+  for (const auto& setting : allSettings) {
+    if (setting.category == StrId::STR_CAT_CONTROLS) {
       controlsSettings.push_back(setting);
-    } else if (setting.category == StrId::STR_CAT_SYSTEM) {
-      systemSettings.push_back(setting);
     }
   }
 
-  // Append device-only ACTION items
-  {
-    controlsSettings.insert(controlsSettings.begin(),
-                            SettingInfo::Action(StrId::STR_REMAP_FRONT_BUTTONS, SettingAction::RemapFrontButtons));
-  }
+  controlsSettings.insert(
+      controlsSettings.begin(),
+      SettingInfo::Action(StrId::STR_REMAP_FRONT_BUTTONS, SettingAction::RemapFrontButtons));
+
+  // System -> Network
   systemSettings.push_back(SettingInfo::Action(StrId::STR_WIFI_NETWORKS, SettingAction::Network));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_FILE_TRANSFER, SettingAction::FileTransfer));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_KOREADER_SYNC, SettingAction::KOReaderSync));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_OPDS_SERVERS, SettingAction::OPDSBrowser));
-  // OTA fetches this board's own release asset (see OtaUpdater); boards whose
-  // asset isn't published yet just report no update available.
+
+  // System -> Update
   systemSettings.push_back(SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate));
 
-  // TEMPORARY UI TEST ENTRY - remove before final firmware.
-  readerSettings.insert(readerSettings.begin(),
-                        SettingInfo::Action(StrId::STR_MANAGE_FONTS, SettingAction::DownloadFonts));
-
-  // Update currentSettings pointer and count for the active category
   switch (selectedCategoryIndex) {
     case 0:
-      currentSettings = &displaySettings;
+      currentSettings = &deviceSettings;
       break;
     case 1:
-      currentSettings = &readerSettings;
-      break;
-    case 2:
       currentSettings = &controlsSettings;
       break;
-    case 3:
+    case 2:
       currentSettings = &systemSettings;
       break;
   }
-  settingsCount = static_cast<int>(currentSettings->size());
+
+  rebuildVisibleRows();
   rebuildRowItems();
+}
+
+void SettingsActivity::rebuildVisibleRows() {
+  visibleRows.clear();
+
+  if (selectedCategoryIndex == 1) {
+    for (size_t i = 0; i < currentSettings->size(); ++i) {
+      visibleRows.push_back({false, Section::DEVICE_DISPLAY, i});
+    }
+    return;
+  }
+
+  auto addSection = [this](const Section section, const size_t start, const size_t end) {
+    visibleRows.push_back({true, section, 0});
+
+    const size_t sectionIndex = static_cast<size_t>(section);
+    if (!sectionExpanded[sectionIndex]) return;
+
+    for (size_t i = start; i < end; ++i) {
+      visibleRows.push_back({false, section, i});
+    }
+  };
+
+  if (selectedCategoryIndex == 0) {
+    addSection(Section::DEVICE_DISPLAY, DEVICE_DISPLAY_START, DEVICE_DISPLAY_END);
+    addSection(Section::DEVICE_APPEARANCE, DEVICE_APPEARANCE_START, DEVICE_APPEARANCE_END);
+    addSection(Section::DEVICE_READING, DEVICE_READING_START, DEVICE_READING_END);
+  } else {
+    addSection(Section::SYSTEM_NETWORK, SYSTEM_NETWORK_START, SYSTEM_NETWORK_END);
+    addSection(Section::SYSTEM_UPDATE, SYSTEM_UPDATE_START, SYSTEM_UPDATE_END);
+  }
 }
 
 void SettingsActivity::onEnter() {
   UiTabListActivity::onEnter();
 
-  // Reset selection to first category (ring position 0, the tab bar, comes
-  // from the base's per-tab nav reset)
   selectedCategoryIndex = 0;
   rebuildSettingsLists();
   requestUpdate();
@@ -118,38 +173,62 @@ void SettingsActivity::onEnter() {
 
 void SettingsActivity::selectCategory(const int categoryIndex) {
   selectedCategoryIndex = categoryIndex;
+
   switch (selectedCategoryIndex) {
     case 0:
-      currentSettings = &displaySettings;
+      currentSettings = &deviceSettings;
       break;
     case 1:
-      currentSettings = &readerSettings;
-      break;
-    case 2:
       currentSettings = &controlsSettings;
       break;
-    case 3:
+    case 2:
       currentSettings = &systemSettings;
       break;
   }
-  settingsCount = static_cast<int>(currentSettings->size());
-  activeNav().top = 0;  // category switches start the list at the top (no per-tab memory here)
+
+  activeNav().top = 0;
+  activeNav().selected = 0;
+  rebuildVisibleRows();
   rebuildRowItems();
 }
 
-// Rebuilds rowValues_/rowItems_ (label + actionValue) for *currentSettings.
-// Structural — call only when the active category or a category's setting
-// list changes, never from buildScreen(), which only refreshes rowValues_
-// content and rowItems_[].value pointers in place.
 void SettingsActivity::rebuildRowItems() {
-  const auto& settings = *currentSettings;
-  rowValues_.assign(settings.size(), std::string());
+  const auto sectionLabel = [](const Section section) {
+    switch (section) {
+      case Section::DEVICE_DISPLAY:
+        return "Display";
+      case Section::DEVICE_APPEARANCE:
+        return "Appearance";
+      case Section::DEVICE_READING:
+        return "Reading";
+      case Section::SYSTEM_NETWORK:
+        return "Network";
+      case Section::SYSTEM_UPDATE:
+        return "Update";
+    }
+    return "";
+  };
+
+  rowValues_.assign(visibleRows.size(), std::string());
   rowItems_.clear();
-  rowItems_.reserve(settings.size());
-  for (size_t i = 0; i < settings.size(); i++) {
+  rowItems_.reserve(visibleRows.size());
+
+  for (size_t i = 0; i < visibleRows.size(); ++i) {
+    const auto& row = visibleRows[i];
     fui::ListItem item;
-    item.label = I18N.get(settings[i].nameId);
     item.actionValue = static_cast<int16_t>(i);
+
+    if (row.isCategory) {
+      item.label = sectionLabel(row.section);
+      item.labelXOffset = 0;
+      item.bold = true;
+      item.triangleIndicator = true;
+      item.triangleDown = sectionExpanded[static_cast<size_t>(row.section)];
+    } else {
+      item.label = I18N.get((*currentSettings)[row.settingIndex].nameId);
+      item.labelXOffset = selectedCategoryIndex == 1 ? 0 : 12;
+    }
+
     rowItems_.push_back(item);
   }
 }
@@ -157,23 +236,66 @@ void SettingsActivity::rebuildRowItems() {
 void SettingsActivity::onTabAction(const int index) {
   if (optionPopup.isActive()) return;
   selectCategory(index);
-  activeNav().selected = 0;  // tab taps land with the tab bar focused
-  // The switched-to tab repaints as the selected pill; a flash overlay on top
-  // of it just repaints the pill in the focused style.
+  activeNav().selected = 0;
   app.clearTapFlash();
 }
 
 void SettingsActivity::activateIndex(const int index) {
   if (optionPopup.isActive()) return;
-  (void)index;  // toggleCurrentSetting reads the ring position
-  // Most rows repaint a different surface (popup, sub-activity, new value);
-  // a lingering tap flash would gray an unrelated element.
+  if (index < 0 || static_cast<size_t>(index) >= visibleRows.size()) return;
+
   app.clearTapFlash();
+
+  const auto row = visibleRows[static_cast<size_t>(index)];
+  if (row.isCategory) {
+    const size_t sectionIndex = static_cast<size_t>(row.section);
+    sectionExpanded[sectionIndex] = !sectionExpanded[sectionIndex];
+    rebuildVisibleRows();
+    rebuildRowItems();
+    activeNav().selected = std::min(activeNav().selected, static_cast<int>(visibleRows.size()));
+    activeNav().followOnBuild = true;
+    requestUpdate();
+    return;
+  }
+
+  activeNav().selected = index + 1;
   toggleCurrentSetting();
-  // Tap-first: a tapped row is not a cursor position. Leaving it focused
-  // (inverted) after the tap meant the row stayed black once its sub-screen or
-  // popup closed, and Back then had to clear that focus before a second Back
-  // left Settings. Hand the focus back to the tab band; the viewport stays put.
+}
+
+void SettingsActivity::stepTab(const int direction) {
+  const bool onTabBar = ringPos() == 0;
+
+  selectedCategoryIndex =
+      direction > 0 ? ButtonNavigator::nextIndex(selectedCategoryIndex, categoryCount)
+                    : ButtonNavigator::previousIndex(selectedCategoryIndex, categoryCount);
+
+  selectCategory(selectedCategoryIndex);
+  activeNav().selected = onTabBar ? 0 : 1;
+  requestUpdate();
+}
+
+void SettingsActivity::navigateButtons() {
+  const int ringSize = listCount() + 1;
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Down)) {
+    moveRingTo(ButtonNavigator::nextIndex(ringPos(), ringSize));
+    return;
+  }
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Up)) {
+    moveRingTo(ButtonNavigator::previousIndex(ringPos(), ringSize));
+    return;
+  }
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+    stepTab(1);
+    return;
+  }
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
+    stepTab(-1);
+    return;
+  }
 }
 
 void SettingsActivity::onExit() {
@@ -198,48 +320,10 @@ bool SettingsActivity::handleCustomInput() {
   return optionPopup.handleInput(mappedInput, [this] { requestUpdate(); });
 }
 
-void SettingsActivity::stepTab(const int direction) {
-  // Ring position 0 stays on the tab bar; a row selection collapses to the
-  // new category's first row (per-tab memory is deliberately not kept here).
-  const bool onTabBar = ringPos() == 0;
-  selectedCategoryIndex = direction > 0 ? ButtonNavigator::nextIndex(selectedCategoryIndex, categoryCount)
-                                        : ButtonNavigator::previousIndex(selectedCategoryIndex, categoryCount);
-  selectCategory(selectedCategoryIndex);
-  activeNav().selected = onTabBar ? 0 : 1;
-  requestUpdate();
-}
-
-void SettingsActivity::navigateButtons() {
-  const int ringSize = listCount() + 1;
-
-  // Side buttons: move up/down through the settings list.
-  if (mappedInput.wasReleased(MappedInputManager::Button::Down)) {
-    moveRingTo(ButtonNavigator::nextIndex(ringPos(), ringSize));
-    return;
-  }
-
-  if (mappedInput.wasReleased(MappedInputManager::Button::Up)) {
-    moveRingTo(ButtonNavigator::previousIndex(ringPos(), ringSize));
-    return;
-  }
-
-  // Front Left/Right buttons: switch settings tabs.
-  if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
-    stepTab(1);
-    return;
-  }
-
-  if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
-    stepTab(-1);
-    return;
-  }
-}
-
 bool SettingsActivity::handleButtons() {
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     if (ringPos() > 0) {
-      toggleCurrentSetting();
-      requestUpdate();
+      activateIndex(ringPos() - 1);
     }
     return true;
   }
@@ -254,12 +338,17 @@ bool SettingsActivity::handleButtons() {
 }
 
 void SettingsActivity::toggleCurrentSetting() {
-  int selectedSetting = ringPos() - 1;
-  if (selectedSetting < 0 || selectedSetting >= settingsCount) {
+  const int visibleIndex = ringPos() - 1;
+  if (visibleIndex < 0 || static_cast<size_t>(visibleIndex) >= visibleRows.size()) {
     return;
   }
 
-  const auto& setting = (*currentSettings)[selectedSetting];
+  const auto& row = visibleRows[static_cast<size_t>(visibleIndex)];
+  if (row.isCategory || row.settingIndex >= currentSettings->size()) {
+    return;
+  }
+
+  const auto& setting = (*currentSettings)[row.settingIndex];
   const bool sleepScreenChanged = setting.valuePtr == &CrossPointSettings::sleepScreen;
   const bool quickResumeTimeoutChanged = setting.valuePtr == &CrossPointSettings::quickResumeSleepScreen;
 
@@ -376,7 +465,7 @@ case SettingAction::DownloadFonts:
   SETTINGS.saveToFile();
   rebuildSettingsLists();
   applyUiSettingChange(setting.valuePtr);
-  activeNav().selected = std::min(ringPos(), settingsCount);
+  activeNav().selected = std::min(ringPos(), listCount());
 }
 
 void SettingsActivity::openSleepTimeoutPicker() {
@@ -451,9 +540,17 @@ void SettingsActivity::buildScreen(UiScreen& screen) {
   // refreshing here, by assigning into the existing rowValues_ strings (no
   // vector growth) rather than building a new items/values vector on every
   // render.
-  const auto& settings = *currentSettings;
-  for (size_t i = 0; i < settings.size(); i++) {
-    rowValues_[i] = settingValueText(settings[i]);
+  for (size_t i = 0; i < visibleRows.size(); ++i) {
+    const auto& row = visibleRows[i];
+    if (row.isCategory) {
+      rowItems_[i].value = nullptr;
+      rowItems_[i].bold = true;
+      rowItems_[i].triangleIndicator = true;
+      rowItems_[i].triangleDown = sectionExpanded[static_cast<size_t>(row.section)];
+      continue;
+    }
+
+    rowValues_[i] = settingValueText((*currentSettings)[row.settingIndex]);
     rowItems_[i].value = rowValues_[i].empty() ? nullptr : rowValues_[i].c_str();
   }
 
@@ -498,7 +595,7 @@ void SettingsActivity::render(RenderLock&&) {
 
   renderUi();
 
-  if (selectedCategoryIndex == 2) {
+  if (selectedCategoryIndex == 1) {
     const char* noteLines[5] = {"Hold HOME to clear all caches", "Hold DIRECTION to skip chapter",
                                 "Hold READ for recents", "Click POWER to refresh", "Hold POWER to sleep"};
     const int helpLineHeight = renderer.getLineHeight(UI_10_FONT_ID);

@@ -156,37 +156,56 @@ struct SettingInfo {
 };
 
 class SettingsActivity final : public UiTabListActivity {
-  int selectedCategoryIndex = 0;  // Currently selected category
-  int settingsCount = 0;
+  enum class Section {
+    DEVICE_DISPLAY,
+    DEVICE_APPEARANCE,
+    DEVICE_READING,
+    SYSTEM_NETWORK,
+    SYSTEM_UPDATE
+  };
 
-  // Per-category settings derived from shared list + device-only actions
-  std::vector<SettingInfo> displaySettings;
-  std::vector<SettingInfo> readerSettings;
+  struct VisibleRow {
+    bool isCategory = false;
+    Section section = Section::DEVICE_DISPLAY;
+    size_t settingIndex = 0;
+  };
+
+  static constexpr int categoryCount = 3;
+  static constexpr int sectionCount = 5;
+
+  int selectedCategoryIndex = 0;  // Currently selected top-level tab
+
+  // Per-tab settings derived from the shared list + device-only actions.
+  // Controls intentionally remains a flat list.
+  std::vector<SettingInfo> deviceSettings;
   std::vector<SettingInfo> controlsSettings;
   std::vector<SettingInfo> systemSettings;
   const std::vector<SettingInfo>* currentSettings = nullptr;
 
+  // Collapsible sections for Device/System. All start collapsed.
+  bool sectionExpanded[sectionCount]{};
+
+  // Visible row mapping. Category rows live here; settingIndex refers to the
+  // corresponding entry in currentSettings for normal rows.
+  std::vector<VisibleRow> visibleRows;
 
   OptionPopup optionPopup;
 
-  // Row structure (label/actionValue) for *currentSettings, rebuilt only when
-  // the active category or a category's setting list changes
-  // (rebuildRowItems(), called from selectCategory()/rebuildSettingsLists())
-  // — not on every repaint. rowValues_ holds the live per-row value text,
-  // refreshed every buildScreen() call by assigning into the existing
-  // strings (no vector growth).
+  // Row structure (label/actionValue) for the visible rows, rebuilt only when
+  // the active category or expanded sections change. Live values are refreshed
+  // in buildScreen() without changing vector sizes.
   std::vector<std::string> rowValues_;
   std::vector<freeink::ui::ListItem> rowItems_;
   void rebuildRowItems();
+  void rebuildVisibleRows();
 
-  static constexpr int categoryCount = 4;
-  static const StrId categoryNames[categoryCount];
+  static const char* const categoryNames[categoryCount];
 
   // --- UiTabListActivity contract ---
-  int listCount() const override { return settingsCount; }
+  int listCount() const override { return static_cast<int>(visibleRows.size()); }
   int tabCount() const override { return categoryCount; }
   int activeTab() const override { return selectedCategoryIndex; }
-  const char* tabLabel(int index) const override { return I18N.get(categoryNames[index]); }
+  const char* tabLabel(int index) const override { return categoryNames[index]; }
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
   void onTabAction(int index) override;
