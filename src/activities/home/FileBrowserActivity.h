@@ -20,6 +20,11 @@ class FileBrowserActivity final : public UiListActivity {
   // Files state
   std::string basepath = "/";
   std::vector<std::string> files;
+  // Hidden files are a File Browser session-only option. Each new browser
+  // activity starts with them hidden.
+  bool showHiddenFiles = false;
+  // Whether the current directory contains at least one hidden file.
+  bool currentDirectoryHasHiddenFiles = false;
   std::unique_ptr<char[]> fileNameBuffer;
 
   // Per-row render buffers, derived from `files` and rebuilt only when it
@@ -42,8 +47,8 @@ class FileBrowserActivity final : public UiListActivity {
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
   void onRowLongPress(int index) override;
-  // Long-press BACK goes to root; short Back goes up a directory (home/cancel at
-  // root), and Confirm activates on RELEASE (a hold is "delete").
+  // Long-press BACK toggles hidden files; short Back goes up a directory
+  // (home/cancel at root), and Confirm activates on RELEASE (a hold is "delete").
   bool handleCustomInput() override;
   bool handleButtons() override;
   // Header shows the current folder name (battery indicator via GUI.drawHeader);
