@@ -714,6 +714,7 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
           if ((liType && (strstr(liType, "endnote") || strstr(liType, "footnote"))) ||
               (liRole && (strstr(liRole, "doc-endnote") || strstr(liRole, "doc-footnote")))) {
             self->endnoteStartWordIndex = -1;
+            self->endnoteStartFirstWordIndex = -1;
             const size_t idLen = strlen(idValue);
             size_t digitStart = idLen;
             while (digitStart > 0 && idValue[digitStart - 1] >= '0' && idValue[digitStart - 1] <= '9') digitStart--;
@@ -1321,6 +1322,22 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
       self->footnoteLinkIsBacklink = (roleAttr && strstr(roleAttr, "doc-backlink")) ||
                                      (epubTypeAttr && strstr(epubTypeAttr, "backlink"));
       self->footnoteLinkTextReplaced = false;
+      self->footnoteLinkInferred = !self->footnoteLinkIsNoteref && !self->footnoteLinkIsBacklink;
+      if (self->footnoteLinkInferred) {
+        const bool atBlockStart =
+            self->partWordBufferIndex == 0 &&
+            (self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0)) == 0;
+        self->footnoteLinkIsBacklink = atBlockStart;
+        if (atBlockStart) {
+          // Each note starts with a plain bullet. It is written before the link's own style is
+          // pushed, so the bullet is not bold, italic or underlined.
+          self->syntheticCharacterData = true;
+          characterData(self, "\xE2\x80\xA2 ", 4);
+          self->syntheticCharacterData = false;
+        }
+      }
+      self->footnoteLinkStartWordIndex =
+          self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0) + 1;
       if ((roleAttr && (strstr(roleAttr, "doc-noteref") || strstr(roleAttr, "doc-backlink"))) ||
           (epubTypeAttr && (strstr(epubTypeAttr, "noteref") || strstr(epubTypeAttr, "backlink")))) {
         entry.hasBold = true;
@@ -1552,6 +1569,8 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
       self->inlineStyleStack.push_back(prefixStyle);
       self->updateEffectiveInlineStyle();
       self->syntheticCharacterData = true;
+      self->endnoteStartFirstWordIndex =
+          self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0) + 1;
       characterData(self, prefix.c_str(), static_cast<int>(prefix.size()));
       self->syntheticCharacterData = false;
       self->endnoteStartWordIndex =
@@ -1616,7 +1635,7 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
 
   // Collect footnote link display text (for the number label)
   // Skip whitespace and brackets to normalize noterefs like "[1]" → "1"
-  if (self->insideFootnoteLink) {
+  if (self->insideFootnoteLink && !self->syntheticCharacterData) {
     int start = 0;
     int end = len - 1;
 
@@ -1655,6 +1674,50 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
     s = markerReplacement;
     len = static_cast<int>(strlen(markerReplacement));
     self->footnoteLinkTextReplaced = true;
+  } else if (self->insideFootnoteLink && self->footnoteLinkInferred && !self->syntheticCharacterData) {
+    // Unlabelled note links: same look as labelled ones. Written as synthetic text with an
+    // overriding style so book CSS (e.g. superscript) cannot change it.
+    if (!self->footnoteLinkTextReplaced && isFootnoteMarkerText(self->currentFootnote.number)) {
+      char marker[FOOTNOTE_NUMBER_LEN];
+      strncpy(marker, self->currentFootnote.number, sizeof(marker) - 1);
+      marker[sizeof(marker) - 1] = '\0';
+      size_t markerLen = strlen(marker);
+      while (markerLen > 1 && (marker[markerLen - 1] == '.' || marker[markerLen - 1] == ':')) {
+        marker[--markerLen] = '\0';
+      }
+      char label[FOOTNOTE_NUMBER_LEN + 24];
+      if (self->footnoteLinkIsBacklink) {
+        snprintf(label, sizeof(label), "Endnote %s:", marker);
+      } else {
+        snprintf(label, sizeof(label), " (Endnote %s)", marker);
+      }
+      StyleStackEntry labelStyle;
+      labelStyle.depth = self->depth;
+      labelStyle.hasBold = true;
+      labelStyle.bold = true;
+      labelStyle.hasItalic = true;
+      labelStyle.italic = true;
+      labelStyle.hasTextDecoration = true;
+      labelStyle.textDecoration = CssTextDecoration::Underline;
+      labelStyle.hasSup = true;
+      labelStyle.sup = false;
+      labelStyle.hasSub = true;
+      labelStyle.sub = false;
+      self->inlineStyleStack.push_back(labelStyle);
+      self->updateEffectiveInlineStyle();
+      self->syntheticCharacterData = true;
+      characterData(self, label, static_cast<int>(strlen(label)));
+      self->syntheticCharacterData = false;
+      // Write the label's last word now, while its style is still active.
+      if (self->partWordBufferIndex > 0) {
+        self->flushPartWordBuffer();
+        self->nextWordContinues = true;
+      }
+      self->inlineStyleStack.pop_back();
+      self->updateEffectiveInlineStyle();
+      self->footnoteLinkTextReplaced = true;
+    }
+    if (self->footnoteLinkTextReplaced) len = 0;  // hide the book's own link text
   }
 
   uint32_t nextCodepointOffset = callbackVisibleOffset;
@@ -1965,13 +2028,21 @@ void XMLCALL ChapterHtmlSlimParser::endElement(void* userData, const XML_Char* n
       normalizeFootnoteLabel(entry.number, entry.href, self->footnoteLinkIsBacklink);
       int wordIndex =
           self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0);
+      int startIndex = self->footnoteLinkStartWordIndex;
       if (self->footnoteLinkIsBacklink && self->endnoteStartWordIndex >= 0) {
         // The way back to the text belongs to the "Endnote N:" prefix at the start of the entry.
         wordIndex = self->endnoteStartWordIndex;
+        startIndex = self->endnoteStartFirstWordIndex;
       }
-      const auto insertAt = std::find_if(self->pendingFootnotes.begin(), self->pendingFootnotes.end(),
-                                         [wordIndex](const auto& pf) { return pf.first > wordIndex; });
-      self->pendingFootnotes.insert(insertAt, std::make_pair(wordIndex, entry));
+      // A link that wraps across a page break is listed on both pages: once at its first word
+      // and once at its last (the page list ignores repeats).
+      const auto addPending = [self](const int idx, const FootnoteEntry& e) {
+        const auto at = std::find_if(self->pendingFootnotes.begin(), self->pendingFootnotes.end(),
+                                     [idx](const auto& pf) { return pf.first > idx; });
+        self->pendingFootnotes.insert(at, std::make_pair(idx, e));
+      };
+      if (startIndex >= 0 && startIndex < wordIndex) addPending(startIndex, entry);
+      addPending(wordIndex, entry);
     }
     self->insideFootnoteLink = false;
   }

@@ -90,6 +90,9 @@ class Page {
 
   void addFootnote(const char* number, const char* href) {
     if (footnotes.size() >= MAX_FOOTNOTES_PER_PAGE) return;  // Cap per-page footnotes
+    for (const auto& existing : footnotes) {
+      if (strcmp(existing.number, number) == 0 && strcmp(existing.href, href) == 0) return;  // already listed
+    }
     FootnoteEntry entry;
     strncpy(entry.number, number, sizeof(entry.number) - 1);
     entry.number[sizeof(entry.number) - 1] = '\0';

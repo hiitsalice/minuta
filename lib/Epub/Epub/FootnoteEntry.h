@@ -54,6 +54,10 @@ inline void normalizeFootnoteLabel(char* number, const char* href, const bool is
   } else {
     strncpy(marker, number, sizeof(marker) - 1);
     marker[sizeof(marker) - 1] = '\0';
+    size_t markerLen = strlen(marker);
+    while (markerLen > 1 && (marker[markerLen - 1] == '.' || marker[markerLen - 1] == ':')) {
+      marker[--markerLen] = '\0';
+    }
   }
   strcpy(number, (isBackArrow || isBacklink) ? "To reference" : "To endnote");
   if (marker[0] != '\0') {

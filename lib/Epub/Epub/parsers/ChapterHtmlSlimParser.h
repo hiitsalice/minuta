@@ -135,6 +135,9 @@ class ChapterHtmlSlimParser {
   bool footnoteLinkIsNoteref = false;     // open link is a note reference (role/epub:type)
   bool footnoteLinkIsBacklink = false;    // open link is a back-link to the text
   bool footnoteLinkTextReplaced = false;  // note-reference text already swapped for this link
+  bool footnoteLinkInferred = false;      // link has no note labels; role guessed from its position
+  int footnoteLinkStartWordIndex = -1;   // 1-based word position of the open link's first word
+  int endnoteStartFirstWordIndex = -1;   // 1-based word position of the first word of the "Endnote N:" prefix
   int endnoteStartWordIndex = -1;         // word position of the "Endnote N:" prefix of the open entry
   std::string pendingEndnotePrefix;       // "Endnote N: " to write before the next text of an endnote entry
   int wordsExtractedInBlock = 0;
