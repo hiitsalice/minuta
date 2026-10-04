@@ -8,3 +8,7 @@ void clearBookCache(const std::string& path);
 
 // Returns true if the directory name matches a book cache entry.
 bool isBookCacheDirectoryName(const char* name);
+
+// Clears all known book reading-cache directories.
+// Returns the number of successfully removed cache directories.
+int clearAllBookCaches();

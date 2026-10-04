@@ -1,4 +1,5 @@
 #include "HomeActivity.h"
+#include "../settings/ClearCacheActivity.h"
 
 #include <Bitmap.h>
 #include <Epub.h>
@@ -190,6 +191,13 @@ void HomeActivity::freeCoverBuffer() {
 void HomeActivity::loop() {
   const int menuCount = getMenuItemCount();
   const auto& metrics = UITheme::getInstance().getMetrics();
+
+  if (mappedInput.wasLongPressed(MappedInputManager::Button::Back, 700)) {
+    startActivityForResult(
+        std::make_unique<ClearCacheActivity>(renderer, mappedInput),
+        [this](const ActivityResult&) { onEnter(); });
+    return;
+  }
 
   auto activateSelection = [this] {
            const bool isCoverTheme = SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM ||

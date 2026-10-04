@@ -29,8 +29,8 @@ void ClearCacheActivity::render(RenderLock&&) {
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, tr(STR_CLEAR_READING_CACHE));
 
   if (state == WARNING) {
-    // Fixed layout per audit: bold, Y=420.
-    renderer.drawCenteredText(UI_10_FONT_ID, 420, "Clear reading cache?", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 404, "Clear cache?", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 432, "This will clear all reading caches");
 
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Clear", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -84,45 +84,8 @@ void ClearCacheActivity::beginClear() {
 void ClearCacheActivity::clearCache() {
   LOG_DBG("CLEAR_CACHE", "Clearing cache...");
 
-  // Open .crosspoint directory
-  auto root = Storage.open("/.crosspoint");
-  if (!root || !root.isDirectory()) {
-    LOG_DBG("CLEAR_CACHE", "Failed to open cache directory");
-    if (root) root.close();
-    state = FAILED;
-    requestUpdate();
-    return;
-  }
-
-  clearedCount = 0;
+  clearedCount = clearAllBookCaches();
   failedCount = 0;
-  char name[128];
-
-  // Iterate through all entries in the directory
-  for (auto file = root.openNextFile(); file; file = root.openNextFile()) {
-    file.getName(name, sizeof(name));
-    String itemName(name);
-
-    // Only delete directories matching known book cache names.
-    if (file.isDirectory() && isBookCacheDirectoryName(itemName.c_str())) {
-      String fullPath = "/.crosspoint/" + itemName;
-      LOG_DBG("CLEAR_CACHE", "Removing cache: %s", fullPath.c_str());
-
-      file.close();  // Close before attempting to delete
-
-      if (Storage.removeDir(fullPath.c_str())) {
-        clearedCount++;
-      } else {
-        LOG_ERR("CLEAR_CACHE", "Failed to remove: %s", fullPath.c_str());
-        failedCount++;
-      }
-    } else {
-      file.close();
-    }
-  }
-  root.close();
-
-  LOG_DBG("CLEAR_CACHE", "Cache cleared: %d removed, %d failed", clearedCount, failedCount);
 
   state = SUCCESS;
   requestUpdate();

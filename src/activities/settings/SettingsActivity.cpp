@@ -78,18 +78,13 @@ void SettingsActivity::rebuildSettingsLists() {
   systemSettings.push_back(SettingInfo::Action(StrId::STR_FILE_TRANSFER, SettingAction::FileTransfer));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_KOREADER_SYNC, SettingAction::KOReaderSync));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_OPDS_SERVERS, SettingAction::OPDSBrowser));
-  systemSettings.push_back(SettingInfo::Action(StrId::STR_CLEAR_READING_CACHE, SettingAction::ClearCache));
   // OTA fetches this board's own release asset (see OtaUpdater); boards whose
   // asset isn't published yet just report no update available.
   systemSettings.push_back(SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate));
 
-  // TEMPORARY UI TEST ENTRIES - remove before final firmware.
+  // TEMPORARY UI TEST ENTRY - remove before final firmware.
   readerSettings.insert(readerSettings.begin(),
-                        SettingInfo::Action(StrId::STR_CUSTOMISE_STATUS_BAR, SettingAction::CustomiseStatusBar));
-  readerSettings.insert(readerSettings.begin() + 1,
-                        SettingInfo::Action(StrId::STR_TEXT_SETTINGS, SettingAction::TextSettings));
-  readerSettings.insert(readerSettings.begin() + 2,
                         SettingInfo::Action(StrId::STR_MANAGE_FONTS, SettingAction::DownloadFonts));
 
   // Update currentSettings pointer and count for the active category
