@@ -19,7 +19,7 @@
 namespace fui = freeink::ui;
 
 namespace {
-constexpr unsigned long GO_HOME_MS = 700;
+constexpr unsigned long HIDDEN_FILES_TOGGLE_MS = 700;
 constexpr unsigned long DELETE_MS = 700;
 constexpr size_t NAME_BUFFER_SIZE = 500;
 }  // namespace
@@ -35,6 +35,7 @@ FileBrowserActivity::FileBrowserActivity(GfxRenderer& renderer, MappedInputManag
 
 void FileBrowserActivity::loadFiles() {
   files.clear();
+  currentDirectoryHasHiddenFiles = false;
 
   auto root = Storage.open(basepath.c_str());
   if (!root || !root.isDirectory()) {
@@ -54,7 +55,13 @@ void FileBrowserActivity::loadFiles() {
   for (auto file = root.openNextFile(); file; file = root.openNextFile()) {
     file.getName(fileNameBuffer.get(), NAME_BUFFER_SIZE);
     const bool isDirectory = file.isDirectory();
-    if ((!SETTINGS.showHiddenFiles && fileNameBuffer[0] == '.') ||
+    const bool isHidden = fileNameBuffer[0] == '.';
+
+    if (isHidden) {
+      currentDirectoryHasHiddenFiles = true;
+    }
+
+    if ((!showHiddenFiles && isHidden) ||
         strcmp(fileNameBuffer.get(), "System Volume Information") == 0) {
       continue;
     }
@@ -272,7 +279,7 @@ void FileBrowserActivity::activateSelected(const bool forceDelete, const bool im
     return;
   }
 
-  if (mode == Mode::Books && (forceDelete || mappedInput.getHeldTime() >= GO_HOME_MS)) {
+  if (mode == Mode::Books && (forceDelete || mappedInput.getHeldTime() >= HIDDEN_FILES_TOGGLE_MS)) {
     // --- LONG PRESS ACTION: DELETE FILE OR DIRECTORY ---
     std::string cleanBasePath = basepath;
     if (cleanBasePath.back() != '/') cleanBasePath += "/";
@@ -340,20 +347,30 @@ void FileBrowserActivity::activateSelected(const bool forceDelete, const bool im
 }
 
 bool FileBrowserActivity::handleCustomInput() {
-  // Long press BACK (1s+) goes to root folder (Books mode only).
-  // In firmware-pick mode we keep navigation simple: short Back = up dir / cancel.
-  if (mode == Mode::Books && mappedInput.wasReleased(MappedInputManager::Button::Back) &&
-      mappedInput.getHeldTime() >= GO_HOME_MS && basepath != "/") {
-    {
-      // buildScreen() runs on the render task and reads basepath plus the
-      // row caches rebuildRowItems() frees; mutate only under the render lock.
-      RenderLock lock(*this);
-      basepath = "/";
-      loadFiles();
-      nav.selected = 0;
-      nav.top = 0;
+  // Long press BACK is consumed in the Books File Browser. If the current
+  // directory has hidden files, toggle their visibility; otherwise do nothing.
+  // Firmware-pick mode keeps Back as ordinary directory navigation/cancel.
+  if (mode == Mode::Books &&
+      mappedInput.wasLongPressed(MappedInputManager::Button::Back, HIDDEN_FILES_TOGGLE_MS)) {
+    if (!currentDirectoryHasHiddenFiles) {
+      return true;
     }
-    requestUpdate();
+
+    {
+      // buildScreen() runs on the render task and reads the row caches that
+      // loadFiles() rebuilds, so mutate them only under the render lock.
+      RenderLock lock(*this);
+      showHiddenFiles = !showHiddenFiles;
+      loadFiles();
+
+      if (files.empty()) {
+        nav.selected = 0;
+      } else if (nav.selected >= listCount()) {
+        nav.selected = listCount() - 1;
+      }
+      nav.follow(listCount());
+    }
+    requestUpdate(true);
     return true;
   }
 
@@ -374,7 +391,7 @@ bool FileBrowserActivity::handleButtons() {
 
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     // Short press: go up one directory, or go home if at root
-    if (mappedInput.getHeldTime() < GO_HOME_MS) {
+    if (mappedInput.getHeldTime() < HIDDEN_FILES_TOGGLE_MS) {
       if (basepath != "/") {
         const std::string oldPath = basepath;
 
@@ -485,9 +502,10 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
           renderer.getScreenHeight() / 2,
           tr(STR_NO_BIN_FILES));
     } else {
-      screen.centeredText(
-          tr(STR_NO_FILES_FOUND),
-          screen.theme().bodyText);
+      renderer.drawCenteredText(
+          UI_10_FONT_ID,
+          420,
+          tr(STR_NO_FILES_FOUND));
     }
     return;
   }
@@ -521,8 +539,10 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   // on a single line across the available width.
   props.balanceWrappedLabelWithValue = false;
   props.partialTrailingRow = false;
-  syncListViewport(screen, props, false, 48);
-  screen.list(props, static_cast<int16_t>(screen.body().height - 48));
+  // Reserve an additional 48px below the list so fewer rows are shown.
+  // This is list-only spacing and does not move the footer or help text.
+  syncListViewport(screen, props, false, 96);
+  screen.list(props, static_cast<int16_t>(screen.body().height - 96));
 }
 
 void FileBrowserActivity::drawChrome() {
@@ -545,21 +565,35 @@ void FileBrowserActivity::drawFooter() {
                                             files.empty() ? "" : tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
-  const char* helpText = "Hold SELECT to delete";
+  const char* deleteHelpText = "Hold SELECT to delete";
+  const char* hiddenHelpText = "Hold BACK to show hidden";
   const int helpLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
   const int textHeight = renderer.getTextHeight(UI_10_FONT_ID);
   const int hintTop = renderer.getScreenHeight() - UITheme::getInstance().getMetrics().buttonHintsHeight;
-  const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, helpText);
-  const int textX = (renderer.getScreenWidth() - textWidth) / 2;
-  const int textY = hintTop - 15 - helpLineHeight - 40;
+  const int deleteTextWidth = renderer.getTextWidth(UI_10_FONT_ID, deleteHelpText);
+  const int hiddenTextWidth = renderer.getTextWidth(UI_10_FONT_ID, hiddenHelpText);
+  const int deleteTextX = (renderer.getScreenWidth() - deleteTextWidth) / 2;
+  const int hiddenTextX = (renderer.getScreenWidth() - hiddenTextWidth) / 2;
+
+  // The new hidden-file hint stays at the original help-text position.
+  const int hiddenTextY = hintTop - 15 - helpLineHeight - 42;
+  const int deleteTextY = hiddenTextY - 36;
 
   constexpr int boxPadding = 6;
-  renderer.fillRectDither(textX - boxPadding,
-                          textY - boxPadding,
-                          textWidth + boxPadding * 2,
+
+  renderer.fillRectDither(hiddenTextX - boxPadding,
+                          hiddenTextY - boxPadding,
+                          hiddenTextWidth + boxPadding * 2,
                           textHeight + boxPadding * 2,
                           Color::LightGray);
-  renderer.drawText(UI_10_FONT_ID, textX, textY, helpText, true, EpdFontFamily::REGULAR);
+  renderer.drawText(UI_10_FONT_ID, hiddenTextX, hiddenTextY, hiddenHelpText, true, EpdFontFamily::REGULAR);
+
+  renderer.fillRectDither(deleteTextX - boxPadding,
+                          deleteTextY - boxPadding,
+                          deleteTextWidth + boxPadding * 2,
+                          textHeight + boxPadding * 2,
+                          Color::LightGray);
+  renderer.drawText(UI_10_FONT_ID, deleteTextX, deleteTextY, deleteHelpText, true, EpdFontFamily::REGULAR);
 }
 
 size_t FileBrowserActivity::findEntry(const std::string& name) const {
