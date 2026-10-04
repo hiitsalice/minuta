@@ -36,6 +36,19 @@ class EpubReaderMenuActivity final : public UiListActivity {
     StrId labelId;
   };
 
+  enum class Category : uint8_t {
+    NAVIGATION,
+    TOOLS,
+    APPEARANCE,
+    UTILITIES
+  };
+
+  struct VisibleRow {
+    bool isCategory = false;
+    Category category = Category::NAVIGATION;
+    size_t menuIndex = 0;
+  };
+
   static void buildMenuItems(std::vector<MenuItem>& items, bool hasFootnotes, bool hasBookmarks);
 
   explicit EpubReaderMenuActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const std::string& title,
@@ -46,15 +59,20 @@ class EpubReaderMenuActivity final : public UiListActivity {
   bool handleHomeGesture() override;
 
  private:
-  // Row storage: menuItems is at most MAX_MENU_ITEMS, so a
-  // fixed-capacity array avoids any heap allocation for the row list. Labels
-  // are set once in the constructor (buildMenuRowItems()); buildScreen()
-  // only refreshes rows whose values reflect live state.
-  static constexpr size_t MAX_MENU_ITEMS = 16;
+  // Four category rows + fifteen action rows when everything is expanded.
+  static constexpr size_t MAX_MENU_ITEMS = 19;
   freeink::ui::ListItem menuRowItems[MAX_MENU_ITEMS]{};
+
+  // Visible rows are rebuilt when a category expands/collapses. The action
+  // enum itself remains unchanged so EpubReaderActivity keeps its existing
+  // dispatch behaviour.
+  std::vector<VisibleRow> visibleRows;
+  bool categoryExpanded[4]{false, false, false, false};
+
+  void rebuildVisibleRows();
   void buildMenuRowItems();
 
-  int listCount() const override { return static_cast<int>(menuItems.size()); }
+  int listCount() const override { return static_cast<int>(visibleRows.size()); }
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
   // Popup input runs before any button or touch handling.
@@ -67,7 +85,8 @@ class EpubReaderMenuActivity final : public UiListActivity {
 
   void closeCancelled();
 
-  // Fixed menu layout
+  // Fixed action layout. visibleRows adds/removes category children without
+  // changing the underlying action list.
   std::vector<MenuItem> menuItems;
 
   OptionPopup optionPopup;

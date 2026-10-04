@@ -23,16 +23,67 @@ EpubReaderMenuActivity::EpubReaderMenuActivity(GfxRenderer& renderer, MappedInpu
       totalPages(totalPages),
       bookProgressPercent(bookProgressPercent) {
   buildMenuItems(menuItems, hasFootnotes, hasBookmarks);
+  rebuildVisibleRows();
+}
+
+void EpubReaderMenuActivity::rebuildVisibleRows() {
+  visibleRows.clear();
+
+  constexpr size_t NAVIGATION_START = 0;
+  constexpr size_t NAVIGATION_END = 4;
+  constexpr size_t TOOLS_START = 4;
+  constexpr size_t TOOLS_END = 9;
+  constexpr size_t APPEARANCE_START = 9;
+  constexpr size_t APPEARANCE_END = 12;
+  constexpr size_t UTILITIES_START = 12;
+  constexpr size_t UTILITIES_END = 15;
+
+  const auto addCategory = [this](const Category category, const size_t start, const size_t end) {
+    const size_t categoryIndex = static_cast<size_t>(category);
+    visibleRows.push_back({true, category, 0});
+
+    if (!categoryExpanded[categoryIndex]) return;
+
+    for (size_t i = start; i < end; ++i)
+      visibleRows.push_back({false, category, i});
+  };
+
+  addCategory(Category::NAVIGATION, NAVIGATION_START, NAVIGATION_END);
+  addCategory(Category::TOOLS, TOOLS_START, TOOLS_END);
+  addCategory(Category::APPEARANCE, APPEARANCE_START, APPEARANCE_END);
+  addCategory(Category::UTILITIES, UTILITIES_START, UTILITIES_END);
+
   buildMenuRowItems();
 }
 
-// Populates menuRowItems's labels/actionValue from menuItems. Called once
-// here since menuItems (and thus which rows exist) never changes after
-// construction; buildScreen() only touches the two rows with a live value.
 void EpubReaderMenuActivity::buildMenuRowItems() {
-  for (size_t i = 0; i < menuItems.size() && i < MAX_MENU_ITEMS; i++) {
+  for (size_t i = 0; i < MAX_MENU_ITEMS; ++i)
+    menuRowItems[i] = {};
+
+  static constexpr const char* CATEGORY_LABELS[] = {
+      "Navigation",
+      "Tools",
+      "Appearance",
+      "Utilities",
+  };
+
+  for (size_t i = 0; i < visibleRows.size() && i < MAX_MENU_ITEMS; ++i) {
+    const auto& row = visibleRows[i];
     fui::ListItem item;
-    item.label = menuItems[i].action == MenuAction::DICTIONARY ? "Dictionary" : I18N.get(menuItems[i].labelId);
+
+    if (row.isCategory) {
+      const size_t categoryIndex = static_cast<size_t>(row.category);
+      item.label = CATEGORY_LABELS[categoryIndex];
+      item.bold = true;
+      item.labelXOffset = -12;
+      item.triangleIndicator = true;
+      item.triangleDown = categoryExpanded[categoryIndex];
+    } else {
+      item.label = menuItems[row.menuIndex].action == MenuAction::DICTIONARY
+                       ? "Dictionary"
+                       : I18N.get(menuItems[row.menuIndex].labelId);
+    }
+
     item.actionValue = static_cast<int16_t>(i);
     menuRowItems[i] = item;
   }
@@ -40,22 +91,30 @@ void EpubReaderMenuActivity::buildMenuRowItems() {
 
 void EpubReaderMenuActivity::buildMenuItems(std::vector<MenuItem>& items, bool hasFootnotes, bool hasBookmarks) {
   items.clear();
-  items.reserve(MAX_MENU_ITEMS);
-  (void)hasFootnotes;  // Endnote List is always listed
-  items.push_back({MenuAction::FOOTNOTES, StrId::STR_FOOTNOTES});
-  (void)hasBookmarks;
+  items.reserve(15);
 
+  (void)hasFootnotes;  // Endnote List is always listed.
+  (void)hasBookmarks;  // Highlight List is always listed.
+
+  // Navigation
   items.push_back({MenuAction::SELECT_CHAPTER, StrId::STR_SELECT_CHAPTER});
   items.push_back({MenuAction::GO_TO_PERCENT, StrId::STR_GO_TO_PERCENT});
-  items.push_back({MenuAction::TEXT_SETTINGS, StrId::STR_TEXT_SETTINGS});
-  items.push_back({MenuAction::STATUS_BAR, StrId::STR_CUSTOMISE_STATUS_BAR});
+  items.push_back({MenuAction::FOOTNOTES, StrId::STR_FOOTNOTES});
+  items.push_back({MenuAction::AUTO_PAGE_TURN, StrId::STR_AUTO_TURN_SEC_PER_PAGE});
+
+  // Tools
   items.push_back({MenuAction::HIGHLIGHT, StrId::STR_HIGHLIGHT});
   items.push_back({MenuAction::HIGHLIGHT_MARKER, StrId::STR_HIGHLIGHT_MARKER});
   items.push_back({MenuAction::BOOKMARKS, StrId::STR_HIGHLIGHT_LIST});
   items.push_back({MenuAction::DICTIONARY, StrId::STR_LOOKUP});
   items.push_back({MenuAction::SCREENSHOT, StrId::STR_SCREENSHOT_BUTTON});
+
+  // Appearance
+  items.push_back({MenuAction::STATUS_BAR, StrId::STR_CUSTOMISE_STATUS_BAR});
+  items.push_back({MenuAction::TEXT_SETTINGS, StrId::STR_TEXT_SETTINGS});
   items.push_back({MenuAction::ROTATE_SCREEN, StrId::STR_ORIENTATION});
-  items.push_back({MenuAction::AUTO_PAGE_TURN, StrId::STR_AUTO_TURN_SEC_PER_PAGE});
+
+  // Utilities
   items.push_back({MenuAction::DISPLAY_QR, StrId::STR_DISPLAY_QR});
   items.push_back({MenuAction::SYNC, StrId::STR_SYNC_PROGRESS});
   items.push_back({MenuAction::DELETE_CACHE, StrId::STR_DELETE_CACHE});
@@ -76,21 +135,36 @@ bool EpubReaderMenuActivity::handleHomeGesture() {
 
 void EpubReaderMenuActivity::activateIndex(const int index) {
   if (optionPopup.isActive()) return;
-  // The activated row leaves this screen (popup or finish); a lingering flash
-  // would gray an unrelated element on the next render.
+  if (index < 0 || index >= static_cast<int>(visibleRows.size())) return;
+
+  // The activated row leaves this screen (popup or finish), or changes the
+  // visible list. Clear any lingering tap flash before either case.
   app.clearTapFlash();
   nav.selected = index;
 
-  const auto selectedAction = menuItems[index].action;
+  const auto row = visibleRows[static_cast<size_t>(index)];
+
+  if (row.isCategory) {
+    const size_t categoryIndex = static_cast<size_t>(row.category);
+    categoryExpanded[categoryIndex] = !categoryExpanded[categoryIndex];
+
+    // The category itself remains selected after the visible-row list changes.
+    // Rebuilding from the category index preserves that selection naturally.
+    rebuildVisibleRows();
+    nav.followOnBuild = true;
+    requestUpdate();
+    return;
+  }
+
+  const auto selectedAction = menuItems[row.menuIndex].action;
+
   if (selectedAction == MenuAction::ROTATE_SCREEN) {
     pendingOrientation = (pendingOrientation + 1) % static_cast<int>(orientationLabels.size());
     // Rotate the menu immediately. Only the renderer turns;
     // SETTINGS.orientation stays unchanged so the reader's
     // result handler still detects the change and reflows.
     ReaderUtils::applyOrientation(renderer, pendingOrientation);
-    app.setDevice(uiTarget.deviceContext());  // hit rects follow the new frame
-    // Landscape shows fewer rows than portrait; re-run the scroll-to-selected
-    // pass so the row being cycled (this one) stays visible after rotating.
+    app.setDevice(uiTarget.deviceContext());
     nav.followOnBuild = true;
     requestUpdate(true);
     return;
@@ -163,34 +237,42 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   screen.spacer(static_cast<int16_t>(menuEdgePadding - 2));
 
   // Minuta reader menu rows use the same 12pt UI size as the outer menus.
-  // Do this after drawing the progress summary above so that line keeps its
-  // existing smaller typography.
   uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
   uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
-  // menuRowItems's labels/actionValue were set once in the constructor (see
-  // buildMenuRowItems()); only rows with live values need refreshing here.
-  for (size_t i = 0; i < menuItems.size(); i++) {
-    const auto action = menuItems[i].action;
+  for (size_t i = 0; i < visibleRows.size() && i < MAX_MENU_ITEMS; ++i) {
+    const auto& row = visibleRows[i];
+
+    if (row.isCategory) {
+      const size_t categoryIndex = static_cast<size_t>(row.category);
+      menuRowItems[i].triangleIndicator = true;
+      menuRowItems[i].triangleDown = categoryExpanded[categoryIndex];
+      menuRowItems[i].value = nullptr;
+      continue;
+    }
+
+    const auto action = menuItems[row.menuIndex].action;
+
     if (action == MenuAction::HIGHLIGHT_MARKER) {
       menuRowItems[i].value = SETTINGS.highlightMarkerEnabled ? "On" : "Off";
     } else if (action == MenuAction::ROTATE_SCREEN) {
       menuRowItems[i].value = I18N.get(orientationLabels[pendingOrientation]);
     } else if (action == MenuAction::AUTO_PAGE_TURN) {
       menuRowItems[i].value = pageTurnLabels[selectedPageTurnOption];
+    } else {
+      menuRowItems[i].value = nullptr;
     }
   }
 
   fui::ListProps props;
   props.items = menuRowItems;
-  props.count = static_cast<uint16_t>(menuItems.size());
+  props.count = static_cast<uint16_t>(visibleRows.size());
   props.action = ACTION_ROW;
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight + 11);
   props.rowGap = 0;
-  props.valueInset = 8;  // air between the value and the row edge
-  // Label at the value's font size: both sides of the row read as one unit.
-  // maxLines=2 also marks the style caller-owned (see textStyleUnset).
+  props.valueInset = 8;
+  props.labelXOffset = 12;
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 2;
   props.labelText.lineGap = 6;
