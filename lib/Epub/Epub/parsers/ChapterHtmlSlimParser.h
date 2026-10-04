@@ -132,6 +132,11 @@ class ChapterHtmlSlimParser {
   std::vector<std::pair<int, FootnoteEntry>> pendingFootnotes;  // <wordIndex, entry>
   std::vector<std::pair<int, std::string>> pendingInlineAnchors;  // <wordIndex, id> for <a id=...> targets
   std::string currentLinkAnchorId;  // id of the open <a>, recorded at its closing tag
+  bool footnoteLinkIsNoteref = false;     // open link is a note reference (role/epub:type)
+  bool footnoteLinkIsBacklink = false;    // open link is a back-link to the text
+  bool footnoteLinkTextReplaced = false;  // note-reference text already swapped for this link
+  int endnoteStartWordIndex = -1;         // word position of the "Endnote N:" prefix of the open entry
+  std::string pendingEndnotePrefix;       // "Endnote N: " to write before the next text of an endnote entry
   int wordsExtractedInBlock = 0;
 
   // Resumable parse state. The one-shot parseAndBuildPages() drives these

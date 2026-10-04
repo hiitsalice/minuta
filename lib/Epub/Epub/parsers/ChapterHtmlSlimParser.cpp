@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "ChapterHtmlSlimParser.h"
 
 #include <FsHelpers.h>
@@ -705,6 +706,22 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
         // of thousands of them per chapter, exhausting the heap. TOC anchors are
         // always recorded regardless of element type, since they drive page breaks.
         const char* idValue = atts[i + 1];
+        if (strcmp(name, "li") == 0) {
+          // Endnote entry (e.g. <li id="note-3" epub:type="endnote">): remember its number so
+          // "Endnote N: " can be written before its text.
+          const char* liType = getAttribute(atts, "epub:type");
+          const char* liRole = getAttribute(atts, "role");
+          if ((liType && (strstr(liType, "endnote") || strstr(liType, "footnote"))) ||
+              (liRole && (strstr(liRole, "doc-endnote") || strstr(liRole, "doc-footnote")))) {
+            self->endnoteStartWordIndex = -1;
+            const size_t idLen = strlen(idValue);
+            size_t digitStart = idLen;
+            while (digitStart > 0 && idValue[digitStart - 1] >= '0' && idValue[digitStart - 1] <= '9') digitStart--;
+            if (digitStart < idLen && idLen - digitStart <= 8) {
+              self->pendingEndnotePrefix = std::string("Endnote ") + std::string(idValue + digitStart) + ": ";
+            }
+          }
+        }
         const bool isTocAnchor =
             std::find(self->tocAnchors.begin(), self->tocAnchors.end(), idValue) != self->tocAnchors.end();
         if (isTocAnchor || (!isNonNavigableInlineElement(name) && self->anchorData.size() < MAX_ANCHORS_PER_CHAPTER)) {
@@ -1299,6 +1316,11 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
       // Note references and their back-links stand out: bold + italic on top of the underline.
       const char* roleAttr = getAttribute(atts, "role");
       const char* epubTypeAttr = getAttribute(atts, "epub:type");
+      self->footnoteLinkIsNoteref = (roleAttr && strstr(roleAttr, "doc-noteref")) ||
+                                    (epubTypeAttr && strstr(epubTypeAttr, "noteref"));
+      self->footnoteLinkIsBacklink = (roleAttr && strstr(roleAttr, "doc-backlink")) ||
+                                     (epubTypeAttr && strstr(epubTypeAttr, "backlink"));
+      self->footnoteLinkTextReplaced = false;
       if ((roleAttr && (strstr(roleAttr, "doc-noteref") || strstr(roleAttr, "doc-backlink"))) ||
           (epubTypeAttr && (strstr(epubTypeAttr, "noteref") || strstr(epubTypeAttr, "backlink")))) {
         entry.hasBold = true;
@@ -1506,6 +1528,39 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
 
 void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char* s, int len) {
   auto* self = static_cast<ChapterHtmlSlimParser*>(userData);
+  // First text of an endnote entry: write "Endnote N: " (bold, italic, underlined) before it,
+  // after the bullet. The prefix goes through this same function as synthetic text.
+  if (!self->pendingEndnotePrefix.empty() && !self->syntheticCharacterData) {
+    bool hasText = false;
+    for (int k = 0; k < len; ++k) {
+      if (!isWhitespace(s[k])) {
+        hasText = true;
+        break;
+      }
+    }
+    if (hasText) {
+      const std::string prefix = std::move(self->pendingEndnotePrefix);
+      self->pendingEndnotePrefix.clear();
+      StyleStackEntry prefixStyle;
+      prefixStyle.depth = self->depth;
+      prefixStyle.hasBold = true;
+      prefixStyle.bold = true;
+      prefixStyle.hasItalic = true;
+      prefixStyle.italic = true;
+      prefixStyle.hasTextDecoration = true;
+      prefixStyle.textDecoration = CssTextDecoration::Underline;
+      self->inlineStyleStack.push_back(prefixStyle);
+      self->updateEffectiveInlineStyle();
+      self->syntheticCharacterData = true;
+      characterData(self, prefix.c_str(), static_cast<int>(prefix.size()));
+      self->syntheticCharacterData = false;
+      self->endnoteStartWordIndex =
+          self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0);
+      self->inlineStyleStack.pop_back();
+      self->updateEffectiveInlineStyle();
+    }
+  }
+
   const bool countVisibleOffsets = self->insideBody && self->nonVisibleTextDepth == 0 && !self->syntheticCharacterData;
   const uint32_t callbackVisibleOffset = self->visibleTextOffset;
   if (countVisibleOffsets) {
@@ -1587,13 +1642,19 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
     self->currentFootnote.number[self->currentFootnoteLinkTextLen] = '\0';
   }
 
-  // Back-arrow glyphs (U+21A9 / U+2191) are missing from the UI font and draw as boxes:
-  // show a plain "<<" marker instead.
+  // Link text swaps. The back-arrow glyph (U+21A9 / U+2191) is missing from the UI font and
+  // draws as boxes, so it is dropped. Note-reference numbers read "(Endnote N)".
+  char markerReplacement[FOOTNOTE_NUMBER_LEN + 16];
   if (self->insideFootnoteLink && len >= 3 && static_cast<uint8_t>(s[0]) == 0xE2 &&
       static_cast<uint8_t>(s[1]) == 0x86 &&
       (static_cast<uint8_t>(s[2]) == 0xA9 || static_cast<uint8_t>(s[2]) == 0x91)) {
-    s = "<<";
-    len = 2;
+    len = 0;
+  } else if (self->insideFootnoteLink && self->footnoteLinkIsNoteref && !self->footnoteLinkTextReplaced &&
+             self->currentFootnote.number[0] != '\0') {
+    snprintf(markerReplacement, sizeof(markerReplacement), " (Endnote %s)", self->currentFootnote.number);
+    s = markerReplacement;
+    len = static_cast<int>(strlen(markerReplacement));
+    self->footnoteLinkTextReplaced = true;
   }
 
   uint32_t nextCodepointOffset = callbackVisibleOffset;
@@ -1901,10 +1962,16 @@ void XMLCALL ChapterHtmlSlimParser::endElement(void* userData, const XML_Char* n
       entry.number[sizeof(entry.number) - 1] = '\0';
       strncpy(entry.href, self->currentFootnote.href, sizeof(entry.href) - 1);
       entry.href[sizeof(entry.href) - 1] = '\0';
-      normalizeFootnoteLabel(entry.number, entry.href);
+      normalizeFootnoteLabel(entry.number, entry.href, self->footnoteLinkIsBacklink);
       int wordIndex =
           self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0);
-      self->pendingFootnotes.push_back({wordIndex, entry});
+      if (self->footnoteLinkIsBacklink && self->endnoteStartWordIndex >= 0) {
+        // The way back to the text belongs to the "Endnote N:" prefix at the start of the entry.
+        wordIndex = self->endnoteStartWordIndex;
+      }
+      const auto insertAt = std::find_if(self->pendingFootnotes.begin(), self->pendingFootnotes.end(),
+                                         [wordIndex](const auto& pf) { return pf.first > wordIndex; });
+      self->pendingFootnotes.insert(insertAt, std::make_pair(wordIndex, entry));
     }
     self->insideFootnoteLink = false;
   }
