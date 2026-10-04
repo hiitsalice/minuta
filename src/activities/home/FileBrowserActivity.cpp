@@ -566,7 +566,9 @@ void FileBrowserActivity::drawFooter() {
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   const char* deleteHelpText = "Hold SELECT to delete";
-  const char* hiddenHelpText = "Hold BACK to show hidden";
+  const bool showHiddenHelp = currentDirectoryHasHiddenFiles;
+  const char* hiddenHelpText =
+      (basepath == "/") ? "Hold HOME to show hidden" : "Hold BACK to show hidden";
   const int helpLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
   const int textHeight = renderer.getTextHeight(UI_10_FONT_ID);
   const int hintTop = renderer.getScreenHeight() - UITheme::getInstance().getMetrics().buttonHintsHeight;
@@ -575,18 +577,21 @@ void FileBrowserActivity::drawFooter() {
   const int deleteTextX = (renderer.getScreenWidth() - deleteTextWidth) / 2;
   const int hiddenTextX = (renderer.getScreenWidth() - hiddenTextWidth) / 2;
 
-  // The new hidden-file hint stays at the original help-text position.
+  // The hidden-file hint occupies the lower help-text position when needed.
+  // If there are no hidden files, the delete hint moves down into that position.
   const int hiddenTextY = hintTop - 15 - helpLineHeight - 42;
-  const int deleteTextY = hiddenTextY - 36;
+  const int deleteTextY = showHiddenHelp ? hiddenTextY - 36 : hiddenTextY;
 
   constexpr int boxPadding = 6;
 
-  renderer.fillRectDither(hiddenTextX - boxPadding,
-                          hiddenTextY - boxPadding,
-                          hiddenTextWidth + boxPadding * 2,
-                          textHeight + boxPadding * 2,
-                          Color::LightGray);
-  renderer.drawText(UI_10_FONT_ID, hiddenTextX, hiddenTextY, hiddenHelpText, true, EpdFontFamily::REGULAR);
+  if (showHiddenHelp) {
+    renderer.fillRectDither(hiddenTextX - boxPadding,
+                            hiddenTextY - boxPadding,
+                            hiddenTextWidth + boxPadding * 2,
+                            textHeight + boxPadding * 2,
+                            Color::LightGray);
+    renderer.drawText(UI_10_FONT_ID, hiddenTextX, hiddenTextY, hiddenHelpText, true, EpdFontFamily::REGULAR);
+  }
 
   renderer.fillRectDither(deleteTextX - boxPadding,
                           deleteTextY - boxPadding,
