@@ -220,13 +220,13 @@ void SettingsActivity::rebuildRowItems() {
 
     if (row.isCategory) {
       item.label = sectionLabel(row.section);
-      item.labelXOffset = 0;
+      item.labelXOffset = 21;
       item.bold = true;
-      item.triangleIndicator = true;
+      item.leadingTriangleIndicator = true;
       item.triangleDown = sectionExpanded[static_cast<size_t>(row.section)];
     } else {
       item.label = I18N.get((*currentSettings)[row.settingIndex].nameId);
-      item.labelXOffset = selectedCategoryIndex == 1 ? 0 : 12;
+      item.labelXOffset = 0;
     }
 
     rowItems_.push_back(item);

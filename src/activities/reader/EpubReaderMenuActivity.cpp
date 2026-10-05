@@ -75,8 +75,8 @@ void EpubReaderMenuActivity::buildMenuRowItems() {
       const size_t categoryIndex = static_cast<size_t>(row.category);
       item.label = CATEGORY_LABELS[categoryIndex];
       item.bold = true;
-      item.labelXOffset = -12;
-      item.triangleIndicator = true;
+      item.labelXOffset = 21;
+      item.leadingTriangleIndicator = true;
       item.triangleDown = categoryExpanded[categoryIndex];
     } else {
       item.label = menuItems[row.menuIndex].action == MenuAction::DICTIONARY
@@ -272,7 +272,7 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight + 11);
   props.rowGap = 0;
   props.valueInset = 8;
-  props.labelXOffset = 12;
+  props.labelXOffset = 0;
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 2;
   props.labelText.lineGap = 6;
