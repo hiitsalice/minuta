@@ -133,7 +133,7 @@ void EpubReaderChapterSelectionActivity::buildScreen(UiScreen& screen) {
                                       static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
                                       static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height)),
                                       static_cast<int16_t>(safe.x)});
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  screen.spacer(11);
 
   if (!epub) {
     return;
@@ -146,6 +146,8 @@ void EpubReaderChapterSelectionActivity::buildScreen(UiScreen& screen) {
   fui::ListProps props;
   props.count = static_cast<uint16_t>(listCount());
   props.action = ACTION_ROW;
+  props.rowHeight = 36;
+  props.labelYOffset = 1;
   syncListViewport(screen, props);
   // Materialize the row window for the final viewport (syncListViewport just
   // applied follow/clamping to nav.top) and hand list() the window with its
@@ -153,6 +155,8 @@ void EpubReaderChapterSelectionActivity::buildScreen(UiScreen& screen) {
   refreshTocWindow(nav.top);
   props.items = windowItems;
   props.itemsWindowFirst = static_cast<uint16_t>(windowStart);
+  props.labelText = screen.theme().smallText;
+  props.labelText.font = fui::GfxRendererTarget::FONT_SMALL;
   screen.list(props);
 }
 
