@@ -40,6 +40,8 @@ class EpubReaderActivity final : public ReaderActivity {
   bool skipNextButtonCheck = false;
   bool automaticPageTurnActive = false;
   bool showBookmarkMessage = false;
+  enum class PendingWordSelect { None, Highlight, Dictionary };
+  PendingWordSelect pendingWordSelect = PendingWordSelect::None;
   bool showDictionaryMessage = false;
   unsigned long dictionaryMessageTime = 0UL;
   bool currentPageBookmarked = false;

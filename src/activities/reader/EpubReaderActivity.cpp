@@ -280,6 +280,12 @@ void EpubReaderActivity::showBuildPopup(GfxRenderer& renderer, int& pagesUntilFu
 }
 
 void EpubReaderActivity::openDictionaryWordSelect() {
+  if (!section) {
+    pendingWordSelect = PendingWordSelect::Dictionary;
+    requestUpdate();
+    return;
+  }
+
   if (SETTINGS.dictionaryName[0] == '\0') {
     showDictionaryMessage = true;
     dictionaryMessageTime = millis();
@@ -302,7 +308,11 @@ void EpubReaderActivity::openDictionaryWordSelect() {
 }
 
 void EpubReaderActivity::openHighlightWordSelect() {
-  if (!section) return;
+  if (!section) {
+    pendingWordSelect = PendingWordSelect::Highlight;
+    requestUpdate();
+    return;
+  }
   auto page = section->loadPage(section->currentPage);
   if (!page) return;
 
@@ -351,6 +361,17 @@ void EpubReaderActivity::loop() {
   }
 
   constexpr unsigned long IDLE_PREWARM_DEBOUNCE_MS = 400;
+  if (pendingWordSelect != PendingWordSelect::None && section && !section->isBuilding()) {
+    const auto pending = pendingWordSelect;
+    pendingWordSelect = PendingWordSelect::None;
+    if (pending == PendingWordSelect::Dictionary) {
+      openDictionaryWordSelect();
+    } else {
+      openHighlightWordSelect();
+    }
+    return;
+  }
+
   if (section && !section->isBuilding() && !RenderLock::peek() && renderer.hasFrameBuffer() &&
       lastRenderCompleteMs != 0 && millis() - lastRenderCompleteMs > IDLE_PREWARM_DEBOUNCE_MS &&
       ESP.getFreeHeap() > RENDER_MIN_FREE_HEAP && ESP.getMaxAllocHeap() > BACKGROUND_BUILD_MIN_MAX_ALLOC &&
