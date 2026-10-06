@@ -49,7 +49,7 @@ namespace {
 // X4 overlays require a half refresh after grayscale page rendering.
 bool xteinkClassPanel() { return gpio.isXteinkDevice(); }
 
-constexpr int PAGE_TURN_SECONDS[] = {1, 60, 20, 10, 5};
+constexpr int PAGE_TURN_SECONDS[] = {1, 5, 10, 20, 30, 60};
 constexpr size_t initialBookmarkCacheCapacity = 16;
 constexpr float bookmarkProgressEpsilon = 0.0001f;
 
@@ -1058,7 +1058,7 @@ void EpubReaderActivity::renderBook() {
   const auto statusBar = SETTINGS.statusBarSpec();
   const uint8_t statusBarHeight = UITheme::getInstance().getStatusBarHeight();
   const int statusPadding =
-      ((statusBar.textLaneVisible() || automaticPageTurnActive) ? 11 : 0) + statusBar.progressBarHeightPx;
+      (statusBar.textLaneVisible() ? 11 : 0) + statusBar.progressBarHeightPx;
 
   // Preserve the configured screen margin, then add clearance matching the
   // visible status text and progress-bar thickness.
@@ -1623,13 +1623,7 @@ void EpubReaderActivity::renderStatusBar() const {
   int textYOffset = 0;
   const auto sb = SETTINGS.statusBarSpec();
 
-  if (automaticPageTurnActive) {
-    title = tr(STR_AUTO_TURN_ENABLED) + std::to_string(pageTurnDuration / 1000);
-    const uint8_t statusBarHeight = UITheme::getInstance().getStatusBarHeight();
-    if (statusBarHeight == 0 || statusBarHeight == UITheme::getInstance().getProgressBarHeight()) {
-      textYOffset += UITheme::getInstance().getMetrics().statusBarVerticalMargin;
-    }
-  } else if (sb.titleMode == CrossPointSettings::STATUS_BAR_TITLE::CHAPTER_TITLE) {
+  if (sb.titleMode == CrossPointSettings::STATUS_BAR_TITLE::CHAPTER_TITLE) {
     title = tr(STR_UNNAMED);
     if (epub) {
       const int tocIndex = epub->getTocIndexForSpineIndex(currentSpineIndex);
@@ -1644,6 +1638,23 @@ void EpubReaderActivity::renderStatusBar() const {
 
   GUI.drawStatusBar(renderer, bookProgress, currentPage, pageCount, title, 0, textYOffset, true, currentPageBookmarked,
                     section ? section->isBuilding() : false);
+
+  if (automaticPageTurnActive) {
+    const std::string autoTurnText = tr(STR_AUTO_TURN_ENABLED);
+
+    int orientedMarginTop, orientedMarginRight, orientedMarginBottom, orientedMarginLeft;
+    renderer.getOrientedViewableTRBL(&orientedMarginTop, &orientedMarginRight, &orientedMarginBottom,
+                                     &orientedMarginLeft);
+
+    const uint8_t statusBarHeight = UITheme::getInstance().getStatusBarHeight();
+    const int statusTextLineHeight = renderer.getLineHeight(SMALL_FONT_ID);
+    const int autoTurnY =
+        statusBarHeight + orientedMarginBottom - 1 - statusTextLineHeight + 3;
+
+    const int autoTurnX =
+        (renderer.getScreenWidth() - renderer.getTextWidth(SMALL_FONT_ID, autoTurnText.c_str())) / 2;
+    renderer.drawText(SMALL_FONT_ID, autoTurnX, autoTurnY, autoTurnText.c_str());
+  }
 }
 
 void EpubReaderActivity::navigateToHref(const std::string& hrefStr, const bool savePosition) {
