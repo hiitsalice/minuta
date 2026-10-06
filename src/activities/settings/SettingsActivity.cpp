@@ -463,9 +463,8 @@ case SettingAction::DownloadFonts:
   }
 
   SETTINGS.saveToFile();
-  rebuildSettingsLists();
   applyUiSettingChange(setting.valuePtr);
-  activeNav().selected = std::min(ringPos(), listCount());
+  requestUpdate();
 }
 
 void SettingsActivity::openSleepTimeoutPicker() {
