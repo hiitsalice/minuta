@@ -183,7 +183,7 @@ class SettingsActivity final : public UiTabListActivity {
   const std::vector<SettingInfo>* currentSettings = nullptr;
 
   // Collapsible sections for Device/System. All start collapsed.
-  bool sectionExpanded[sectionCount]{};
+  bool sectionExpanded[categoryCount][sectionCount]{};
 
   // Visible row mapping. Category rows live here; settingIndex refers to the
   // corresponding entry in currentSettings for normal rows.

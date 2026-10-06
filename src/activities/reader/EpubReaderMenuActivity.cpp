@@ -15,15 +15,25 @@ namespace fui = freeink::ui;
 EpubReaderMenuActivity::EpubReaderMenuActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                                const std::string& title, const int currentPage, const int totalPages,
                                                const int bookProgressPercent, const uint8_t currentOrientation,
-                                               const bool hasFootnotes, const bool hasBookmarks)
+                                               const bool hasFootnotes, const bool hasBookmarks, bool* categoryExpanded, int* selectedRow)
     : UiListActivity("EpubReaderMenu", renderer, mappedInput),
       title(title),
       pendingOrientation(currentOrientation),
       currentPage(currentPage),
       totalPages(totalPages),
-      bookProgressPercent(bookProgressPercent) {
+      bookProgressPercent(bookProgressPercent),
+      categoryExpanded(categoryExpanded),
+      selectedRow(selectedRow) {
   buildMenuItems(menuItems, hasFootnotes, hasBookmarks);
   rebuildVisibleRows();
+  if (selectedRow && *selectedRow >= 0 && *selectedRow < static_cast<int>(visibleRows.size()))
+    nav.selected = *selectedRow;
+}
+
+void EpubReaderMenuActivity::onEnter() {
+  UiListActivity::onEnter();
+  if (selectedRow && *selectedRow >= 0 && *selectedRow < static_cast<int>(visibleRows.size()))
+    nav.selected = *selectedRow;
 }
 
 void EpubReaderMenuActivity::rebuildVisibleRows() {
@@ -121,6 +131,7 @@ void EpubReaderMenuActivity::buildMenuItems(std::vector<MenuItem>& items, bool h
 }
 
 void EpubReaderMenuActivity::closeCancelled() {
+  if (selectedRow) *selectedRow = nav.selected;
   ActivityResult result;
   result.isCancelled = true;
   result.data = MenuResult{-1, pendingOrientation, selectedPageTurnOption};
@@ -183,6 +194,7 @@ void EpubReaderMenuActivity::activateIndex(const int index) {
     return;
   }
 
+  if (selectedRow) *selectedRow = nav.selected;
   setResult(MenuResult{static_cast<int>(selectedAction), pendingOrientation, selectedPageTurnOption});
   finish();
 }

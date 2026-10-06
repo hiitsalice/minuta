@@ -146,7 +146,7 @@ void SettingsActivity::rebuildVisibleRows() {
     visibleRows.push_back({true, section, 0});
 
     const size_t sectionIndex = static_cast<size_t>(section);
-    if (!sectionExpanded[sectionIndex]) return;
+    if (!sectionExpanded[selectedCategoryIndex][sectionIndex]) return;
 
     for (size_t i = start; i < end; ++i) {
       visibleRows.push_back({false, section, i});
@@ -223,7 +223,7 @@ void SettingsActivity::rebuildRowItems() {
       item.labelXOffset = 21;
       item.bold = true;
       item.leadingTriangleIndicator = true;
-      item.triangleDown = sectionExpanded[static_cast<size_t>(row.section)];
+      item.triangleDown = sectionExpanded[selectedCategoryIndex][static_cast<size_t>(row.section)];
     } else {
       item.label = I18N.get((*currentSettings)[row.settingIndex].nameId);
       item.labelXOffset = 0;
@@ -249,7 +249,7 @@ void SettingsActivity::activateIndex(const int index) {
   const auto row = visibleRows[static_cast<size_t>(index)];
   if (row.isCategory) {
     const size_t sectionIndex = static_cast<size_t>(row.section);
-    sectionExpanded[sectionIndex] = !sectionExpanded[sectionIndex];
+    sectionExpanded[selectedCategoryIndex][sectionIndex] = !sectionExpanded[selectedCategoryIndex][sectionIndex];
     rebuildVisibleRows();
     rebuildRowItems();
     activeNav().selected = std::min(activeNav().selected, static_cast<int>(visibleRows.size()));
@@ -545,7 +545,7 @@ void SettingsActivity::buildScreen(UiScreen& screen) {
       rowItems_[i].value = nullptr;
       rowItems_[i].bold = true;
       rowItems_[i].triangleIndicator = true;
-      rowItems_[i].triangleDown = sectionExpanded[static_cast<size_t>(row.section)];
+      rowItems_[i].triangleDown = sectionExpanded[selectedCategoryIndex][static_cast<size_t>(row.section)];
       continue;
     }
 

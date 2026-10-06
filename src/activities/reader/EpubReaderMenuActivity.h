@@ -53,8 +53,9 @@ class EpubReaderMenuActivity final : public UiListActivity {
 
   explicit EpubReaderMenuActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const std::string& title,
                                   const int currentPage, const int totalPages, const int bookProgressPercent,
-                                  const uint8_t currentOrientation, const bool hasFootnotes, bool hasBookmarks);
+                                  const uint8_t currentOrientation, const bool hasFootnotes, bool hasBookmarks, bool* categoryExpanded, int* selectedRow);
 
+  void onEnter() override;
   void render(RenderLock&&) override;
   bool handleHomeGesture() override;
 
@@ -67,7 +68,8 @@ class EpubReaderMenuActivity final : public UiListActivity {
   // enum itself remains unchanged so EpubReaderActivity keeps its existing
   // dispatch behaviour.
   std::vector<VisibleRow> visibleRows;
-  bool categoryExpanded[4]{false, false, false, false};
+  bool* categoryExpanded = nullptr;
+  int* selectedRow = nullptr;
 
   void rebuildVisibleRows();
   void buildMenuRowItems();
