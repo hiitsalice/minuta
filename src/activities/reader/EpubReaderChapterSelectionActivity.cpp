@@ -139,7 +139,7 @@ void EpubReaderChapterSelectionActivity::buildScreen(UiScreen& screen) {
     return;
   }
   if (listCount() == 0) {
-    screen.centeredText(tr(STR_NO_CHAPTERS), screen.theme().bodyText);
+    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_NO_CHAPTERS), true);
     return;
   }
 
