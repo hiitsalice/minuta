@@ -539,10 +539,11 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   // on a single line across the available width.
   props.balanceWrappedLabelWithValue = false;
   props.partialTrailingRow = false;
-  // Reserve an additional 48px below the list so fewer rows are shown.
+  // Reserve extra space below the list for the help text; reclaim 48px when only one help line is shown.
   // This is list-only spacing and does not move the footer or help text.
-  syncListViewport(screen, props, false, 96);
-  screen.list(props, static_cast<int16_t>(screen.body().height - 96));
+  const int16_t listBottomInset = currentDirectoryHasHiddenFiles ? 96 : 48;
+  syncListViewport(screen, props, false, listBottomInset);
+  screen.list(props, static_cast<int16_t>(screen.body().height - listBottomInset));
 }
 
 void FileBrowserActivity::drawChrome() {
