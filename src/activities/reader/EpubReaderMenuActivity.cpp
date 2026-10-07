@@ -310,6 +310,15 @@ void EpubReaderMenuActivity::render(RenderLock&&) {
 
   renderUi();
 
+  // Wrapped labels can make the actual visible row count smaller than the
+  // fixed-height estimate. ListNav may correct the viewport after layout;
+  // rebuild so the displayed rows match the corrected selection/viewport.
+  for (int pass = 0; activeNav().consumeRebuildNeeded() && pass < 8; ++pass) {
+    renderer.clearScreen();
+    drawChrome();
+    renderUi();
+  }
+
   drawFooter();
   renderer.displayBuffer();
 }
