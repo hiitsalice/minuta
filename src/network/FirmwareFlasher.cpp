@@ -14,6 +14,7 @@
 
 #include "FirmwareBoardTag.h"
 #include "OtaBootSwitch.h"
+#include "util/BookCacheUtils.h"
 
 namespace firmware_flash {
 
@@ -359,6 +360,13 @@ Result flashFromSdPath(const char* sdPath, ProgressCb onProgress, void* ctx, boo
     LOG_ERR("FLASH", "otadata switch failed");
     return Result::OTADATA_FAIL;
   }
+
+  // A successful firmware flash invalidates every reading cache. This applies
+  // even when the same firmware image is flashed again, matching the existing
+  // settings reset behaviour above.
+  const int clearedCaches = clearAllBookCaches();
+  LOG_INF("BookCache", "Firmware flash complete: cleared %d book caches", clearedCaches);
+
   return Result::OK;
 }
 
