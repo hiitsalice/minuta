@@ -141,6 +141,7 @@ class ChapterHtmlSlimParser {
   int endnoteStartFirstWordIndex = -1;   // 1-based word position of the first word of the "Endnote N:" prefix
   int endnoteStartWordIndex = -1;         // word position of the "Endnote N:" prefix of the open entry
   std::string pendingEndnotePrefix;       // "Endnote N: " to write before the next text of an endnote entry
+  std::string pendingMalformedNbsp;        // buffered "&nbsp." fragment from malformed EPUB HTML
   int wordsExtractedInBlock = 0;
 
   // Resumable parse state. The one-shot parseAndBuildPages() drives these

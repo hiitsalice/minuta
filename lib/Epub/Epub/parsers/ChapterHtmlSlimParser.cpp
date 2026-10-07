@@ -1556,6 +1556,49 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
 
 void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char* s, int len) {
   auto* self = static_cast<ChapterHtmlSlimParser*>(userData);
+
+  // Some EPUBs contain the malformed entity "&amp;nbsp." (missing the final
+  // semicolon). Expat expands "&amp;" to "&" and may deliver that separately
+  // from the following "nbsp.", so hold a standalone "&" until the next
+  // callback. Only the exact malformed "&nbsp." sequence is normalized.
+  std::string normalizedText;
+
+  if (len > 0) {
+    if (!self->pendingMalformedNbsp.empty()) {
+      self->pendingMalformedNbsp.append(s, static_cast<size_t>(len));
+
+      if (self->pendingMalformedNbsp.size() >= 6 &&
+          self->pendingMalformedNbsp.compare(0, 6, "&nbsp.") == 0) {
+        normalizedText = " ";
+        normalizedText.append(self->pendingMalformedNbsp.substr(6));
+        self->pendingMalformedNbsp.clear();
+        s = normalizedText.c_str();
+        len = static_cast<int>(normalizedText.size());
+      } else if (self->pendingMalformedNbsp.size() < 6 &&
+                 std::string("&nbsp.").compare(0, self->pendingMalformedNbsp.size(),
+                                               self->pendingMalformedNbsp) == 0) {
+        return;
+      } else {
+        normalizedText = self->pendingMalformedNbsp;
+        self->pendingMalformedNbsp.clear();
+        s = normalizedText.c_str();
+        len = static_cast<int>(normalizedText.size());
+      }
+    }
+
+    if (len > 0 && s[len - 1] == '&') {
+      --len;
+      if (len == 0) {
+        self->pendingMalformedNbsp = "&";
+        return;
+      }
+
+      normalizedText.assign(s, static_cast<size_t>(len));
+      self->pendingMalformedNbsp = "&";
+      s = normalizedText.c_str();
+    }
+  }
+
   // First text of an endnote entry: write "Endnote N: " (bold, italic, underlined) before it,
   // after the bullet. The prefix goes through this same function as synthetic text.
   if (!self->pendingEndnotePrefix.empty() && !self->syntheticCharacterData) {
