@@ -23,15 +23,26 @@ struct FootnoteEntry {
 inline bool isFootnoteMarkerText(const char* text) {
   const size_t len = strlen(text);
   if (len == 0 || len > 6) return false;
-  int letterRun = 0;
+
+  bool hasDigit = false;
+  int letterCount = 0;
   for (size_t i = 0; i < len; i++) {
     const unsigned char c = static_cast<unsigned char>(text[i]);
     if (c == ' ' || c == '\t' || c == '\n' || c == '\r') return false;
-    const bool isLetter = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
-    letterRun = isLetter ? letterRun + 1 : 0;
-    if (letterRun >= 3) return false;
+    if (c >= '0' && c <= '9') {
+      hasDigit = true;
+      continue;
+    }
+    if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+      letterCount++;
+      continue;
+    }
+    if (c == '.' || c == ':' || c == '*') continue;
+    return false;
   }
-  return true;
+
+  if (hasDigit) return true;
+  return len == 1 && text[0] == '*';
 }
 
 // Builds the label shown in the Endnotes list. Links that go to a note read "To endnote N";

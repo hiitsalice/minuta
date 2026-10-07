@@ -1317,27 +1317,38 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
       // Note references and their back-links stand out: bold + italic on top of the underline.
       const char* roleAttr = getAttribute(atts, "role");
       const char* epubTypeAttr = getAttribute(atts, "epub:type");
+      LOG_INF("EpubParser", "Internal link href=%s role=%s epub:type=%s",
+               href ? href : "(null)",
+               roleAttr ? roleAttr : "(null)",
+               epubTypeAttr ? epubTypeAttr : "(null)");
       self->footnoteLinkIsNoteref = (roleAttr && strstr(roleAttr, "doc-noteref")) ||
                                     (epubTypeAttr && strstr(epubTypeAttr, "noteref"));
       self->footnoteLinkIsBacklink = (roleAttr && strstr(roleAttr, "doc-backlink")) ||
                                      (epubTypeAttr && strstr(epubTypeAttr, "backlink"));
       self->footnoteLinkTextReplaced = false;
       self->footnoteLinkInferred = !self->footnoteLinkIsNoteref && !self->footnoteLinkIsBacklink;
-      if (self->footnoteLinkInferred) {
-        const bool atBlockStart =
-            self->partWordBufferIndex == 0 &&
-            (self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0)) == 0;
-        self->footnoteLinkIsBacklink = atBlockStart;
-        if (atBlockStart) {
-          // Each note starts with a plain bullet. It is written before the link's own style is
-          // pushed, so the bullet is not bold, italic or underlined.
-          self->syntheticCharacterData = true;
-          characterData(self, "\xE2\x80\xA2 ", 4);
-          self->syntheticCharacterData = false;
-        }
-      }
+      const char* fragment = strchr(href, '#');
+      const bool fragmentLooksLikeNote =
+          fragment &&
+          (strstr(fragment, "note") || strstr(fragment, "Note") ||
+           strstr(fragment, "NOTE") || strstr(fragment, "endnote") ||
+           strstr(fragment, "footnote"));
+
+      self->footnoteLinkAtBlockStart =
+          self->footnoteLinkInferred &&
+          fragmentLooksLikeNote &&
+          self->partWordBufferIndex == 0 &&
+          (self->wordsExtractedInBlock +
+           (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0)) == 0;
       self->footnoteLinkStartWordIndex =
           self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0) + 1;
+
+      if (self->footnoteLinkAtBlockStart) {
+        self->footnoteLinkIsBacklink = true;
+        self->syntheticCharacterData = true;
+        characterData(self, "\xE2\x80\xA2 ", 4);
+        self->syntheticCharacterData = false;
+      }
       if ((roleAttr && (strstr(roleAttr, "doc-noteref") || strstr(roleAttr, "doc-backlink"))) ||
           (epubTypeAttr && (strstr(epubTypeAttr, "noteref") || strstr(epubTypeAttr, "backlink")))) {
         entry.hasBold = true;
@@ -1669,14 +1680,15 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
       (static_cast<uint8_t>(s[2]) == 0xA9 || static_cast<uint8_t>(s[2]) == 0x91)) {
     len = 0;
   } else if (self->insideFootnoteLink && self->footnoteLinkIsNoteref && !self->footnoteLinkTextReplaced &&
-             self->currentFootnote.number[0] != '\0') {
+             self->currentFootnote.number[0] != '\0' &&
+             isFootnoteMarkerText(self->currentFootnote.number)) {
     snprintf(markerReplacement, sizeof(markerReplacement), " (Endnote %s)", self->currentFootnote.number);
     s = markerReplacement;
     len = static_cast<int>(strlen(markerReplacement));
     self->footnoteLinkTextReplaced = true;
   } else if (self->insideFootnoteLink && self->footnoteLinkInferred && !self->syntheticCharacterData) {
-    // Unlabelled note links: same look as labelled ones. Written as synthetic text with an
-    // overriding style so book CSS (e.g. superscript) cannot change it.
+    // Unlabelled internal links are only treated as notes when their visible text
+    // actually looks like a note marker.
     if (!self->footnoteLinkTextReplaced && isFootnoteMarkerText(self->currentFootnote.number)) {
       char marker[FOOTNOTE_NUMBER_LEN];
       strncpy(marker, self->currentFootnote.number, sizeof(marker) - 1);
@@ -1685,12 +1697,14 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
       while (markerLen > 1 && (marker[markerLen - 1] == '.' || marker[markerLen - 1] == ':')) {
         marker[--markerLen] = '\0';
       }
+
       char label[FOOTNOTE_NUMBER_LEN + 24];
       if (self->footnoteLinkIsBacklink) {
         snprintf(label, sizeof(label), "Endnote %s:", marker);
       } else {
         snprintf(label, sizeof(label), " (Endnote %s)", marker);
       }
+
       StyleStackEntry labelStyle;
       labelStyle.depth = self->depth;
       labelStyle.hasBold = true;
@@ -1708,15 +1722,18 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
       self->syntheticCharacterData = true;
       characterData(self, label, static_cast<int>(strlen(label)));
       self->syntheticCharacterData = false;
+
       // Write the label's last word now, while its style is still active.
       if (self->partWordBufferIndex > 0) {
         self->flushPartWordBuffer();
         self->nextWordContinues = true;
       }
+
       self->inlineStyleStack.pop_back();
       self->updateEffectiveInlineStyle();
       self->footnoteLinkTextReplaced = true;
     }
+
     if (self->footnoteLinkTextReplaced) len = 0;  // hide the book's own link text
   }
 
