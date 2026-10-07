@@ -10,6 +10,7 @@ import configparser
 import os
 import subprocess
 import sys
+import time
 
 
 def warn(msg):
@@ -77,19 +78,27 @@ def get_base_version(project_dir):
 
 
 def inject_version(env):
-    # Only applies to development environments; release envs set the
-    # version via build_flags in platformio.ini and are unaffected.
-    if env['PIOENV'] != 'default':
-        return
-
     project_dir = env['PROJECT_DIR']
-    base_version = get_base_version(project_dir)
-    branch = get_git_branch(project_dir)
-    short_sha = get_git_short_sha(project_dir)
-    version_string = f'{base_version}-dev-{branch}-{short_sha}'
 
-    env.Append(CPPDEFINES=[('CROSSPOINT_VERSION', f'\\"{version_string}\\"')])
-    print(f'CrossPoint build version: {version_string}')
+    # Development environments get their version from the current branch/SHA.
+    # Release environments already define CROSSPOINT_VERSION in platformio.ini.
+    if env['PIOENV'] == 'default':
+        base_version = get_base_version(project_dir)
+        branch = get_git_branch(project_dir)
+        short_sha = get_git_short_sha(project_dir)
+        version_string = f'{base_version}-dev-{branch}-{short_sha}'
+        env.Append(CPPDEFINES=[
+            ('CROSSPOINT_VERSION', f'\\\"{version_string}\\\"'),
+        ])
+        print(f'CrossPoint build version: {version_string}')
+
+    # Every firmware build gets a unique cache ID, including repeated builds
+    # of the same Git commit.
+    build_id = str(time.time_ns())
+    env.Append(CPPDEFINES=[
+        ('BOOK_CACHE_BUILD_ID', f'\\\"{build_id}\\\"'),
+    ])
+    print(f'Book cache build ID: {build_id}')
 
 
 # PlatformIO/SCons entry point — Import and env are SCons builtins injected at runtime.
