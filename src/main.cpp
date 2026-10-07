@@ -397,6 +397,10 @@ void setup() {
       return;
     }
 
+    // Fresh flash: also drop every book cache so nothing built by an older firmware survives.
+    const int clearedCaches = clearAllBookCaches();
+    LOG_INF("BookCache", "Fresh firmware install: cleared %d book caches", clearedCaches);
+
     if (esp_ota_mark_app_valid_cancel_rollback() != ESP_OK) {
       LOG_ERR("OTA", "failed to confirm firmware");
       return;
