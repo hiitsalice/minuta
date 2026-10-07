@@ -10,6 +10,7 @@
 #include <limits>
 #include <string>
 
+#include "util/BookCacheUtils.h"
 #include "I18nKeys.h"
 #include "ReaderFontSizes.h"
 #include "SettingsList.h"
@@ -108,12 +109,20 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   doc["settingsVersion"] = 1;
   doc["controlsLayoutVersion"] = 2;
   doc["sleepScreenModeVersion"] = 1;
+  doc["bookCacheVersion"] = 1;
 }
 
 bool CrossPointSettings::fromJson(JsonVariantConst doc) {
   CrossPointSettings& s = *this;
   bool needsResave = false;
   bool sleepScreenMigrated = false;
+
+  const uint8_t storedBookCacheVersion = doc["bookCacheVersion"] | (uint8_t)0;
+  if (storedBookCacheVersion < 1) {
+    clearAllBookCaches();
+    requestResave();
+    needsResave = true;
+  }
 
   const uint8_t storedSettingsVersion = doc["settingsVersion"] | (uint8_t)0;
   if (storedSettingsVersion < 1) {
