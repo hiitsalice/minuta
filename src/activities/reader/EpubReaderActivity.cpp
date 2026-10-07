@@ -1652,8 +1652,8 @@ void EpubReaderActivity::renderStatusBar() const {
         statusBarHeight + orientedMarginBottom - 1 - statusTextLineHeight + 3;
 
     const int autoTurnX =
-        (renderer.getScreenWidth() - renderer.getTextWidth(SMALL_FONT_ID, autoTurnText.c_str())) / 2;
-    renderer.drawText(SMALL_FONT_ID, autoTurnX, autoTurnY, autoTurnText.c_str());
+        (renderer.getScreenWidth() - renderer.getTextWidth(SMALL_FONT_ID, autoTurnText.c_str(), EpdFontFamily::ITALIC)) / 2;
+    renderer.drawText(SMALL_FONT_ID, autoTurnX, autoTurnY, autoTurnText.c_str(), true, EpdFontFamily::ITALIC);
   }
 }
 
