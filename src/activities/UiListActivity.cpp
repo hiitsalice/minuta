@@ -79,13 +79,11 @@ void UiListActivity::navigateButtons() {
   buttonNavigator.onNextRelease([this, count, &n] { moveSelectionTo(ButtonNavigator::nextIndex(n.selected, count)); });
   buttonNavigator.onPreviousRelease(
       [this, count, &n] { moveSelectionTo(ButtonNavigator::previousIndex(n.selected, count)); });
-  // Page by the rows the last build actually drew (pageRows), not the
-  // fixed-height visibleRows estimate: with wrapped labels the estimate
-  // overshoots and rows between pages would never be shown.
+  // Holding direction skips exactly 6 list items.
   buttonNavigator.onNextContinuous(
-      [this, count, &n] { moveSelectionTo(ButtonNavigator::nextPageIndex(n.selected, count, n.pageRows())); });
+      [this, count, &n] { moveSelectionTo(std::min(n.selected + 6, count - 1)); });
   buttonNavigator.onPreviousContinuous(
-      [this, count, &n] { moveSelectionTo(ButtonNavigator::previousPageIndex(n.selected, count, n.pageRows())); });
+      [this, count, &n] { moveSelectionTo(std::max(n.selected - 6, 0)); });
 }
 
 void UiListActivity::syncListViewport(UiScreen& screen, fui::ListProps& props, const bool hasSubtitle, const int16_t bottomInset) {
