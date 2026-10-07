@@ -800,14 +800,22 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
       break;
     }
     case EpubReaderMenuActivity::MenuAction::DISPLAY_QR: {
-      if (section && section->currentPage >= 0 && section->currentPage < section->pageCount) {
-        std::string fullText = section->getTextFromSectionFile();
-        if (!fullText.empty()) {
-          startActivityForResult(std::make_unique<QrDisplayActivity>(renderer, mappedInput, fullText),
-                                 [this](const ActivityResult&) { openReaderMenu(); });
-          break;
+      // Read the page text under the render lock: right after the menu closes the render task
+      // is re-reading the same section file, and an unlocked read could come back empty.
+      std::string fullText;
+      {
+        RenderLock lock;
+        if (section && section->currentPage >= 0 && section->currentPage < section->pageCount) {
+          fullText = section->getTextFromSectionFile();
+          if (fullText.empty()) fullText = section->getTextFromSectionFile();  // one retry
         }
       }
+      if (!fullText.empty()) {
+        startActivityForResult(std::make_unique<QrDisplayActivity>(renderer, mappedInput, fullText),
+                               [this](const ActivityResult&) { openReaderMenu(); });
+        break;
+      }
+      LOG_ERR("ERS", "QR: no text for current page (section %s)", section ? "present" : "missing");
       requestUpdate();
       break;
     }
