@@ -109,11 +109,6 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   doc["settingsVersion"] = 1;
   doc["controlsLayoutVersion"] = 2;
   doc["sleepScreenModeVersion"] = 1;
-#ifdef BOOK_CACHE_BUILD_ID
-  doc["bookCacheBuildId"] = BOOK_CACHE_BUILD_ID;
-#else
-  doc["bookCacheBuildId"] = "unknown";
-#endif
 }
 
 bool CrossPointSettings::fromJson(JsonVariantConst doc) {
@@ -121,14 +116,6 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
   bool needsResave = false;
   bool sleepScreenMigrated = false;
 
-#ifdef BOOK_CACHE_BUILD_ID
-  const char* storedBookCacheBuildId = doc["bookCacheBuildId"] | "";
-  if (strcmp(storedBookCacheBuildId, BOOK_CACHE_BUILD_ID) != 0) {
-    clearAllBookCaches();
-    requestResave();
-    needsResave = true;
-  }
-#endif
 
   const uint8_t storedSettingsVersion = doc["settingsVersion"] | (uint8_t)0;
   if (storedSettingsVersion < 1) {

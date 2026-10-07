@@ -57,6 +57,8 @@ class EpubReaderActivity final : public ReaderActivity {
   bool readerMenuCategoryExpanded[4] = {false, false, false, false};
   int readerMenuSelectedRow = 0;
 
+  void resetReaderMenuState();
+
   // Footnote support
   std::vector<FootnoteEntry> currentPageFootnotes;
   struct SavedPosition {

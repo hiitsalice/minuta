@@ -9,6 +9,7 @@
 #include <HalPowerManager.h>
 #include <HalStorage.h>
 #ifndef SIMULATOR
+#include <Preferences.h>
 #include <esp_ota_ops.h>
 #endif
 #include <HalSystem.h>
@@ -36,6 +37,7 @@
 #include "images/LoadingIcon.h"
 #include "platform/UsbSerialJtagHandoff.h"
 #include "util/ButtonNavigator.h"
+#include "util/BookCacheUtils.h"
 #include "util/ScreenshotUtil.h"
 
 GfxRenderer renderer(display);
@@ -62,6 +64,34 @@ bool verifyRollbackLater() {
   }
 
   return true;
+}
+#endif
+
+#ifndef SIMULATOR
+void invalidateBookCachesForFirmwareBuild() {
+#ifdef BOOK_CACHE_BUILD_ID
+  Preferences prefs;
+  if (!prefs.begin("minuta", false)) {
+    LOG_ERR("BookCache", "Failed to open NVS cache marker");
+    return;
+  }
+
+  const String storedBuildId = prefs.getString("cacheBuildId", "");
+  if (storedBuildId != BOOK_CACHE_BUILD_ID) {
+    LOG_INF("BookCache", "Firmware build changed: %s -> %s; clearing caches",
+            storedBuildId.c_str(), BOOK_CACHE_BUILD_ID);
+
+    clearAllBookCaches();
+
+    if (!prefs.putString("cacheBuildId", BOOK_CACHE_BUILD_ID)) {
+      LOG_ERR("BookCache", "Failed to save cache build ID");
+    } else {
+      LOG_INF("BookCache", "Book cache invalidation complete");
+    }
+  }
+
+  prefs.end();
+#endif
 }
 #endif
 
@@ -357,6 +387,8 @@ void setup() {
   HalSystem::checkPanic();
 
 #ifndef SIMULATOR
+  invalidateBookCachesForFirmwareBuild();
+
   if (freshFirmwareInstall) {
     if (Storage.exists("/.crosspoint/settings.json") &&
         !Storage.remove("/.crosspoint/settings.json")) {

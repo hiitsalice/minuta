@@ -261,6 +261,8 @@ void EpubReaderActivity::openReaderMenu() {
                            toggleAutoPageTurn(menu.pageTurnOption);
                            if (!result.isCancelled) {
                              onReaderMenuConfirm(static_cast<EpubReaderMenuActivity::MenuAction>(menu.action));
+                           } else {
+                             resetReaderMenuState();
                            }
                          });
 }
@@ -628,6 +630,13 @@ void EpubReaderActivity::jumpToPercent(int percent) {
   requestUpdate();
 }
 
+void EpubReaderActivity::resetReaderMenuState() {
+  for (bool& expanded : readerMenuCategoryExpanded) {
+    expanded = false;
+  }
+  readerMenuSelectedRow = 0;
+}
+
 void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction action) {
   auto progressChangeResultHandler = [this](const ActivityResult& result) {
     loadCachedBookmarks();
@@ -648,6 +657,7 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
           nextPageNumber = std::max(0, sync.page);
           section.reset();
         }
+          resetReaderMenuState();
         requestUpdate();
         return;
       }
@@ -680,6 +690,7 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
       } else if (!section) {
         nextPageNumber = targetPage;
       }
+        resetReaderMenuState();
       requestUpdate();
     }
   };
@@ -714,6 +725,7 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
             RenderLock lock;
             clearDeferredReposition();
             currentSpineIndex = chapterResult.spineIndex;
+            resetReaderMenuState();
             pendingAnchor = chapterResult.anchor;
             nextPageNumber = 0;
             section.reset();
@@ -730,6 +742,7 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
                                }
                                const auto& footnoteResult = std::get<FootnoteResult>(result.data);
                                navigateToHref(footnoteResult.href, true);
+                                 resetReaderMenuState();
                                requestUpdate();
                              });
       break;
@@ -771,15 +784,18 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
               openReaderMenu();
             } else {
               jumpToPercent(std::get<PercentResult>(result.data).percent);
+              resetReaderMenuState();
             }
           });
       break;
     }
     case EpubReaderMenuActivity::MenuAction::DICTIONARY: {
+        resetReaderMenuState();
       openDictionaryWordSelect();
       break;
     }
     case EpubReaderMenuActivity::MenuAction::HIGHLIGHT: {
+        resetReaderMenuState();
       openHighlightWordSelect();
       break;
     }
@@ -796,6 +812,7 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
       break;
     }
     case EpubReaderMenuActivity::MenuAction::GO_HOME: {
+        resetReaderMenuState();
       onGoHome();
       return;
     }
@@ -814,6 +831,7 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
           }
         }
       }
+        resetReaderMenuState();
       onGoHome();
       return;
     }
@@ -822,10 +840,12 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
         RenderLock lock;
         pendingScreenshot = true;
       }
+        resetReaderMenuState();
       requestUpdate();
       break;
     }
     case EpubReaderMenuActivity::MenuAction::SYNC: {
+        resetReaderMenuState();
       launchKOReaderSync();
       break;
     }
