@@ -92,7 +92,6 @@ uint32_t Section::onPageComplete(std::unique_ptr<Page> page) {
     LOG_ERR("SCT", "Failed to serialize page %d", builtPageCount_);
     return 0;
   }
-  LOG_DBG("SCT", "Page %d processed", builtPageCount_);
 
   builtPageCount_++;
   // pageCount is the pages available to read: a rebuild over a partial only raises it

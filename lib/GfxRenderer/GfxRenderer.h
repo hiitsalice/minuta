@@ -235,6 +235,7 @@ class GfxRenderer {
   // skip an expensive bitmap decode. Returns true when no strip is active.
   // Corners are rotated to physical, so it is orientation-aware.
   bool glyphIntersectsStrip(int x0, int y0, int x1, int y1) const;
+  bool isStripTargetActive() const { return _stripActive; }
 
   // Active pixel-write target for raw writers (DirectPixelWriter) that bypass
   // drawPixel for speed. When a strip target is active these return the band

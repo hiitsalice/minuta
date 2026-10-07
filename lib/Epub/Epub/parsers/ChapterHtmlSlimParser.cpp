@@ -1317,10 +1317,6 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
       // Note references and their back-links stand out: bold + italic on top of the underline.
       const char* roleAttr = getAttribute(atts, "role");
       const char* epubTypeAttr = getAttribute(atts, "epub:type");
-      LOG_INF("EpubParser", "Internal link href=%s role=%s epub:type=%s",
-               href ? href : "(null)",
-               roleAttr ? roleAttr : "(null)",
-               epubTypeAttr ? epubTypeAttr : "(null)");
       self->footnoteLinkIsNoteref = (roleAttr && strstr(roleAttr, "doc-noteref")) ||
                                     (epubTypeAttr && strstr(epubTypeAttr, "noteref"));
       self->footnoteLinkIsBacklink = (roleAttr && strstr(roleAttr, "doc-backlink")) ||
