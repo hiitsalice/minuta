@@ -161,13 +161,13 @@ void RecentBooksActivity::promptRemoveBook(const std::string& path, const std::s
 }
 
 void RecentBooksActivity::buildScreen(UiScreen& screen) {
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Same margins and spacing as the Library.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 7), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 9), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight + 3), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
   screen.spacer(10);
@@ -187,8 +187,11 @@ void RecentBooksActivity::buildScreen(UiScreen& screen) {
   props.labelText = label;
   props.balanceWrappedLabelWithValue = false;
   props.partialTrailingRow = false;
-  syncListViewport(screen, props, false, 48);
-  screen.list(props, static_cast<int16_t>(screen.body().height - 48));
+  props.rowHeight = 36;
+  props.labelYOffset = 1;
+  props.rowGap = 0;
+  syncListViewport(screen, props, false, 36);
+  screen.list(props, static_cast<int16_t>(screen.body().height - 36));
 }
 
 void RecentBooksActivity::drawFooter() {
@@ -205,7 +208,7 @@ void RecentBooksActivity::drawFooter() {
   const int hintTop = renderer.getScreenHeight() - UITheme::getInstance().getMetrics().buttonHintsHeight;
   const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, helpText);
   const int textX = (renderer.getScreenWidth() - textWidth) / 2;
-  const int textY = hintTop - 15 - helpLineHeight - 12;
+  const int textY = hintTop - 15 - helpLineHeight + 2;
 
   constexpr int boxPadding = 6;
   renderer.fillRectDither(textX - boxPadding, textY - boxPadding, textWidth + boxPadding * 2,
