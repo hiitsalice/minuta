@@ -55,15 +55,16 @@ Minuta is intentionally built around XTEINK X4 only. Removing unused device supp
 | Minuta 1.1 | 4,033,219 bytes / 3.85 MiB | +1,452 bytes / +1.4 KiB     | -10.53%                        |
 | Minuta 1.2 | 4,005,049 bytes / 3.82 MiB | -28,170 bytes / -27.5 KiB   | -11.15%                        |
 | Minuta 1.3 | 3,608,981 bytes / 3.44 MiB | -396,068 bytes / -386.8 KiB | -19.94%                        |
+| Minuta 1.4 | 3,703,499 bytes / 3.53 MiB | +94,518 bytes / +92.3 KiB   | -17.84%                        |
 
 Baseline refers to the firmware size of the CrossPoint build Minuta was forked from.
 
-### Current resource usage (Minuta 1.3)
+### Current resource usage (Minuta 1.4)
 
 | Measure                   | Result                          |
 |----------------------------|----------------------------------|
-| Free app-partition space   | 2,958,171 bytes / 2.82 MiB      |
-| RAM used                   | 55,652 bytes / 17.0%            |
+| Flash used                 | 3,690,859 bytes / 56.3%         |
+| RAM used                   | 55,708 bytes / 17.0%            |
 
 These are firmware-size measurements rather than promises about page-turn speed or battery life. Minuta was made smaller so the X4 has less unnecessary firmware to carry around.
 
@@ -114,6 +115,10 @@ Minuta keeps CrossPoint’s reading foundation, but I’ve removed, rearranged, 
 * **Settings reset when Minuta is installed.** Every firmware flash resets Minuta’s settings to its defaults. This is intentional: since Minuta removes and changes quite a few options, I want each installation to start from a clean set of Minuta settings rather than carrying things over from somewhere else. Your books and other SD card content will not be erased.
 
 * **And then there is Highlight.** I felt like Bookmark was not a particularly accurate way of saving something you wanted to come back to, especially because it stores a page based on its first word and therefore moves around when the font size changes. So Bookmark is gone, and **Highlight** takes its place. You can select the first and last word of a passage, save it, show it with **Highlight Marker**, and browse saved passages through **Highlight List**. I also tried to keep the feature light enough that it doesn’t noticeably slow down page turning.
+
+* **Keeping things tucked away.** The Reader Menu and Settings are now collapsible, and quite a few less-used actions have been moved behind button holds and other shortcuts. I wanted the everyday screens to stay clean without removing those functions entirely.
+
+* **Recent Books and Endnotes.** I added a small Recent Books page for quick access to recently opened books, and reworked the old footnote system into **Endnotes**, with simple navigation between a reference and its corresponding note.
 
 Overall, Minuta is still CrossPoint underneath, but I’ve tried to make the parts that you actually see and interact with feel much more deliberate, simple, and... Minuta-fied.
 
