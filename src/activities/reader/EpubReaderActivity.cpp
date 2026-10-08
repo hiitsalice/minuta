@@ -519,8 +519,16 @@ void EpubReaderActivity::loop() {
     }
 
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
-      if (epub && !saveProgress(0, 0, 0)) {
-        LOG_ERR("ERS", "Failed to reset finished-book progress");
+      {
+        RenderLock lock;
+        if (epub) {
+          section.reset();
+          epub->clearCache();
+          epub->setupCacheDir();
+          if (!saveProgress(0, 0, 0)) {
+            LOG_ERR("ERS", "Failed to reset finished-book progress");
+          }
+        }
       }
       onGoHome();
       return;
