@@ -283,8 +283,7 @@ void ChapterHtmlSlimParser::flushPendingAnchor() {
   // block is flushed so the chapter starts on a fresh page.
   if (std::find(tocAnchors.begin(), tocAnchors.end(), pendingAnchorId) != tocAnchors.end()) {
     if (currentPage && !currentPage->elements.empty()) {
-      completePageFn(std::move(currentPage), xpathParagraphIndex, xpathListItemIndex, currentPageVisibleOffset);
-      completedPageCount++;
+      completePageForEndnote(std::move(currentPage));
       currentPage.reset(new Page());
       currentPageNextY = 0;
       currentPageVisibleOffsetSet = false;
@@ -294,6 +293,29 @@ void ChapterHtmlSlimParser::flushPendingAnchor() {
   // Record deferred anchor after previous block is flushed (and any TOC page break)
   anchorData.push_back({std::move(pendingAnchorId), static_cast<uint16_t>(completedPageCount)});
   pendingAnchorId.clear();
+}
+
+void ChapterHtmlSlimParser::completePageForEndnote(std::unique_ptr<Page> page) {
+  if (!page) return;
+
+  if (insideEndnoteEntry && endnoteFirstLineSeen) {
+    pendingEndnotePages.push_back(
+        {std::move(page), xpathParagraphIndex, xpathListItemIndex, currentPageVisibleOffset});
+    completedPageCount++;
+    return;
+  }
+
+  completePageFn(std::move(page), xpathParagraphIndex, xpathListItemIndex, currentPageVisibleOffset);
+  completedPageCount++;
+}
+
+void ChapterHtmlSlimParser::flushPendingEndnotePages() {
+  for (auto& pending : pendingEndnotePages) {
+    completePageFn(std::move(pending.page), pending.paragraphIndex, pending.listItemIndex,
+                   pending.visibleTextOffset);
+  }
+  pendingEndnotePages.clear();
+  endnoteFirstLineSeen = false;
 }
 
 void ChapterHtmlSlimParser::setCurrentPageVisibleOffset(const uint32_t offset) {
@@ -312,7 +334,6 @@ void ChapterHtmlSlimParser::flushPartWordBuffer() {
     return;
   }
 
-  // Determine font style from depth-based tracking and CSS effective style
   const bool isBold = boldUntilDepth < depth || effectiveBold;
   const bool isItalic = italicUntilDepth < depth || effectiveItalic;
 
@@ -324,7 +345,8 @@ void ChapterHtmlSlimParser::flushPartWordBuffer() {
   if (isItalic) {
     fontStyle = static_cast<EpdFontFamily::Style>(fontStyle | EpdFontFamily::ITALIC);
   }
-  fontStyle = static_cast<EpdFontFamily::Style>(fontStyle | fontStyleForTextDecoration(effectiveTextDecoration));
+  fontStyle = static_cast<EpdFontFamily::Style>(
+      fontStyle | fontStyleForTextDecoration(effectiveTextDecoration));
   if (effectiveSup) {
     fontStyle = static_cast<EpdFontFamily::Style>(fontStyle | EpdFontFamily::SUP);
   } else if (effectiveSub) {
@@ -443,8 +465,7 @@ void ChapterHtmlSlimParser::emitHorizontalRule(const BlockStyle& blockStyle) {
 
   if (!currentPage->elements.empty() && currentPageNextY + totalHeight > viewportHeight) {
     setCurrentPageVisibleOffset(visibleTextOffset);
-    completePageFn(std::move(currentPage), xpathParagraphIndex, xpathListItemIndex, currentPageVisibleOffset);
-    completedPageCount++;
+    completePageForEndnote(std::move(currentPage));
     currentPage.reset(new (std::nothrow) Page());
     if (!currentPage) {
       LOG_ERR("EHP", "Failed to create page after horizontal-rule page break");
@@ -617,8 +638,7 @@ void ChapterHtmlSlimParser::finishTableRow() {
     if (!currentPage || pageFull) {
       if (pageFull) {
         setCurrentPageVisibleOffset(lineVisibleOffset);
-        completePageFn(std::move(currentPage), xpathParagraphIndex, xpathListItemIndex, currentPageVisibleOffset);
-        completedPageCount++;
+        completePageForEndnote(std::move(currentPage));
       }
       currentPage = makeUniqueNoThrow<Page>();
       if (!currentPage) {
@@ -1131,9 +1151,7 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
                 if (self->currentPage && !self->currentPage->elements.empty() &&
                     (self->currentPageNextY + imageMarginTop + displayHeight + imageMarginBottom >
                      self->viewportHeight)) {
-                  self->completePageFn(std::move(self->currentPage), self->xpathParagraphIndex,
-                                       self->xpathListItemIndex, self->currentPageVisibleOffset);
-                  self->completedPageCount++;
+                  self->completePageForEndnote(std::move(self->currentPage));
                   self->currentPage.reset(new Page());
                   if (!self->currentPage) {
                     LOG_ERR("EHP", "Failed to create new page");
@@ -1552,8 +1570,8 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
 
 void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char* s, int len) {
   auto* self = static_cast<ChapterHtmlSlimParser*>(userData);
-  // First text of an endnote entry: write "Endnote N: " (bold, italic, underlined) before it,
-  // after the bullet. The prefix goes through this same function as synthetic text.
+  // First text of an endnote entry: write "Endnote N: " (bold, italic, underlined)
+  // before it, after the bullet.
   if (!self->pendingEndnotePrefix.empty() && !self->syntheticCharacterData) {
     bool hasText = false;
     for (int k = 0; k < len; ++k) {
@@ -1565,6 +1583,7 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
     if (hasText) {
       const std::string prefix = std::move(self->pendingEndnotePrefix);
       self->pendingEndnotePrefix.clear();
+
       StyleStackEntry prefixStyle;
       prefixStyle.depth = self->depth;
       prefixStyle.hasBold = true;
@@ -1575,13 +1594,18 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
       prefixStyle.textDecoration = CssTextDecoration::Underline;
       self->inlineStyleStack.push_back(prefixStyle);
       self->updateEffectiveInlineStyle();
+
       self->syntheticCharacterData = true;
       self->endnoteStartFirstWordIndex =
-          self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0) + 1;
+          self->wordsExtractedInBlock +
+          (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0) + 1;
       characterData(self, prefix.c_str(), static_cast<int>(prefix.size()));
+      self->flushPartWordBuffer();
       self->syntheticCharacterData = false;
       self->endnoteStartWordIndex =
-          self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0);
+          self->wordsExtractedInBlock +
+          (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0);
+
       self->inlineStyleStack.pop_back();
       self->updateEffectiveInlineStyle();
     }
@@ -2024,7 +2048,16 @@ void XMLCALL ChapterHtmlSlimParser::endElement(void* userData, const XML_Char* n
   self->depth -= 1;
 
   if (strcmp(name, "li") == 0) {
-    self->insideEndnoteEntry = false;
+    if (self->insideEndnoteEntry) {
+      self->insideEndnoteEntry = false;
+      if (self->currentPage) {
+        for (const auto& bl : self->pendingEndnoteBacklinks) {
+          self->currentPage->addFootnote(bl.number.c_str(), bl.href.c_str());
+        }
+      }
+      self->pendingEndnoteBacklinks.clear();
+      self->flushPendingEndnotePages();
+    }
   }
 
   // Record an <a id=...> target against the page of its own word.
@@ -2052,10 +2085,18 @@ void XMLCALL ChapterHtmlSlimParser::endElement(void* userData, const XML_Char* n
       int wordIndex =
           self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0);
       int startIndex = self->footnoteLinkStartWordIndex;
-      if (self->footnoteLinkIsBacklink && self->endnoteStartWordIndex >= 0) {
-        // The way back to the text belongs to the "Endnote N:" prefix at the start of the entry.
-        wordIndex = self->endnoteStartWordIndex;
-        startIndex = self->endnoteStartFirstWordIndex;
+      bool handledBacklink = false;
+      if (self->footnoteLinkIsBacklink && self->insideEndnoteEntry) {
+        // The backlink belongs to the page containing the synthetic "Endnote N:" prefix,
+        // even when the backlink occurs in a later paragraph or later page.
+        if (!self->endnoteFirstLineSeen) {
+          self->pendingEndnoteBacklinks.push_back({entry.number, entry.href});
+        } else if (!self->pendingEndnotePages.empty()) {
+          self->pendingEndnotePages.front().page->addFootnote(entry.number, entry.href);
+        } else if (self->currentPage) {
+          self->currentPage->addFootnote(entry.number, entry.href);
+        }
+        handledBacklink = true;
       }
       // A link that wraps across a page break is listed on both pages: once at its first word
       // and once at its last (the page list ignores repeats).
@@ -2064,8 +2105,10 @@ void XMLCALL ChapterHtmlSlimParser::endElement(void* userData, const XML_Char* n
                                      [idx](const auto& pf) { return pf.first > idx; });
         self->pendingFootnotes.insert(at, std::make_pair(idx, e));
       };
-      if (startIndex >= 0 && startIndex < wordIndex) addPending(startIndex, entry);
-      addPending(wordIndex, entry);
+      if (!handledBacklink) {
+        if (startIndex >= 0 && startIndex < wordIndex) addPending(startIndex, entry);
+        addPending(wordIndex, entry);
+      }
     }
     self->insideFootnoteLink = false;
   }
@@ -2282,8 +2325,7 @@ bool ChapterHtmlSlimParser::finishParse() {
       pendingAnchorId.clear();
     }
     setCurrentPageVisibleOffset(visibleTextOffset);
-    completePageFn(std::move(currentPage), xpathParagraphIndex, xpathListItemIndex, currentPageVisibleOffset);
-    completedPageCount++;
+    completePageForEndnote(std::move(currentPage));
     currentPage.reset();
     currentTextBlock.reset();
   }
@@ -2320,13 +2362,23 @@ void ChapterHtmlSlimParser::addLineToPage(std::shared_ptr<TextBlock> line, const
 
   if (currentPageNextY + lineHeight > viewportHeight) {
     setCurrentPageVisibleOffset(visibleOffset);
-    completePageFn(std::move(currentPage), xpathParagraphIndex, xpathListItemIndex, currentPageVisibleOffset);
-    completedPageCount++;
+    completePageForEndnote(std::move(currentPage));
     currentPage.reset(new Page());
     currentPageNextY = 0;
     currentPageVisibleOffsetSet = false;
   }
   setCurrentPageVisibleOffset(visibleOffset);
+
+  // The first line actually laid out inside an endnote identifies its true first page.
+  // This is deliberately based on layout rather than <li> position, because the entry
+  // may begin after the previous page has already been completed.
+  if (insideEndnoteEntry && !endnoteFirstLineSeen) {
+    endnoteFirstLineSeen = true;
+    for (const auto& bl : pendingEndnoteBacklinks) {
+      currentPage->addFootnote(bl.number.c_str(), bl.href.c_str());
+    }
+    pendingEndnoteBacklinks.clear();
+  }
 
   // Track cumulative words to assign footnotes to the page containing their anchor
   wordsExtractedInBlock += line->wordCount();

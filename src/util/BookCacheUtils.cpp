@@ -7,6 +7,8 @@
 #include "../activities/reader/ProgressFile.h"
 #include <Txt.h>
 #include <Xtc.h>
+#include <utility>
+#include <vector>
 
 bool isBookCacheDirectoryName(const char* name) {
   if (!name) {
@@ -40,47 +42,66 @@ int clearAllBookCaches() {
     file.getName(name, sizeof(name));
     String itemName(name);
 
-    if (file.isDirectory() && isBookCacheDirectoryName(itemName.c_str())) {
-      String fullPath = "/.crosspoint/" + itemName;
-      const std::string progressPath = std::string(fullPath.c_str()) + "/progress.bin";
-      uint8_t progressData[10];
-      size_t progressSize = 0;
+    if (!file.isDirectory() || !isBookCacheDirectoryName(itemName.c_str())) {
+      file.close();
+      continue;
+    }
 
-      // Reader progress is persistent state, not generated cache data.
-      // Preserve it while clearing the rest of the book cache.
-      HalFile progressFile;
-      if (Storage.openFileForRead("BookCache", progressPath, progressFile)) {
-        progressSize = progressFile.read(progressData, sizeof(progressData));
-        progressFile.close();
+    const std::string cachePath = std::string("/.crosspoint/") + itemName.c_str();
+    file.close();
+
+    bool removedCacheData = false;
+    std::vector<std::string> stack;
+    stack.push_back(cachePath);
+
+    while (!stack.empty()) {
+      const std::string currentPath = std::move(stack.back());
+      stack.pop_back();
+
+      auto dir = Storage.open(currentPath.c_str());
+      if (!dir || !dir.isDirectory()) {
+        if (dir) dir.close();
+        LOG_ERR("BookCache", "Failed to open cache directory: %s", currentPath.c_str());
+        continue;
       }
 
-      LOG_DBG("BookCache", "Removing cache: %s", fullPath.c_str());
-      file.close();
+      dir.rewindDirectory();
+      for (auto entry = dir.openNextFile(); entry; entry = dir.openNextFile()) {
+        char entryName[128];
+        entry.getName(entryName, sizeof(entryName));
 
-      if (Storage.removeDir(fullPath.c_str())) {
-        if (!Storage.mkdir(fullPath.c_str())) {
-          LOG_ERR("BookCache", "Failed to recreate cache directory: %s", fullPath.c_str());
+        if (strcmp(entryName, ".") == 0 || strcmp(entryName, "..") == 0) {
+          entry.close();
           continue;
         }
 
-        bool progressRestored = true;
-        if (progressSize > 0) {
-          progressRestored = ProgressFile::writeAtomic(fullPath.c_str(), progressData, progressSize);
-          if (progressRestored) {
-            LOG_DBG("BookCache", "Preserved reading progress: %s", progressPath.c_str());
+        std::string entryPath = currentPath + "/" + entryName;
+        const bool isDir = entry.isDirectory();
+        entry.close();
+
+        if (isDir) {
+          stack.push_back(entryPath);
+        } else if (strcmp(entryName, "progress.bin") != 0) {
+          if (Storage.remove(entryPath.c_str())) {
+            removedCacheData = true;
+          } else {
+            LOG_ERR("BookCache", "Failed to remove cache file: %s", entryPath.c_str());
           }
         }
-
-        if (progressRestored) {
-          clearedCount++;
-        } else {
-          LOG_ERR("BookCache", "Failed to restore progress: %s", progressPath.c_str());
-        }
-      } else {
-        LOG_ERR("BookCache", "Failed to remove: %s", fullPath.c_str());
       }
-    } else {
-      file.close();
+
+      dir.close();
+
+      // Remove empty cache subdirectories after their contents have been cleared.
+      // The top-level book cache directory is intentionally retained for progress.bin.
+      if (currentPath != cachePath && !Storage.removeDir(currentPath.c_str())) {
+        LOG_ERR("BookCache", "Failed to remove cache subdirectory: %s", currentPath.c_str());
+      }
+    }
+
+    if (removedCacheData) {
+      clearedCount++;
+      LOG_DBG("BookCache", "Cleared cache data: %s", cachePath.c_str());
     }
   }
 

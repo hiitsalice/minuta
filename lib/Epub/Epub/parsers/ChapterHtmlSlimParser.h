@@ -131,6 +131,15 @@ class ChapterHtmlSlimParser {
   int currentFootnoteLinkTextLen = 0;
   std::vector<std::pair<int, FootnoteEntry>> pendingFootnotes;  // <wordIndex, entry>
   std::vector<std::pair<int, std::string>> pendingInlineAnchors;  // <wordIndex, id> for <a id=...> targets
+
+  struct PendingEndnotePage {
+    std::unique_ptr<Page> page;
+    uint16_t paragraphIndex;
+    uint16_t listItemIndex;
+    uint32_t visibleTextOffset;
+  };
+  std::vector<PendingEndnotePage> pendingEndnotePages;
+  bool endnoteFirstLineSeen = false;
   std::string currentLinkAnchorId;  // id of the open <a>, recorded at its closing tag
   bool footnoteLinkIsNoteref = false;     // open link is a note reference (role/epub:type)
   bool footnoteLinkIsBacklink = false;    // open link is a back-link to the text
@@ -142,6 +151,11 @@ class ChapterHtmlSlimParser {
   int endnoteStartFirstWordIndex = -1;   // 1-based word position of the first word of the "Endnote N:" prefix
   int endnoteStartWordIndex = -1;         // word position of the "Endnote N:" prefix of the open entry
   std::string pendingEndnotePrefix;       // "Endnote N: " to write before the next text of an endnote entry
+  struct PendingEndnoteBacklink {
+    std::string number;
+    std::string href;
+  };
+  std::vector<PendingEndnoteBacklink> pendingEndnoteBacklinks;  // waiting for the endnote's first laid-out line
   std::string pendingMalformedNbsp;        // buffered "&nbsp." fragment from malformed EPUB HTML
   int wordsExtractedInBlock = 0;
 
@@ -165,6 +179,8 @@ class ChapterHtmlSlimParser {
   void addTableRowSeparator();
   void setCurrentPageVisibleOffset(uint32_t offset);
   void makePages();
+  void completePageForEndnote(std::unique_ptr<Page> page);
+  void flushPendingEndnotePages();
   static EpdFontFamily::Style fontStyleForTextDecoration(CssTextDecoration decoration);
   static void applyDirectionToEntry(StyleStackEntry& entry, const CssStyle& css);
   static void applyTextDecorationToEntry(StyleStackEntry& entry, const CssStyle& css);
