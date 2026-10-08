@@ -713,6 +713,7 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
           const char* liRole = getAttribute(atts, "role");
           if ((liType && (strstr(liType, "endnote") || strstr(liType, "footnote"))) ||
               (liRole && (strstr(liRole, "doc-endnote") || strstr(liRole, "doc-footnote")))) {
+            self->insideEndnoteEntry = true;
             self->endnoteStartWordIndex = -1;
             self->endnoteStartFirstWordIndex = -1;
             const size_t idLen = strlen(idValue);
@@ -1322,18 +1323,23 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
       self->footnoteLinkIsBacklink = (roleAttr && strstr(roleAttr, "doc-backlink")) ||
                                      (epubTypeAttr && strstr(epubTypeAttr, "backlink"));
       self->footnoteLinkTextReplaced = false;
-      self->footnoteLinkInferred = !self->footnoteLinkIsNoteref && !self->footnoteLinkIsBacklink;
+      self->footnoteLinkInferred = !self->footnoteLinkIsNoteref &&
+                                     !self->footnoteLinkIsBacklink &&
+                                     (self->insideEndnoteEntry || self->insideSup);
       if (self->footnoteLinkInferred) {
         const bool atBlockStart =
             self->partWordBufferIndex == 0 &&
             (self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0)) == 0;
-        self->footnoteLinkIsBacklink = atBlockStart;
-        if (atBlockStart) {
+        self->footnoteLinkIsBacklink = self->insideEndnoteEntry ||
+                                       (atBlockStart && isEndnoteListMarkerText(self->currentFootnote.number));
+        if (self->footnoteLinkIsBacklink) {
           // Each note starts with a plain bullet. It is written before the link's own style is
           // pushed, so the bullet is not bold, italic or underlined.
-          self->syntheticCharacterData = true;
-          characterData(self, "\xE2\x80\xA2 ", 4);
-          self->syntheticCharacterData = false;
+          if (self->insideEndnoteEntry) {
+            self->syntheticCharacterData = true;
+            characterData(self, "\xE2\x80\xA2 ", 4);
+            self->syntheticCharacterData = false;
+          }
         }
       }
       self->footnoteLinkStartWordIndex =
@@ -1491,6 +1497,7 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
     StyleStackEntry entry;
     entry.depth = self->depth;
     if (strcmp(name, "sup") == 0) {
+      self->insideSup = true;
       entry.hasSup = true;
       entry.sup = true;
     } else {
@@ -1659,6 +1666,18 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
       self->currentFootnote.number[self->currentFootnoteLinkTextLen++] = s[i];
     }
     self->currentFootnote.number[self->currentFootnoteLinkTextLen] = '\0';
+
+    // Some EPUBs use unmarked note links: the note list starts with a numeric marker such as
+    // "1.", while the corresponding in-text reference is a superscript link. Only promote a
+    // block-start link when its collected text has this exact note-list shape, so ordinary
+    // chapter/cross-reference links remain untouched.
+    if (!self->footnoteLinkInferred && !self->footnoteLinkIsNoteref && !self->footnoteLinkIsBacklink &&
+        self->partWordBufferIndex == 0 &&
+        (self->wordsExtractedInBlock + (self->currentTextBlock ? static_cast<int>(self->currentTextBlock->size()) : 0)) == 0 &&
+        isEndnoteListMarkerText(self->currentFootnote.number)) {
+      self->footnoteLinkInferred = true;
+      self->footnoteLinkIsBacklink = true;
+    }
   }
 
   // Link text swaps. The back-arrow glyph (U+21A9 / U+2191) is missing from the UI font and
@@ -2004,6 +2023,10 @@ void XMLCALL ChapterHtmlSlimParser::endElement(void* userData, const XML_Char* n
 
   self->depth -= 1;
 
+  if (strcmp(name, "li") == 0) {
+    self->insideEndnoteEntry = false;
+  }
+
   // Record an <a id=...> target against the page of its own word.
   if (!self->currentLinkAnchorId.empty() && strcmp(name, "a") == 0) {
     if (self->partWordBufferIndex > 0) {
@@ -2094,6 +2117,10 @@ void XMLCALL ChapterHtmlSlimParser::endElement(void* userData, const XML_Char* n
   // Leaving italic tag
   if (self->italicUntilDepth == self->depth) {
     self->italicUntilDepth = INT_MAX;
+  }
+
+  if (strcmp(name, "sup") == 0) {
+    self->insideSup = false;
   }
 
   // Pop from inline style stack if we pushed an entry at this depth

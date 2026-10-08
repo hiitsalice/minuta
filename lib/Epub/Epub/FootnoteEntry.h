@@ -34,6 +34,18 @@ inline bool isFootnoteMarkerText(const char* text) {
   return true;
 }
 
+// True for an unmarked endnote-list marker such as "1." or "12.".
+// This is intentionally stricter than isFootnoteMarkerText() so ordinary links such as
+// single-letter chapter titles are never inferred as endnote back-links.
+inline bool isEndnoteListMarkerText(const char* text) {
+  const size_t len = strlen(text);
+  if (len < 2 || len > 7 || text[len - 1] != '.') return false;
+  for (size_t i = 0; i < len - 1; i++) {
+    if (text[i] < '0' || text[i] > '9') return false;
+  }
+  return true;
+}
+
 // Builds the label shown in the Endnotes list. Links that go to a note read "To endnote N";
 // back-links (U+21A9 / U+2191 arrows, which the UI font can't draw, or links flagged as
 // back-links) read "To reference N". N is the link's own text (e.g. "3", "*") or, for
@@ -59,7 +71,7 @@ inline void normalizeFootnoteLabel(char* number, const char* href, const bool is
       marker[--markerLen] = '\0';
     }
   }
-  strcpy(number, (isBackArrow || isBacklink) ? "To reference" : "To endnote");
+  strcpy(number, isBacklink ? "To reference" : "To endnote");
   if (marker[0] != '\0') {
     strcat(number, " ");
     strncat(number, marker, FOOTNOTE_NUMBER_LEN - 1 - strlen(number));
