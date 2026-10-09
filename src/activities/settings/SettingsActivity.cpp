@@ -241,28 +241,45 @@ void SettingsActivity::stepTab(const int direction) {
   requestUpdate();
 }
 
+void SettingsActivity::jumpToAdjacentSection(const int direction) {
+  std::vector<size_t> headers;
+  for (size_t i = 0; i < visibleRows.size(); ++i) {
+    if (visibleRows[i].isCategory) headers.push_back(i);
+  }
+  if (headers.empty()) return;
+
+  const int ring = ringPos();
+  size_t target = 0;
+  if (ring <= 0) {
+    target = direction > 0 ? 0 : headers.size() - 1;
+  } else {
+    if (static_cast<size_t>(ring - 1) >= visibleRows.size()) return;
+    const Section currentSection = visibleRows[static_cast<size_t>(ring - 1)].section;
+    size_t pos = 0;
+    for (size_t h = 0; h < headers.size(); ++h) {
+      if (visibleRows[headers[h]].section == currentSection) {
+        pos = h;
+        break;
+      }
+    }
+    target = direction > 0 ? (pos + 1) % headers.size() : (pos + headers.size() - 1) % headers.size();
+  }
+  moveRingTo(static_cast<int>(headers[target]) + 1);
+}
+
 void SettingsActivity::navigateButtons() {
+  using Button = MappedInputManager::Button;
   const int ringSize = listCount() + 1;
 
-  if (mappedInput.wasReleased(MappedInputManager::Button::Down)) {
-    moveRingTo(ButtonNavigator::nextIndex(ringPos(), ringSize));
-    return;
-  }
+  // Tap: front Left/Right behave exactly like side Up/Down (one row).
+  settingsNavigator.onRelease({Button::Down, Button::Right},
+                              [this, ringSize] { moveRingTo(ButtonNavigator::nextIndex(ringPos(), ringSize)); });
+  settingsNavigator.onRelease({Button::Up, Button::Left},
+                              [this, ringSize] { moveRingTo(ButtonNavigator::previousIndex(ringPos(), ringSize)); });
 
-  if (mappedInput.wasReleased(MappedInputManager::Button::Up)) {
-    moveRingTo(ButtonNavigator::previousIndex(ringPos(), ringSize));
-    return;
-  }
-
-  if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
-    stepTab(1);
-    return;
-  }
-
-  if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
-    stepTab(-1);
-    return;
-  }
+  // Hold: jump to the next / previous section header, repeating while held.
+  settingsNavigator.onContinuous({Button::Down, Button::Right}, [this] { jumpToAdjacentSection(1); });
+  settingsNavigator.onContinuous({Button::Up, Button::Left}, [this] { jumpToAdjacentSection(-1); });
 }
 
 void SettingsActivity::onExit() {
