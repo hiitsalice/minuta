@@ -38,18 +38,6 @@ const char* const SettingsActivity::categoryNames[categoryCount] = {
 
 namespace {
 
-constexpr size_t DEVICE_DISPLAY_START = 0;
-constexpr size_t DEVICE_DISPLAY_END = 3;
-constexpr size_t DEVICE_APPEARANCE_START = 3;
-constexpr size_t DEVICE_APPEARANCE_END = 5;
-constexpr size_t DEVICE_READING_START = 5;
-constexpr size_t DEVICE_READING_END = 7;
-constexpr size_t DEVICE_CONTROLS_START = 7;
-constexpr size_t DEVICE_CONTROLS_END = 11;
-constexpr size_t DEVICE_NETWORK_START = 11;
-constexpr size_t DEVICE_NETWORK_END = 15;
-constexpr size_t DEVICE_UPDATE_START = 15;
-constexpr size_t DEVICE_UPDATE_END = 17;
 
 }  // namespace
 
@@ -79,36 +67,57 @@ void SettingsActivity::rebuildSettingsLists() {
     }
   };
 
-  // Device -> Display
-  appendSetting(deviceSettings, StrId::STR_TIME_TO_SLEEP);
-  appendSetting(deviceSettings, StrId::STR_SLEEP_SCREEN);
-  appendSetting(deviceSettings, StrId::STR_REFRESH_FREQ);
-
-  // Device -> Appearance
-  appendSetting(deviceSettings, StrId::STR_UI_THEME);
-  appendSetting(deviceSettings, StrId::STR_SUNLIGHT_FADING_FIX);
-
-  // Device -> Reading
-  deviceSettings.push_back(SettingInfo::Action(StrId::STR_FONT_BROWSER, SettingAction::DownloadFonts));
-  appendSetting(deviceSettings, StrId::STR_DICTIONARY);
-
-  // Device -> Controls
-  deviceSettings.push_back(SettingInfo::Action(StrId::STR_REMAP_FRONT_BUTTONS, SettingAction::RemapFrontButtons));
-  for (const auto& setting : allSettings) {
-    if (setting.category == StrId::STR_CAT_CONTROLS) {
-      deviceSettings.push_back(setting);
+  sectionRanges.clear();
+  const auto addSettingsSection = [&](const char* label, const std::function<void()>& fill) {
+    const size_t start = deviceSettings.size();
+    fill();
+    if (deviceSettings.size() > start) {
+      sectionRanges.push_back({label, start, deviceSettings.size()});
     }
+  };
+
+  addSettingsSection("Display", [&] {
+    appendSetting(deviceSettings, StrId::STR_TIME_TO_SLEEP);
+    appendSetting(deviceSettings, StrId::STR_SLEEP_SCREEN);
+    appendSetting(deviceSettings, StrId::STR_REFRESH_FREQ);
+  });
+
+  addSettingsSection("Appearance", [&] {
+    appendSetting(deviceSettings, StrId::STR_UI_THEME);
+    appendSetting(deviceSettings, StrId::STR_SUNLIGHT_FADING_FIX);
+  });
+
+  addSettingsSection("Reading", [&] {
+    deviceSettings.push_back(SettingInfo::Action(StrId::STR_FONT_BROWSER, SettingAction::DownloadFonts));
+    appendSetting(deviceSettings, StrId::STR_DICTIONARY);
+  });
+
+  addSettingsSection("Controls", [&] {
+    deviceSettings.push_back(SettingInfo::Action(StrId::STR_REMAP_FRONT_BUTTONS, SettingAction::RemapFrontButtons));
+    for (const auto& setting : allSettings) {
+      if (setting.category == StrId::STR_CAT_CONTROLS) {
+        deviceSettings.push_back(setting);
+      }
+    }
+  });
+
+  addSettingsSection("Network", [&] {
+    deviceSettings.push_back(SettingInfo::Action(StrId::STR_WIFI_NETWORKS, SettingAction::Network));
+    deviceSettings.push_back(SettingInfo::Action(StrId::STR_FILE_TRANSFER, SettingAction::FileTransfer));
+    deviceSettings.push_back(SettingInfo::Action(StrId::STR_KOREADER_SYNC, SettingAction::KOReaderSync));
+    deviceSettings.push_back(SettingInfo::Action(StrId::STR_OPDS_SERVERS, SettingAction::OPDSBrowser));
+  });
+
+  addSettingsSection("Update", [&] {
+    deviceSettings.push_back(SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates));
+    deviceSettings.push_back(SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate));
+  });
+
+  // Expansion state follows the number of sections; existing states are kept.
+  sectionExpanded.resize(categoryCount);
+  for (auto& expanded : sectionExpanded) {
+    expanded.resize(sectionRanges.size(), 0);
   }
-
-  // Device -> Network
-  deviceSettings.push_back(SettingInfo::Action(StrId::STR_WIFI_NETWORKS, SettingAction::Network));
-  deviceSettings.push_back(SettingInfo::Action(StrId::STR_FILE_TRANSFER, SettingAction::FileTransfer));
-  deviceSettings.push_back(SettingInfo::Action(StrId::STR_KOREADER_SYNC, SettingAction::KOReaderSync));
-  deviceSettings.push_back(SettingInfo::Action(StrId::STR_OPDS_SERVERS, SettingAction::OPDSBrowser));
-
-  // Device -> Update
-  deviceSettings.push_back(SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates));
-  deviceSettings.push_back(SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate));
 
   currentSettings = &deviceSettings;
 
@@ -130,12 +139,9 @@ void SettingsActivity::rebuildVisibleRows() {
     }
   };
 
-  addSection(Section::DEVICE_DISPLAY, DEVICE_DISPLAY_START, DEVICE_DISPLAY_END);
-  addSection(Section::DEVICE_APPEARANCE, DEVICE_APPEARANCE_START, DEVICE_APPEARANCE_END);
-  addSection(Section::DEVICE_READING, DEVICE_READING_START, DEVICE_READING_END);
-  addSection(Section::DEVICE_CONTROLS, DEVICE_CONTROLS_START, DEVICE_CONTROLS_END);
-  addSection(Section::DEVICE_NETWORK, DEVICE_NETWORK_START, DEVICE_NETWORK_END);
-  addSection(Section::DEVICE_UPDATE, DEVICE_UPDATE_START, DEVICE_UPDATE_END);
+  for (size_t s = 0; s < sectionRanges.size(); ++s) {
+    addSection(s, sectionRanges[s].start, sectionRanges[s].end);
+  }
 }
 
 void SettingsActivity::onEnter() {
@@ -158,24 +164,6 @@ void SettingsActivity::selectCategory(const int categoryIndex) {
 }
 
 void SettingsActivity::rebuildRowItems() {
-  const auto sectionLabel = [](const Section section) {
-    switch (section) {
-      case Section::DEVICE_CONTROLS:
-        return "Controls";
-      case Section::DEVICE_DISPLAY:
-        return "Display";
-      case Section::DEVICE_APPEARANCE:
-        return "Appearance";
-      case Section::DEVICE_READING:
-        return "Reading";
-      case Section::DEVICE_NETWORK:
-        return "Network";
-      case Section::DEVICE_UPDATE:
-        return "Update";
-    }
-    return "";
-  };
-
   rowValues_.assign(visibleRows.size(), std::string());
   rowItems_.clear();
   rowItems_.reserve(visibleRows.size());
@@ -186,7 +174,7 @@ void SettingsActivity::rebuildRowItems() {
     item.actionValue = static_cast<int16_t>(i);
 
     if (row.isCategory) {
-      item.label = sectionLabel(row.section);
+      item.label = sectionRanges[row.section].label;
       item.labelXOffset = 21;
       item.bold = true;
       item.leadingTriangleIndicator = true;

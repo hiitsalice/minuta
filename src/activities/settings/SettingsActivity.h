@@ -157,23 +157,22 @@ struct SettingInfo {
 };
 
 class SettingsActivity final : public UiTabListActivity {
-  enum class Section {
-    DEVICE_CONTROLS,
-    DEVICE_DISPLAY,
-    DEVICE_APPEARANCE,
-    DEVICE_READING,
-    DEVICE_NETWORK,
-    DEVICE_UPDATE
+  // A section is an index into sectionRanges (built in rebuildSettingsLists()).
+  using Section = size_t;
+
+  struct SectionRange {
+    const char* label;
+    size_t start;
+    size_t end;
   };
 
   struct VisibleRow {
     bool isCategory = false;
-    Section section = Section::DEVICE_DISPLAY;
+    Section section = 0;
     size_t settingIndex = 0;
   };
 
   static constexpr int categoryCount = 1;
-  static constexpr int sectionCount = 6;
 
   int selectedCategoryIndex = 0;  // Currently selected top-level tab
 
@@ -182,7 +181,8 @@ class SettingsActivity final : public UiTabListActivity {
   const std::vector<SettingInfo>* currentSettings = nullptr;
 
   // Collapsible sections for Device/System. All start collapsed.
-  bool sectionExpanded[categoryCount][sectionCount]{};
+  std::vector<std::vector<uint8_t>> sectionExpanded;  // [category][section], sized by rebuildSettingsLists()
+  std::vector<SectionRange> sectionRanges;            // sections in display order
 
   // Visible row mapping. Category rows live here; settingIndex refers to the
   // corresponding entry in currentSettings for normal rows.
