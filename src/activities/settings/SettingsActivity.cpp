@@ -38,14 +38,14 @@ const char* const SettingsActivity::categoryNames[categoryCount] = {
 
 namespace {
 
-constexpr size_t DEVICE_CONTROLS_START = 0;
-constexpr size_t DEVICE_CONTROLS_END = 4;
-constexpr size_t DEVICE_DISPLAY_START = 4;
-constexpr size_t DEVICE_DISPLAY_END = 7;
-constexpr size_t DEVICE_APPEARANCE_START = 7;
-constexpr size_t DEVICE_APPEARANCE_END = 9;
-constexpr size_t DEVICE_READING_START = 9;
-constexpr size_t DEVICE_READING_END = 11;
+constexpr size_t DEVICE_DISPLAY_START = 0;
+constexpr size_t DEVICE_DISPLAY_END = 3;
+constexpr size_t DEVICE_APPEARANCE_START = 3;
+constexpr size_t DEVICE_APPEARANCE_END = 5;
+constexpr size_t DEVICE_READING_START = 5;
+constexpr size_t DEVICE_READING_END = 7;
+constexpr size_t DEVICE_CONTROLS_START = 7;
+constexpr size_t DEVICE_CONTROLS_END = 11;
 constexpr size_t DEVICE_NETWORK_START = 11;
 constexpr size_t DEVICE_NETWORK_END = 15;
 constexpr size_t DEVICE_UPDATE_START = 15;
@@ -79,14 +79,6 @@ void SettingsActivity::rebuildSettingsLists() {
     }
   };
 
-  // Device -> Controls
-  deviceSettings.push_back(SettingInfo::Action(StrId::STR_REMAP_FRONT_BUTTONS, SettingAction::RemapFrontButtons));
-  for (const auto& setting : allSettings) {
-    if (setting.category == StrId::STR_CAT_CONTROLS) {
-      deviceSettings.push_back(setting);
-    }
-  }
-
   // Device -> Display
   appendSetting(deviceSettings, StrId::STR_TIME_TO_SLEEP);
   appendSetting(deviceSettings, StrId::STR_SLEEP_SCREEN);
@@ -99,6 +91,14 @@ void SettingsActivity::rebuildSettingsLists() {
   // Device -> Reading
   deviceSettings.push_back(SettingInfo::Action(StrId::STR_FONT_BROWSER, SettingAction::DownloadFonts));
   appendSetting(deviceSettings, StrId::STR_DICTIONARY);
+
+  // Device -> Controls
+  deviceSettings.push_back(SettingInfo::Action(StrId::STR_REMAP_FRONT_BUTTONS, SettingAction::RemapFrontButtons));
+  for (const auto& setting : allSettings) {
+    if (setting.category == StrId::STR_CAT_CONTROLS) {
+      deviceSettings.push_back(setting);
+    }
+  }
 
   // Device -> Network
   deviceSettings.push_back(SettingInfo::Action(StrId::STR_WIFI_NETWORKS, SettingAction::Network));
@@ -130,10 +130,10 @@ void SettingsActivity::rebuildVisibleRows() {
     }
   };
 
-  addSection(Section::DEVICE_CONTROLS, DEVICE_CONTROLS_START, DEVICE_CONTROLS_END);
   addSection(Section::DEVICE_DISPLAY, DEVICE_DISPLAY_START, DEVICE_DISPLAY_END);
   addSection(Section::DEVICE_APPEARANCE, DEVICE_APPEARANCE_START, DEVICE_APPEARANCE_END);
   addSection(Section::DEVICE_READING, DEVICE_READING_START, DEVICE_READING_END);
+  addSection(Section::DEVICE_CONTROLS, DEVICE_CONTROLS_START, DEVICE_CONTROLS_END);
   addSection(Section::DEVICE_NETWORK, DEVICE_NETWORK_START, DEVICE_NETWORK_END);
   addSection(Section::DEVICE_UPDATE, DEVICE_UPDATE_START, DEVICE_UPDATE_END);
 }
@@ -493,7 +493,7 @@ void SettingsActivity::buildScreen(UiScreen& screen) {
   // Minuta settings typography: tabs, labels and values all use Steinem 11.
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
 
   buildTabBar(screen);
@@ -524,7 +524,7 @@ void SettingsActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems_.data();
   props.count = static_cast<uint16_t>(rowItems_.size());
   props.action = ACTION_ROW;
-  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight + 11);
+  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight + 10);
   props.rowGap = 0;
   props.valueInset = 8;  // air between the value and the row edge
   // Titles match the value's font size (smallText) so both sides of a row
@@ -564,7 +564,7 @@ void SettingsActivity::render(RenderLock&&) {
   const int ring = ringPos();
   const auto confirmLabel = ring == 0 ? "" : tr(STR_TOGGLE);
 
-  const auto labels = mappedInput.mapLabels(tr(STR_HOME), confirmLabel, tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT));
+  const auto labels = mappedInput.mapLabels(tr(STR_HOME), confirmLabel, "Up", "Down");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   // Always use standard refresh for settings screen
