@@ -34,23 +34,22 @@ namespace fui = freeink::ui;
 
 const char* const SettingsActivity::categoryNames[categoryCount] = {
     "Device",
-    "Controls",
-    "System",
 };
 
 namespace {
 
-constexpr size_t DEVICE_DISPLAY_START = 0;
-constexpr size_t DEVICE_DISPLAY_END = 3;
-constexpr size_t DEVICE_APPEARANCE_START = 3;
-constexpr size_t DEVICE_APPEARANCE_END = 5;
-constexpr size_t DEVICE_READING_START = 5;
-constexpr size_t DEVICE_READING_END = 7;
-
-constexpr size_t SYSTEM_NETWORK_START = 0;
-constexpr size_t SYSTEM_NETWORK_END = 4;
-constexpr size_t SYSTEM_UPDATE_START = 4;
-constexpr size_t SYSTEM_UPDATE_END = 6;
+constexpr size_t DEVICE_CONTROLS_START = 0;
+constexpr size_t DEVICE_CONTROLS_END = 4;
+constexpr size_t DEVICE_DISPLAY_START = 4;
+constexpr size_t DEVICE_DISPLAY_END = 7;
+constexpr size_t DEVICE_APPEARANCE_START = 7;
+constexpr size_t DEVICE_APPEARANCE_END = 9;
+constexpr size_t DEVICE_READING_START = 9;
+constexpr size_t DEVICE_READING_END = 11;
+constexpr size_t DEVICE_NETWORK_START = 11;
+constexpr size_t DEVICE_NETWORK_END = 15;
+constexpr size_t DEVICE_UPDATE_START = 15;
+constexpr size_t DEVICE_UPDATE_END = 17;
 
 }  // namespace
 
@@ -59,8 +58,6 @@ SettingsActivity::SettingsActivity(GfxRenderer& renderer, MappedInputManager& ma
 
 void SettingsActivity::rebuildSettingsLists() {
   deviceSettings.clear();
-  controlsSettings.clear();
-  systemSettings.clear();
 
   // Pick up any fonts uploaded/deleted over the web server since the last
   // reader activity ran — otherwise the font-family picker shows stale list.
@@ -82,6 +79,14 @@ void SettingsActivity::rebuildSettingsLists() {
     }
   };
 
+  // Device -> Controls
+  deviceSettings.push_back(SettingInfo::Action(StrId::STR_REMAP_FRONT_BUTTONS, SettingAction::RemapFrontButtons));
+  for (const auto& setting : allSettings) {
+    if (setting.category == StrId::STR_CAT_CONTROLS) {
+      deviceSettings.push_back(setting);
+    }
+  }
+
   // Device -> Display
   appendSetting(deviceSettings, StrId::STR_TIME_TO_SLEEP);
   appendSetting(deviceSettings, StrId::STR_SLEEP_SCREEN);
@@ -95,38 +100,17 @@ void SettingsActivity::rebuildSettingsLists() {
   deviceSettings.push_back(SettingInfo::Action(StrId::STR_FONT_BROWSER, SettingAction::DownloadFonts));
   appendSetting(deviceSettings, StrId::STR_DICTIONARY);
 
-  // Controls remains the existing flat list.
-  for (const auto& setting : allSettings) {
-    if (setting.category == StrId::STR_CAT_CONTROLS) {
-      controlsSettings.push_back(setting);
-    }
-  }
+  // Device -> Network
+  deviceSettings.push_back(SettingInfo::Action(StrId::STR_WIFI_NETWORKS, SettingAction::Network));
+  deviceSettings.push_back(SettingInfo::Action(StrId::STR_FILE_TRANSFER, SettingAction::FileTransfer));
+  deviceSettings.push_back(SettingInfo::Action(StrId::STR_KOREADER_SYNC, SettingAction::KOReaderSync));
+  deviceSettings.push_back(SettingInfo::Action(StrId::STR_OPDS_SERVERS, SettingAction::OPDSBrowser));
 
-  controlsSettings.insert(
-      controlsSettings.begin(),
-      SettingInfo::Action(StrId::STR_REMAP_FRONT_BUTTONS, SettingAction::RemapFrontButtons));
+  // Device -> Update
+  deviceSettings.push_back(SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates));
+  deviceSettings.push_back(SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate));
 
-  // System -> Network
-  systemSettings.push_back(SettingInfo::Action(StrId::STR_WIFI_NETWORKS, SettingAction::Network));
-  systemSettings.push_back(SettingInfo::Action(StrId::STR_FILE_TRANSFER, SettingAction::FileTransfer));
-  systemSettings.push_back(SettingInfo::Action(StrId::STR_KOREADER_SYNC, SettingAction::KOReaderSync));
-  systemSettings.push_back(SettingInfo::Action(StrId::STR_OPDS_SERVERS, SettingAction::OPDSBrowser));
-
-  // System -> Update
-  systemSettings.push_back(SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates));
-  systemSettings.push_back(SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate));
-
-  switch (selectedCategoryIndex) {
-    case 0:
-      currentSettings = &deviceSettings;
-      break;
-    case 1:
-      currentSettings = &controlsSettings;
-      break;
-    case 2:
-      currentSettings = &systemSettings;
-      break;
-  }
+  currentSettings = &deviceSettings;
 
   rebuildVisibleRows();
   rebuildRowItems();
@@ -134,13 +118,6 @@ void SettingsActivity::rebuildSettingsLists() {
 
 void SettingsActivity::rebuildVisibleRows() {
   visibleRows.clear();
-
-  if (selectedCategoryIndex == 1) {
-    for (size_t i = 0; i < currentSettings->size(); ++i) {
-      visibleRows.push_back({false, Section::DEVICE_DISPLAY, i});
-    }
-    return;
-  }
 
   auto addSection = [this](const Section section, const size_t start, const size_t end) {
     visibleRows.push_back({true, section, 0});
@@ -153,14 +130,12 @@ void SettingsActivity::rebuildVisibleRows() {
     }
   };
 
-  if (selectedCategoryIndex == 0) {
-    addSection(Section::DEVICE_DISPLAY, DEVICE_DISPLAY_START, DEVICE_DISPLAY_END);
-    addSection(Section::DEVICE_APPEARANCE, DEVICE_APPEARANCE_START, DEVICE_APPEARANCE_END);
-    addSection(Section::DEVICE_READING, DEVICE_READING_START, DEVICE_READING_END);
-  } else {
-    addSection(Section::SYSTEM_NETWORK, SYSTEM_NETWORK_START, SYSTEM_NETWORK_END);
-    addSection(Section::SYSTEM_UPDATE, SYSTEM_UPDATE_START, SYSTEM_UPDATE_END);
-  }
+  addSection(Section::DEVICE_CONTROLS, DEVICE_CONTROLS_START, DEVICE_CONTROLS_END);
+  addSection(Section::DEVICE_DISPLAY, DEVICE_DISPLAY_START, DEVICE_DISPLAY_END);
+  addSection(Section::DEVICE_APPEARANCE, DEVICE_APPEARANCE_START, DEVICE_APPEARANCE_END);
+  addSection(Section::DEVICE_READING, DEVICE_READING_START, DEVICE_READING_END);
+  addSection(Section::DEVICE_NETWORK, DEVICE_NETWORK_START, DEVICE_NETWORK_END);
+  addSection(Section::DEVICE_UPDATE, DEVICE_UPDATE_START, DEVICE_UPDATE_END);
 }
 
 void SettingsActivity::onEnter() {
@@ -174,17 +149,7 @@ void SettingsActivity::onEnter() {
 void SettingsActivity::selectCategory(const int categoryIndex) {
   selectedCategoryIndex = categoryIndex;
 
-  switch (selectedCategoryIndex) {
-    case 0:
-      currentSettings = &deviceSettings;
-      break;
-    case 1:
-      currentSettings = &controlsSettings;
-      break;
-    case 2:
-      currentSettings = &systemSettings;
-      break;
-  }
+  currentSettings = &deviceSettings;
 
   activeNav().top = 0;
   activeNav().selected = 0;
@@ -195,15 +160,17 @@ void SettingsActivity::selectCategory(const int categoryIndex) {
 void SettingsActivity::rebuildRowItems() {
   const auto sectionLabel = [](const Section section) {
     switch (section) {
+      case Section::DEVICE_CONTROLS:
+        return "Controls";
       case Section::DEVICE_DISPLAY:
         return "Display";
       case Section::DEVICE_APPEARANCE:
         return "Appearance";
       case Section::DEVICE_READING:
         return "Reading";
-      case Section::SYSTEM_NETWORK:
+      case Section::DEVICE_NETWORK:
         return "Network";
-      case Section::SYSTEM_UPDATE:
+      case Section::DEVICE_UPDATE:
         return "Update";
     }
     return "";
@@ -593,24 +560,6 @@ void SettingsActivity::render(RenderLock&&) {
                     CROSSPOINT_VERSION);
 
   renderUi();
-
-  if (selectedCategoryIndex == 1) {
-    const char* noteLines[5] = {"Hold HOME to clear all caches", "Hold DIRECTION to skip chapter",
-                                "Hold READ for recents", "Click POWER to refresh", "Hold POWER to sleep"};
-    const int helpLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
-    const int textHeight = renderer.getTextHeight(UI_10_FONT_ID);
-    const int hintTop = renderer.getScreenHeight() - metrics.buttonHintsHeight;
-    const int bottomY = hintTop - 15 - helpLineHeight - 12;
-    constexpr int boxPadding = 6;
-    for (int i = 0; i < 5; i++) {
-      const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, noteLines[i]);
-      const int textX = (renderer.getScreenWidth() - textWidth) / 2;
-      const int textY = bottomY - (4 - i) * 36;
-      renderer.fillRectDither(textX - boxPadding, textY - boxPadding, textWidth + boxPadding * 2,
-                              textHeight + boxPadding * 2, Color::LightGray);
-      renderer.drawText(UI_10_FONT_ID, textX, textY, noteLines[i], true, EpdFontFamily::REGULAR);
-    }
-  }
 
   const int ring = ringPos();
   const auto confirmLabel = ring == 0 ? "" : tr(STR_TOGGLE);

@@ -157,11 +157,12 @@ struct SettingInfo {
 
 class SettingsActivity final : public UiTabListActivity {
   enum class Section {
+    DEVICE_CONTROLS,
     DEVICE_DISPLAY,
     DEVICE_APPEARANCE,
     DEVICE_READING,
-    SYSTEM_NETWORK,
-    SYSTEM_UPDATE
+    DEVICE_NETWORK,
+    DEVICE_UPDATE
   };
 
   struct VisibleRow {
@@ -170,16 +171,13 @@ class SettingsActivity final : public UiTabListActivity {
     size_t settingIndex = 0;
   };
 
-  static constexpr int categoryCount = 3;
-  static constexpr int sectionCount = 5;
+  static constexpr int categoryCount = 1;
+  static constexpr int sectionCount = 6;
 
   int selectedCategoryIndex = 0;  // Currently selected top-level tab
 
-  // Per-tab settings derived from the shared list + device-only actions.
-  // Controls intentionally remains a flat list.
+  // Every setting lives on the single Device page.
   std::vector<SettingInfo> deviceSettings;
-  std::vector<SettingInfo> controlsSettings;
-  std::vector<SettingInfo> systemSettings;
   const std::vector<SettingInfo>* currentSettings = nullptr;
 
   // Collapsible sections for Device/System. All start collapsed.
