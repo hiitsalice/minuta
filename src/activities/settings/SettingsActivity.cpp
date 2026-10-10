@@ -151,6 +151,8 @@ void SettingsActivity::onEnter() {
 
   selectedCategoryIndex = 0;
   rebuildSettingsLists();
+  activeNav().top = 0;
+  activeNav().selected = 1;
   requestUpdate();
 }
 
@@ -160,7 +162,7 @@ void SettingsActivity::selectCategory(const int categoryIndex) {
   currentSettings = &deviceSettings;
 
   activeNav().top = 0;
-  activeNav().selected = 0;
+  activeNav().selected = 1;
   rebuildVisibleRows();
   rebuildRowItems();
 }
@@ -193,7 +195,6 @@ void SettingsActivity::rebuildRowItems() {
 void SettingsActivity::onTabAction(const int index) {
   if (optionPopup.isActive()) return;
   selectCategory(index);
-  activeNav().selected = 0;
   app.clearTapFlash();
 }
 
@@ -219,16 +220,8 @@ void SettingsActivity::activateIndex(const int index) {
   toggleCurrentSetting();
 }
 
-void SettingsActivity::stepTab(const int direction) {
-  const bool onTabBar = ringPos() == 0;
-
-  selectedCategoryIndex =
-      direction > 0 ? ButtonNavigator::nextIndex(selectedCategoryIndex, categoryCount)
-                    : ButtonNavigator::previousIndex(selectedCategoryIndex, categoryCount);
-
-  selectCategory(selectedCategoryIndex);
-  activeNav().selected = onTabBar ? 0 : 1;
-  requestUpdate();
+void SettingsActivity::stepTab(const int) {
+  // Settings is a single page without a tab bar; there is nothing to step.
 }
 
 void SettingsActivity::jumpToAdjacentSection(const int direction) {
@@ -264,13 +257,16 @@ void SettingsActivity::jumpToAdjacentSection(const int direction) {
 
 void SettingsActivity::navigateButtons() {
   using Button = MappedInputManager::Button;
-  const int ringSize = listCount() + 1;
+  const int rowCount = listCount();  // ring positions 1..rowCount; no tab bar stop
+  if (rowCount <= 0) return;
+  const auto nextRow = [this, rowCount] { moveRingTo(ringPos() >= rowCount ? 1 : ringPos() + 1); };
+  const auto previousRow = [this, rowCount] { moveRingTo(ringPos() <= 1 ? rowCount : ringPos() - 1); };
 
   // Tap: front Left/Right behave exactly like side Up/Down (one row).
   settingsNavigator.onRelease({Button::Down, Button::Right},
-                              [this, ringSize] { moveRingTo(ButtonNavigator::nextIndex(ringPos(), ringSize)); });
+                              nextRow);
   settingsNavigator.onRelease({Button::Up, Button::Left},
-                              [this, ringSize] { moveRingTo(ButtonNavigator::previousIndex(ringPos(), ringSize)); });
+                              previousRow);
 
   // Hold: jump to the next / previous section header, repeating while held.
   settingsNavigator.onContinuous({Button::Down, Button::Right}, [this] { jumpToAdjacentSection(1); });
@@ -508,10 +504,9 @@ void SettingsActivity::buildScreen(UiScreen& screen) {
   // Minuta settings typography: tabs, labels and values all use Steinem 11.
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight + 7), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
 
-  buildTabBar(screen);
 
   // Give the settings list a comfortable gap below the tab bar.
   // No additional list padding below the tab row.
