@@ -10,6 +10,7 @@
 #include <cstring>
 
 #include "ButtonRemapActivity.h"
+#include "ButtonShortcutsActivity.h"
 #include "activities/util/ConfirmationActivity.h"
 #include "ClearCacheActivity.h"
 #include "CrossPointSettings.h"
@@ -99,6 +100,7 @@ void SettingsActivity::rebuildSettingsLists() {
         deviceSettings.push_back(setting);
       }
     }
+    deviceSettings.push_back(SettingInfo::Action(StrId::STR_BUTTON_SHORTCUTS, SettingAction::ButtonShortcuts));
   });
 
   addSettingsSection("Network", [&] {
@@ -398,6 +400,9 @@ void SettingsActivity::toggleCurrentSetting() {
         break;
       case SettingAction::Network:
         startActivityForResult(std::make_unique<WifiSelectionActivity>(renderer, mappedInput, false), resultHandler);
+        break;
+      case SettingAction::ButtonShortcuts:
+        startActivityForResult(std::make_unique<ButtonShortcutsActivity>(renderer, mappedInput), resultHandler);
         break;
       case SettingAction::ClearCache:
         startActivityForResult(std::make_unique<ClearCacheActivity>(renderer, mappedInput), resultHandler);
