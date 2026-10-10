@@ -252,7 +252,12 @@ void SettingsActivity::jumpToAdjacentSection(const int direction) {
         break;
       }
     }
-    target = direction > 0 ? (pos + 1) % headers.size() : (pos + headers.size() - 1) % headers.size();
+    const bool onHeader = visibleRows[static_cast<size_t>(ring - 1)].isCategory;
+    if (direction < 0 && !onHeader) {
+      target = pos;  // first reach this section's own header
+    } else {
+      target = direction > 0 ? (pos + 1) % headers.size() : (pos + headers.size() - 1) % headers.size();
+    }
   }
   moveRingTo(static_cast<int>(headers[target]) + 1);
 }
