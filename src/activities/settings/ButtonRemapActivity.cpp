@@ -199,12 +199,12 @@ void ButtonRemapActivity::screenTrampoline(UiScreen& screen, void* user) {
 }
 
 void ButtonRemapActivity::buildScreen(UiScreen& screen) {
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
   const auto& metrics = UITheme::getInstance().getMetrics();
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight + 3), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
@@ -220,7 +220,7 @@ void ButtonRemapActivity::buildScreen(UiScreen& screen) {
   props.inputMask = fui::InputNone;
   props.scrollIndicator = false;
   props.valueInset = 8;
-  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight + 11);
+  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight);
   props.rowGap = 0;
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 2;

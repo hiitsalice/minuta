@@ -149,8 +149,8 @@ std::string StatusBarSettingsActivity::rowValueText(const int index) {
 }
 
 void StatusBarSettingsActivity::buildScreen(UiScreen& screen) {
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
   // Match the main Settings menu: Steinem 11 for names and values.
@@ -162,7 +162,7 @@ void StatusBarSettingsActivity::buildScreen(UiScreen& screen) {
   const int statusBarHeight = UITheme::getInstance().getStatusBarHeight();
   const auto previewFooter =
       static_cast<int16_t>(statusBarHeight + verticalPreviewTextPadding + metrics.verticalSpacing);
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight + 3), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight + previewFooter), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
@@ -180,7 +180,7 @@ void StatusBarSettingsActivity::buildScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(MAX_STATUS_BAR_ITEMS);
   props.action = ACTION_ROW;
   props.valueInset = 8;               // air between the value and the row edge
-  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight + 11);
+  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight);
   props.rowGap = 0;
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 2;

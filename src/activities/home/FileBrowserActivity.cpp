@@ -445,20 +445,16 @@ std::string getFileExtension(const std::string& filename) {
 }
 
 void FileBrowserActivity::buildScreen(UiScreen& screen) {
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 7), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight + 3), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(
       metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
-
-  // Give the file/folder list a little more breathing room below the header.
-  // Footer/path position stays unchanged.
-  screen.spacer(10);
 
   if (files.empty()) {
     if (mode == Mode::PickFirmware) {
@@ -503,6 +499,9 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   // The trailing value here is just the short extension: let the name stay
   // on a single line across the available width.
   props.balanceWrappedLabelWithValue = false;
+  props.valueInset = 8;
+  props.rowGap = 0;
+  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight);
   props.partialTrailingRow = false;
   // No extra space below the list: it runs down to the button hints.
   const int16_t listBottomInset = 0;

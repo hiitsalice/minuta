@@ -497,15 +497,16 @@ std::string SettingsActivity::settingValueText(const SettingInfo& setting) {
 }
 
 void SettingsActivity::buildScreen(UiScreen& screen) {
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
   // Minuta settings typography: tabs, labels and values all use Steinem 11.
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight + 7), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight + 3), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
 
   // Give the settings list a comfortable gap below the tab bar.
@@ -534,7 +535,7 @@ void SettingsActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems_.data();
   props.count = static_cast<uint16_t>(rowItems_.size());
   props.action = ACTION_ROW;
-  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight + 10);
+  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight);
   props.rowGap = 0;
   props.valueInset = 8;  // air between the value and the row edge
   // Titles match the value's font size (smallText) so both sides of a row
