@@ -261,10 +261,10 @@ void EpubReaderBookmarksActivity::drawChrome() {
 void EpubReaderBookmarksActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
-  // Content below the Highlight header, above the delete hint and button hints.
+  // Content below the Highlight header, down to the button hints.
   screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight + 16),
                                       static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
-                                      static_cast<int16_t>(63 + metrics.buttonHintsHeight),
+                                      static_cast<int16_t>(metrics.buttonHintsHeight),
                                       static_cast<int16_t>(safe.x)});
 
   if (savedRows.empty()) {
@@ -322,22 +322,6 @@ void EpubReaderBookmarksActivity::render(RenderLock&&) {
   const auto confirmLabel = savedRows.empty() ? "" : tr(STR_SELECT);
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabel, tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
-
-  const char* helpText = "Hold SELECT to delete";
-  const int helpLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
-  const int textHeight = renderer.getTextHeight(UI_10_FONT_ID);
-  const int hintTop = renderer.getScreenHeight() - UITheme::getInstance().getMetrics().buttonHintsHeight;
-  const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, helpText);
-  const int textX = (renderer.getScreenWidth() - textWidth) / 2;
-  const int textY = hintTop - 15 - helpLineHeight - 12;
-
-  constexpr int boxPadding = 6;
-  renderer.fillRectDither(textX - boxPadding,
-                          textY - boxPadding,
-                          textWidth + boxPadding * 2,
-                          textHeight + boxPadding * 2,
-                          Color::LightGray);
-  renderer.drawText(UI_10_FONT_ID, textX, textY, helpText, true, EpdFontFamily::REGULAR);
 
   renderer.displayBuffer();
 }
