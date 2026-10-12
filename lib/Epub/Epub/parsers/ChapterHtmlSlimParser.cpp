@@ -1722,11 +1722,29 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
       (static_cast<uint8_t>(s[2]) == 0xA9 || static_cast<uint8_t>(s[2]) == 0x91)) {
     len = 0;
   } else if (self->insideFootnoteLink && self->footnoteLinkIsNoteref && !self->footnoteLinkTextReplaced &&
-             self->currentFootnote.number[0] != '\0') {
+             self->currentFootnote.number[0] != '\0' && !self->syntheticCharacterData) {
+    // Note references read "(Endnote N)" at normal size: books usually wrap the number in <sup>,
+    // so it is written as synthetic text with the superscript switched off.
     snprintf(markerReplacement, sizeof(markerReplacement), " (Endnote %s)", self->currentFootnote.number);
-    s = markerReplacement;
-    len = static_cast<int>(strlen(markerReplacement));
+    StyleStackEntry markerStyle;
+    markerStyle.depth = self->depth;
+    markerStyle.hasSup = true;
+    markerStyle.sup = false;
+    markerStyle.hasSub = true;
+    markerStyle.sub = false;
+    self->inlineStyleStack.push_back(markerStyle);
+    self->updateEffectiveInlineStyle();
+    self->syntheticCharacterData = true;
+    characterData(self, markerReplacement, static_cast<int>(strlen(markerReplacement)));
+    self->syntheticCharacterData = false;
+    if (self->partWordBufferIndex > 0) {
+      self->flushPartWordBuffer();
+      self->nextWordContinues = true;
+    }
+    self->inlineStyleStack.pop_back();
+    self->updateEffectiveInlineStyle();
     self->footnoteLinkTextReplaced = true;
+    len = 0;  // hide the book's own link text
   } else if (self->insideFootnoteLink && self->footnoteLinkInferred && !self->syntheticCharacterData) {
     // Unlabelled note links: same look as labelled ones. Written as synthetic text with an
     // overriding style so book CSS (e.g. superscript) cannot change it.
