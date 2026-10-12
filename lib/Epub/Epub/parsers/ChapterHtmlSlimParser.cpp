@@ -1331,7 +1331,7 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
       // Apply underline style to visually indicate the link.
       StyleStackEntry entry;
       entry.depth = self->depth;
-      entry.hasTextDecoration = true;
+      entry.hasTextDecoration = false;  // decided below: only note links are underlined
       entry.textDecoration = CssTextDecoration::Underline;
       // Note references and their back-links stand out: bold + italic on top of the underline.
       const char* roleAttr = getAttribute(atts, "role");
@@ -1369,6 +1369,9 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
         entry.hasItalic = true;
         entry.italic = true;
       }
+      // Only endnote references, back-links and inferred note links look like links.
+      entry.hasTextDecoration =
+          self->footnoteLinkIsNoteref || self->footnoteLinkIsBacklink || self->footnoteLinkInferred;
       applyDirectionToEntry(entry, cssStyle);
       self->inlineStyleStack.push_back(entry);
       self->updateEffectiveInlineStyle();
