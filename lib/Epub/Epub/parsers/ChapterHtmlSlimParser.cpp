@@ -1343,7 +1343,7 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
       self->footnoteLinkTextReplaced = false;
       self->footnoteLinkInferred = !self->footnoteLinkIsNoteref &&
                                      !self->footnoteLinkIsBacklink &&
-                                     (self->insideEndnoteEntry || self->insideSup);
+                                     self->insideSup;
       if (self->footnoteLinkInferred) {
         const bool atBlockStart =
             self->partWordBufferIndex == 0 &&
@@ -1353,11 +1353,7 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
         if (self->footnoteLinkIsBacklink) {
           // Each note starts with a plain bullet. It is written before the link's own style is
           // pushed, so the bullet is not bold, italic or underlined.
-          if (self->insideEndnoteEntry) {
-            self->syntheticCharacterData = true;
-            characterData(self, "\xE2\x80\xA2 ", 4);
-            self->syntheticCharacterData = false;
-          }
+          // The list item already wrote this note's bullet.
         }
       }
       self->footnoteLinkStartWordIndex =
@@ -1693,6 +1689,17 @@ void XMLCALL ChapterHtmlSlimParser::characterData(void* userData, const XML_Char
       self->currentFootnote.number[self->currentFootnoteLinkTextLen++] = s[i];
     }
     self->currentFootnote.number[self->currentFootnoteLinkTextLen] = '\0';
+
+    // Inside a tagged endnote an untagged link counts as the way back to the text only when it
+    // is the return arrow; cross-references and plain numbers stay ordinary text.
+    if (self->insideEndnoteEntry && !self->footnoteLinkInferred && !self->footnoteLinkIsNoteref &&
+        !self->footnoteLinkIsBacklink && self->currentFootnoteLinkTextLen >= 3) {
+      const unsigned char* arrow = reinterpret_cast<const unsigned char*>(self->currentFootnote.number);
+      if (arrow[0] == 0xE2 && arrow[1] == 0x86 && (arrow[2] == 0xA9 || arrow[2] == 0x91)) {
+        self->footnoteLinkInferred = true;
+        self->footnoteLinkIsBacklink = true;
+      }
+    }
 
     // Some EPUBs use unmarked note links: the note list starts with a numeric marker such as
     // "1.", while the corresponding in-text reference is a superscript link. Only promote a
