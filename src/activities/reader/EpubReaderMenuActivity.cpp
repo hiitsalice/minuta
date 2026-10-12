@@ -231,24 +231,6 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
                                        menuVerticalOffset),
                   static_cast<int16_t>(safe.x)});
 
-  // Progress summary where the old sub-header band sat.
-  std::string progressLine;
-  if (totalPages > 0) {
-    progressLine = std::string(tr(STR_CHAPTER_PREFIX)) + std::to_string(currentPage) + "/" +
-                   std::to_string(totalPages) + std::string(tr(STR_PAGES_SEPARATOR));
-  }
-  progressLine += std::string(tr(STR_BOOK_PREFIX)) + std::to_string(bookProgressPercent) + "%";
-  const int16_t pad = screen.theme().headerSidePadding;
-
-  // Reader-menu progress summary stays compact at Steinem 10pt.
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
-  auto progressStyle = screen.theme().smallText;
-  progressStyle.align = fui::TextAlign::Right;
-  // Progress summary sits at the very top, 12px under the screen edge, above the header title.
-  const fui::Rect progressRect{static_cast<int16_t>(safe.x + pad), static_cast<int16_t>(safe.y + 12),
-                               static_cast<int16_t>(safe.width - pad * 2),
-                               static_cast<int16_t>(renderer.getLineHeight(UI_10_FONT_ID))};
-  screen.target().text(progressRect, progressLine.c_str(), progressStyle);
 
   // Minuta reader menu rows use the same 10pt UI size as the outer menus.
   uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
