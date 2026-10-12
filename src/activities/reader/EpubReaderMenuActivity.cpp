@@ -225,7 +225,7 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   constexpr int16_t menuVerticalOffset = 1;
   // Shift the complete menu content upward without changing its height.
   screen.setContentMargin(
-      fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - menuVerticalOffset),
+      fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + 13),
                   static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
                   static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + menuEdgePadding +
                                        menuVerticalOffset),
@@ -238,19 +238,21 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
                    std::to_string(totalPages) + std::string(tr(STR_PAGES_SEPARATOR));
   }
   progressLine += std::string(tr(STR_BOOK_PREFIX)) + std::to_string(bookProgressPercent) + "%";
-  const fui::Rect band = screen.takeTop(static_cast<int16_t>(metrics.tabBarHeight));
   const int16_t pad = screen.theme().headerSidePadding;
 
   // Reader-menu progress summary stays compact at Steinem 10pt.
   uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
   auto progressStyle = screen.theme().smallText;
   progressStyle.align = fui::TextAlign::Right;
-  screen.target().text(band.inset(fui::Insets{0, pad, 0, pad}), progressLine.c_str(), progressStyle);
-  screen.spacer(static_cast<int16_t>(menuEdgePadding - 2));
+  // Progress summary sits at the very top, 12px under the screen edge, above the header title.
+  const fui::Rect progressRect{static_cast<int16_t>(safe.x + pad), static_cast<int16_t>(safe.y + 12),
+                               static_cast<int16_t>(safe.width - pad * 2),
+                               static_cast<int16_t>(renderer.getLineHeight(UI_10_FONT_ID))};
+  screen.target().text(progressRect, progressLine.c_str(), progressStyle);
 
-  // Minuta reader menu rows use the same 12pt UI size as the outer menus.
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_12_FONT_ID);
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_12_FONT_ID);
+  // Minuta reader menu rows use the same 10pt UI size as the outer menus.
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
   for (size_t i = 0; i < visibleRows.size() && i < MAX_MENU_ITEMS; ++i) {
@@ -281,7 +283,7 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   props.items = menuRowItems;
   props.count = static_cast<uint16_t>(visibleRows.size());
   props.action = ACTION_ROW;
-  props.rowHeight = static_cast<int16_t>(metrics.listRowHeight + 11);
+  props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.rowGap = 0;
   props.valueInset = 8;
   props.labelXOffset = 0;
@@ -298,7 +300,7 @@ void EpubReaderMenuActivity::drawChrome() {
 
   // Header via GUI.drawHeader (already FreeInkUI-themed) for the battery
   // indicator; the rest of the screen renders through the app.
-  GUI.drawHeader(renderer, Rect{screen.x, screen.y + metrics.topPadding, screen.width, metrics.headerHeight},
+  GUI.drawHeader(renderer, Rect{screen.x, screen.y + metrics.topPadding - 6, screen.width, metrics.headerHeight},
                  title.c_str(), nullptr, false, false);
 }
 
