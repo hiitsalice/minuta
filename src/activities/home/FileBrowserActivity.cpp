@@ -452,44 +452,9 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints.
   screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 7), 0,
-                                      static_cast<int16_t>(metrics.buttonHintsHeight + 3), 0});
+                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(
       metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
-
-  // Full path band at the bottom: separator on top, left-truncated so the
-  // deepest directory stays visible.
-  {
-    const int pathLineHeight = renderer.getLineHeight(SMALL_FONT_ID);
-    const fui::Rect pathBand = screen.takeBottom(static_cast<int16_t>(pathLineHeight + metrics.verticalSpacing));
-    // Lift the entire footer band 3px: separator and path move together.
-    const fui::Rect band{
-        pathBand.x,
-        static_cast<int16_t>(pathBand.y + 1),
-        pathBand.width,
-        pathBand.height};
-    screen.target().fill(fui::Rect{band.x, band.y, band.width, 3}, fui::Paint::solid(fui::Color::Black));
-    const int pathY =
-        band.y + metrics.verticalSpacing / 2 + (band.height - metrics.verticalSpacing / 2 - pathLineHeight) / 2;
-    const int pathMaxWidth = band.width - metrics.contentSidePadding * 2;
-    const char* pathStr = basepath.c_str();
-    const char* pathDisplay = pathStr;
-    char leftTruncBuf[256];
-    if (renderer.getTextWidth(SMALL_FONT_ID, pathStr) > pathMaxWidth) {
-      const char ellipsis[] = "\xe2\x80\xa6";  // UTF-8 ellipsis (…)
-      const int ellipsisWidth = renderer.getTextWidth(SMALL_FONT_ID, ellipsis);
-      const int available = pathMaxWidth - ellipsisWidth;
-      // Walk forward from the start until the suffix fits, skipping UTF-8 continuation bytes
-      const char* p = pathStr;
-      while (*p) {
-        if (renderer.getTextWidth(SMALL_FONT_ID, p) <= available) break;
-        ++p;
-        while (*p && (static_cast<unsigned char>(*p) & 0xC0) == 0x80) ++p;
-      }
-      snprintf(leftTruncBuf, sizeof(leftTruncBuf), "%s%s", ellipsis, p);
-      pathDisplay = leftTruncBuf;
-    }
-    renderer.drawText(SMALL_FONT_ID, band.x + metrics.contentSidePadding, pathY, pathDisplay);
-  }
 
   // Give the file/folder list a little more breathing room below the header.
   // Footer/path position stays unchanged.
@@ -539,9 +504,8 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   // on a single line across the available width.
   props.balanceWrappedLabelWithValue = false;
   props.partialTrailingRow = false;
-  // Reserve extra space below the list for the help text; reclaim 48px when only one help line is shown.
-  // This is list-only spacing and does not move the footer or help text.
-  const int16_t listBottomInset = currentDirectoryHasHiddenFiles ? 96 : 48;
+  // No extra space below the list: it runs down to the button hints.
+  const int16_t listBottomInset = 0;
   syncListViewport(screen, props, false, listBottomInset);
   screen.list(props, static_cast<int16_t>(screen.body().height - listBottomInset));
 }
@@ -566,40 +530,6 @@ void FileBrowserActivity::drawFooter() {
                                             files.empty() ? "" : tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
-  const char* deleteHelpText = "Hold SELECT to delete";
-  const bool showHiddenHelp = currentDirectoryHasHiddenFiles;
-  const char* hiddenHelpText =
-      (basepath == "/") ? "Hold HOME to show hidden" : "Hold BACK to show hidden";
-  const int helpLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
-  const int textHeight = renderer.getTextHeight(UI_10_FONT_ID);
-  const int hintTop = renderer.getScreenHeight() - UITheme::getInstance().getMetrics().buttonHintsHeight;
-  const int deleteTextWidth = renderer.getTextWidth(UI_10_FONT_ID, deleteHelpText);
-  const int hiddenTextWidth = renderer.getTextWidth(UI_10_FONT_ID, hiddenHelpText);
-  const int deleteTextX = (renderer.getScreenWidth() - deleteTextWidth) / 2;
-  const int hiddenTextX = (renderer.getScreenWidth() - hiddenTextWidth) / 2;
-
-  // The hidden-file hint occupies the lower help-text position when needed.
-  // If there are no hidden files, the delete hint moves down into that position.
-  const int hiddenTextY = hintTop - 15 - helpLineHeight - 42;
-  const int deleteTextY = showHiddenHelp ? hiddenTextY - 36 : hiddenTextY;
-
-  constexpr int boxPadding = 6;
-
-  if (showHiddenHelp) {
-    renderer.fillRectDither(hiddenTextX - boxPadding,
-                            hiddenTextY - boxPadding,
-                            hiddenTextWidth + boxPadding * 2,
-                            textHeight + boxPadding * 2,
-                            Color::LightGray);
-    renderer.drawText(UI_10_FONT_ID, hiddenTextX, hiddenTextY, hiddenHelpText, true, EpdFontFamily::REGULAR);
-  }
-
-  renderer.fillRectDither(deleteTextX - boxPadding,
-                          deleteTextY - boxPadding,
-                          deleteTextWidth + boxPadding * 2,
-                          textHeight + boxPadding * 2,
-                          Color::LightGray);
-  renderer.drawText(UI_10_FONT_ID, deleteTextX, deleteTextY, deleteHelpText, true, EpdFontFamily::REGULAR);
 }
 
 size_t FileBrowserActivity::findEntry(const std::string& name) const {
