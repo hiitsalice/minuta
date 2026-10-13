@@ -420,7 +420,7 @@ void HomeActivity::render(RenderLock&&) {
     GUI.drawButtonMenu(
         renderer,
         Rect{0, metrics.homeTopPadding + metrics.homeCoverTileHeight + metrics.homeMenuTopOffset, pageWidth,
-             pageHeight - (metrics.headerHeight + metrics.homeTopPadding + metrics.verticalSpacing +
+             pageHeight - (84 /* Home keeps the original header height */ + metrics.homeTopPadding + metrics.verticalSpacing +
                            metrics.homeMenuTopOffset + metrics.buttonHintsHeight)},
         static_cast<int>(menuItems.size()),
         metrics.homeContinueReadingInMenu ? selectorIndex : selectorIndex - recentBooks.size(),
