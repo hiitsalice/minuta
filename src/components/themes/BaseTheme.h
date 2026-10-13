@@ -238,7 +238,7 @@ class BaseTheme {
   virtual int getMenuRowHeight(const GfxRenderer& renderer) const;
   virtual void drawHeader(const GfxRenderer& renderer, Rect rect, const char* title,
                           const char* subtitle = nullptr, bool centerTitle = false,
-                          bool showBattery = true) const;
+                          bool showBattery = false) const;
   virtual void drawSubHeader(const GfxRenderer& renderer, Rect rect, const char* label,
                              const char* rightLabel = nullptr) const;
   virtual void drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std::vector<RecentBook>& recentBooks,

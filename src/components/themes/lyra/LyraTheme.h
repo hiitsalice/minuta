@@ -27,7 +27,7 @@ constexpr ThemeMetrics values = {.batteryWidth = 18,
                                  .listTitleBold = false,
                                  .headerSidePadding = 18,
                                  .headerUnderlineSize = 3,
-                                 .headerTitleAlign = 0,  // left
+                                 .headerTitleAlign = 1,  // centered
                                  .headerBatterySide = 0,
                                  .headerBatteryDetached = true,
                                  .menuRowHeight = 64,

@@ -385,7 +385,8 @@ void HomeActivity::render(RenderLock&&) {
            metrics.homeTopPadding - metrics.topPadding},
       metrics.homeContinueReadingInMenu && !recentBooks.empty()
           ? recentBooks[0].title.c_str()
-          : nullptr);
+          : nullptr,
+      nullptr, false, true);  // the battery shows only on the home screen
 
   // Record the tile rect so storeCoverBuffer (called from the theme) knows
   // which sub-region of the framebuffer to snapshot. ~16 KB in Portrait
