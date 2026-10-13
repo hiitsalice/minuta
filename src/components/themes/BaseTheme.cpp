@@ -246,7 +246,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   // subtitles.
   ui.target.setFont(fui::GfxRendererTarget::FONT_SMALL, SMALL_FONT_ID);
   // Minuta menu/header titles use Steinem 14pt.
-  ui.target.setFont(fui::GfxRendererTarget::FONT_TITLE, UI_14_FONT_ID);
+  ui.target.setFont(fui::GfxRendererTarget::FONT_TITLE, UI_12_FONT_ID);
   const ThemeMetrics& metrics = UITheme::getInstance().getMetrics();
   const fui::Rect band{static_cast<int16_t>(rect.x), static_cast<int16_t>(rect.y), static_cast<int16_t>(rect.width),
                        static_cast<int16_t>(rect.height)};
@@ -291,6 +291,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   props.borderEdges = fui::EdgeBottom;
   props.titleText = tokens.titleText;
   props.titleText.align = centerTitle ? fui::TextAlign::Center : tokens.headerTitleAlign;
+  props.titleText.bold = true;
   props.subtitleText = tokens.smallText;
   props.styles = tokens.popup;
   props.sidePadding = tokens.headerSidePadding;
