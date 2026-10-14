@@ -262,7 +262,7 @@ void EpubReaderBookmarksActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   // Content below the Highlight header, down to the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight + 10),
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight + 7),
                                       static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
                                       static_cast<int16_t>(metrics.buttonHintsHeight),
                                       static_cast<int16_t>(safe.x)});
@@ -290,7 +290,7 @@ void EpubReaderBookmarksActivity::buildScreen(UiScreen& screen) {
   props.subtitleText.font = fui::GfxRendererTarget::FONT_SMALL;
   props.subtitleGap = 6;
   props.labelYOffset = 1;
-  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listWithSubtitleRowHeight - 2);
+  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listWithSubtitleRowHeight + 2);
   props.rowInset = 18;
   props.sidePadding = 12;
   // Tap opens; long-press deletes (physical buttons stay in loop()).
