@@ -179,7 +179,7 @@ void StatusBarSettingsActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems_;
   props.count = static_cast<uint16_t>(MAX_STATUS_BAR_ITEMS);
   props.action = ACTION_ROW;
-  props.valueInset = 8;               // air between the value and the row edge
+  props.valueInset = 3;               // air between the value and the row edge
   props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight);
   props.rowGap = 0;
   props.labelText = screen.theme().smallText;

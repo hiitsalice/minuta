@@ -499,7 +499,7 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   // The trailing value here is just the short extension: let the name stay
   // on a single line across the available width.
   props.balanceWrappedLabelWithValue = false;
-  props.valueInset = 8;
+  props.valueInset = 3;
   props.rowGap = 0;
   props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight);
   props.partialTrailingRow = false;

@@ -219,7 +219,7 @@ void ButtonRemapActivity::buildScreen(UiScreen& screen) {
   props.selectedIndex = static_cast<int16_t>(selectedRow);
   props.inputMask = fui::InputNone;
   props.scrollIndicator = false;
-  props.valueInset = 8;
+  props.valueInset = 3;
   props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight);
   props.rowGap = 0;
   props.labelText = screen.theme().smallText;

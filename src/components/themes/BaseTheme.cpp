@@ -312,13 +312,28 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
       props.rightReserve = reserve;
     }
   }
+  // Title nudge in pixels (negative = up), added to the header's own title position.
+  // 0 is the original placement. Home keeps its battery header untouched.
+  constexpr int kTitleNudge = -1;
+  if (!showBattery) {
+    props.titleOffsetY = static_cast<int16_t>(props.titleOffsetY + kTitleNudge);
+  }
+
   // Underline only under a titled header: an untitled band (Lyra home screen)
   // historically drew no rule, and the old themes keyed the line on the title.
-  if (title != nullptr && props.styles.normal.border.kind == fui::PaintKind::None && tokens.headerUnderline > 0) {
+  if (showBattery && title != nullptr && props.styles.normal.border.kind == fui::PaintKind::None && tokens.headerUnderline > 0) {
     props.styles.normal.border = fui::Paint::solid(fui::Color::Black);
     props.styles.normal.borderWidth = tokens.headerUnderline;
   }
   fui::header(ui.frame, band, props);
+  if (!showBattery && title != nullptr) {
+    // Short black rule under the title: half the band's width, 2px thick, flush with the band's bottom edge.
+    constexpr int16_t kRuleThickness = 2;
+    const int16_t ruleWidth = static_cast<int16_t>(band.width / 2);
+    ui.target.fill(fui::Rect{static_cast<int16_t>(band.x + (band.width - ruleWidth) / 2),
+                             static_cast<int16_t>(band.bottom() - kRuleThickness), ruleWidth, kRuleThickness},
+                   fui::Paint::solid(fui::Color::Black));
+  }
 
   if (showBattery) {
     fui::BatteryIndicatorProps battery;

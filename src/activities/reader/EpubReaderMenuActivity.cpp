@@ -267,7 +267,7 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   props.action = ACTION_ROW;
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.rowGap = 0;
-  props.valueInset = 8;
+  props.valueInset = 3;
   props.labelXOffset = 0;
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 2;
