@@ -129,7 +129,7 @@ void EpubReaderChapterSelectionActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   // Content: the safe area minus the header band drawChrome paints the title in.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight),
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - 6),
                                       static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
                                       static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height)),
                                       static_cast<int16_t>(safe.x)});
@@ -164,6 +164,6 @@ void EpubReaderChapterSelectionActivity::buildScreen(UiScreen& screen) {
 void EpubReaderChapterSelectionActivity::drawChrome() {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
-  GUI.drawHeader(renderer, Rect{safe.x, safe.y + metrics.topPadding, safe.width, metrics.headerHeight},
+  GUI.drawHeader(renderer, Rect{safe.x, safe.y + metrics.topPadding - 6, safe.width, metrics.headerHeight},
                  tr(STR_SELECT_CHAPTER), nullptr, false, false);
 }

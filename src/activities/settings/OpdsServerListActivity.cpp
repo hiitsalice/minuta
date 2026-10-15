@@ -190,7 +190,7 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
   // from the safe area so board bezel insets apply (same as LanguageSelect).
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   screen.setContentMargin(
-      fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight),
+      fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - 6),
                   static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
                   static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + metrics.buttonHintsHeight),
                   static_cast<int16_t>(safe.x)});

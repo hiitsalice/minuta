@@ -402,11 +402,11 @@ void CrossPointWebServerActivity::render(RenderLock&&) {
     const auto pageWidth = renderer.getScreenWidth();
     const auto pageHeight = renderer.getScreenHeight();
 
-    GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight},
+    GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight},
                    isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_FILE_TRANSFER), nullptr);
 
     if (state == WebServerActivityState::SERVER_RUNNING) {
-      GUI.drawSubHeader(renderer, Rect{0, metrics.topPadding + metrics.headerHeight + 6, pageWidth, metrics.tabBarHeight - 6},
+      GUI.drawSubHeader(renderer, Rect{0, (metrics.topPadding - 6) + metrics.headerHeight + 6, pageWidth, metrics.tabBarHeight - 6},
                         connectedSSID.c_str());
       renderServerRunning();
     } else {
@@ -422,16 +422,16 @@ void CrossPointWebServerActivity::renderServerRunning() const {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const auto pageWidth = renderer.getScreenWidth();
 
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight},
+  GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight},
                  isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_FILE_TRANSFER), nullptr);
-  GUI.drawSubHeader(renderer, Rect{0, metrics.topPadding + metrics.headerHeight + 6, pageWidth, metrics.tabBarHeight - 6},
+  GUI.drawSubHeader(renderer, Rect{0, (metrics.topPadding - 6) + metrics.headerHeight + 6, pageWidth, metrics.tabBarHeight - 6},
                     connectedSSID.c_str());
 
   if (!isApMode) {
-    renderWifiIndicator(metrics.topPadding + metrics.headerHeight);
+    renderWifiIndicator((metrics.topPadding - 6) + metrics.headerHeight);
   }
 
-  int startY = metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight + metrics.verticalSpacing * 2;
+  int startY = (metrics.topPadding - 6) + metrics.headerHeight + metrics.tabBarHeight + metrics.verticalSpacing * 2;
   int height10 = renderer.getLineHeight(UI_10_FONT_ID);
   if (isApMode) {
     // AP mode display

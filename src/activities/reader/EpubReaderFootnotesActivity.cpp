@@ -59,7 +59,7 @@ void EpubReaderFootnotesActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   // Content: the safe area minus the header band GUI.drawHeader paints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight),
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - 6),
                                       static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
                                       static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height)),
                                       static_cast<int16_t>(safe.x)});
@@ -89,7 +89,7 @@ void EpubReaderFootnotesActivity::drawChrome() {
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   // Header via GUI.drawHeader (already FreeInkUI-themed); the rest of the
   // screen renders through the app.
-  GUI.drawHeader(renderer, Rect{safe.x, safe.y + metrics.topPadding, safe.width, metrics.headerHeight},
+  GUI.drawHeader(renderer, Rect{safe.x, safe.y + metrics.topPadding - 6, safe.width, metrics.headerHeight},
                  tr(STR_FOOTNOTES));
 }
 

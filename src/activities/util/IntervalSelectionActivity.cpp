@@ -185,7 +185,7 @@ void IntervalSelectionActivity::render(RenderLock&&) {
   auto metrics = theme.getMetrics();
   Rect screen = theme.getScreenSafeArea(renderer, true, false);
 
-  GUI.drawHeader(renderer, Rect{screen.x, screen.y + metrics.topPadding, screen.width, metrics.headerHeight},
+  GUI.drawHeader(renderer, Rect{screen.x, screen.y + metrics.topPadding - 6, screen.width, metrics.headerHeight},
                  I18N.get(titleId));
 
   // Value readout, slider, hints, and the touch Cancel/OK pair render through the

@@ -167,10 +167,9 @@ void RecentBooksActivity::buildScreen(UiScreen& screen) {
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Same margins and spacing as the Library.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 9), 0,
-                                      static_cast<int16_t>(metrics.buttonHintsHeight + 3), 0});
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 3), 0,
+                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
-  screen.spacer(10);
 
   if (recentBooks.empty()) {
     renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_NO_RECENT_BOOKS));

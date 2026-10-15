@@ -115,7 +115,7 @@ void OtaUpdateActivity::render(RenderLock&&) {
 
   renderer.clearScreen();
 
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, tr(STR_UPDATE));
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_UPDATE));
   // Matches SD firmware update's progress screen Y positions (both use
   // UI_10_FONT_ID's line height for this calculation).
   const auto height = renderer.getLineHeight(UI_10_FONT_ID);

@@ -804,7 +804,7 @@ void FontDownloadActivity::render(RenderLock&&) {
                          ? scriptGroupLabels_[scriptGroupIndex].c_str()
                          : tr(STR_ALL_FONTS);
   }
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, tr(STR_FONT_BROWSER),
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_FONT_BROWSER),
                  nullptr);
 
   if (headerSubtitle != nullptr) {
@@ -812,12 +812,12 @@ void FontDownloadActivity::render(RenderLock&&) {
     const int16_t labelWidth = static_cast<int16_t>(renderer.getTextWidth(UI_10_FONT_ID, headerSubtitle));
     const int16_t labelX = static_cast<int16_t>(pageWidth - metrics.headerSidePadding - labelWidth);
     const int16_t labelY = static_cast<int16_t>(
-        metrics.topPadding + metrics.headerHeight - metrics.headerUnderlineSize - 10 - labelHeight);
+        metrics.topPadding - 6 + metrics.headerHeight - metrics.headerUnderlineSize - 10 - labelHeight);
     renderer.drawText(UI_10_FONT_ID, labelX, labelY, headerSubtitle);
   }
 
   const auto lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
-  const auto contentTop = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing;
+  const auto contentTop = metrics.topPadding - 6 + metrics.headerHeight + metrics.verticalSpacing;
   const auto centerY = (pageHeight - lineHeight) / 2;
 
   if (state_ == LOADING_MANIFEST) {
