@@ -717,23 +717,9 @@ void WifiSelectionActivity::render(RenderLock&&) {
   Rect screen = theme.getScreenSafeArea(renderer, true, false);
 
   // Draw header
-  // STR_NETWORKS_FOUND is ~37 bytes once the Arabic translation is substituted,
-  // so 32 truncated it. This is the same class of truncation bug.
-  char countStr[64];
-  snprintf(countStr, sizeof(countStr), tr(STR_NETWORKS_FOUND), realNetworkCount);
-  const Rect headerRect{screen.x, screen.y + metrics.topPadding, screen.width, metrics.headerHeight};
+  (void)realNetworkCount;
+  const Rect headerRect{screen.x, screen.y + metrics.topPadding - 6, screen.width, metrics.headerHeight};
   GUI.drawHeader(renderer, headerRect, tr(STR_WIFI_NETWORKS), nullptr);
-
-  const int countWidth = renderer.getTextWidth(UI_10_FONT_ID, countStr);
-  const int countY = headerRect.y + headerRect.height - renderer.getTextHeight(UI_10_FONT_ID) - 17;
-  renderer.drawText(UI_10_FONT_ID, headerRect.x + headerRect.width - metrics.headerSidePadding - countWidth, countY,
-                    countStr);
-
-  // Lower only the MAC text; retain the subheader's bottom separator.
-  GUI.drawSubHeader(
-      renderer,
-      Rect{screen.x, screen.y + metrics.topPadding + metrics.headerHeight + 6, screen.width, metrics.tabBarHeight - 6},
-      cachedMacAddress.c_str());
 
   switch (state) {
     case WifiSelectionState::AUTO_CONNECTING:
@@ -811,16 +797,16 @@ void WifiSelectionActivity::listScreen(UiScreen& screen, void* user) {
 void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
-  // Content below the header + MAC sub-band, above the legend line.
+  // Content below the header, down to the button hints.
   screen.setContentMargin(fui::Insets{
       // Tighter gap between the MAC subheader and the first row (12px
       // instead of the default verticalSpacing), scoped to this screen only.
-      static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + metrics.tabBarHeight + 9),
+      static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + 7),
       // Highlight box extended 9px beyond the header-aligned edges on each
       // side, for visible padding around the row content (sidePadding and
       // valueInset below pull the text back 3px to partially offset it).
       static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width) - metrics.headerSidePadding + 5),
-      static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + 48),
+      static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height)),
       static_cast<int16_t>(safe.x - 12)});
 
   if (networks.empty()) {
@@ -869,20 +855,7 @@ void WifiSelectionActivity::renderNetworkList(const Rect* screen, const ThemeMet
     return;
   }
 
-  const char* legendText = tr(STR_NETWORK_LEGEND);
-  const int legendLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
-  const int legendTextHeight = renderer.getTextHeight(UI_10_FONT_ID);
-  const int legendTextWidth = renderer.getTextWidth(UI_10_FONT_ID, legendText);
-  const int legendX = (renderer.getScreenWidth() - legendTextWidth) / 2;
-  const int legendY = screen->y + screen->height - metrics->contentSidePadding - 15 - 12;
-
-  constexpr int boxPadding = 6;
-  renderer.fillRectDither(legendX - boxPadding,
-                          legendY - boxPadding,
-                          legendTextWidth + boxPadding * 2,
-                          legendTextHeight + boxPadding * 2,
-                          Color::LightGray);
-  renderer.drawText(UI_10_FONT_ID, legendX, legendY, legendText, true, EpdFontFamily::REGULAR);
+  (void)metrics;
 
   const bool hasSavedPassword = !networks.empty() && networks[selectedNetworkIndex].hasSavedPassword;
   const char* forgetLabel = hasSavedPassword ? tr(STR_FORGET_BUTTON) : "";
