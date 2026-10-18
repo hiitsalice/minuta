@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "OpdsBookBrowserActivity.h"
 
 #include <Arduino.h>
@@ -191,10 +192,21 @@ void OpdsBookBrowserActivity::screenHeader(UiScreen& screen, const bool withSear
   screen.takeBottom(static_cast<int16_t>(UITheme::getInstance().getMetrics().buttonHintsHeight));
   // Same top offset as every GUI.drawHeader caller, so the band lines up with
   // the rest of the firmware's screens.
-  screen.spacer(static_cast<int16_t>(UITheme::getInstance().getMetrics().topPadding));
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  const int headerTop = std::max(0, metrics.topPadding - 6);
+  screen.spacer(static_cast<int16_t>(headerTop));
   fui::HeaderProps header;
   header.title = server.name.empty() ? tr(STR_OPDS_BROWSER) : server.name.c_str();
-  header.borderEdges = fui::EdgeBottom;
+  header.borderEdges = 0;  // no full-width line; a short rule is drawn below the title
+  {
+    // Same title position as the shared headers: a fixed distance above the rule, nudged 1px up.
+    const auto& tokens = screen.theme();
+    const int titleLh = screen.target().lineHeight(fui::GfxRendererTarget::FONT_TITLE);
+    const int bandH = tokens.headerHeight;
+    const int bandShift = headerTop - (metrics.topPadding - 6);
+    header.titleOffsetY = static_cast<int16_t>((bandH - tokens.headerUnderline - tokens.spaceMd - titleLh) -
+                                               (bandH - titleLh) / 2 - 1 - bandShift);
+  }
   if (withSearch && !searchTemplate.empty()) {
     header.trailingIcon = fui::bitmapFromIcon(icon_search_32);
     header.trailingAction = ACTION_SEARCH;
@@ -205,8 +217,15 @@ void OpdsBookBrowserActivity::screenHeader(UiScreen& screen, const bool withSear
         static_cast<int16_t>((renderer.getLineHeight(titleFontId) - renderer.getTextHeight(titleFontId)) / 2);
   }
   screen.header(header);
-  // Same breathing room between header and content as the legacy screens.
-  screen.spacer(static_cast<int16_t>(UITheme::getInstance().getMetrics().verticalSpacing));
+  {
+    // Short black rule under the title: half the screen width, 2px thick, same place as the other screens.
+    const int16_t ruleW = static_cast<int16_t>(renderer.getScreenWidth() / 2);
+    const int16_t ruleY = static_cast<int16_t>(metrics.topPadding - 6 + metrics.headerHeight - 2);
+    screen.target().fill(fui::Rect{static_cast<int16_t>((renderer.getScreenWidth() - ruleW) / 2), ruleY, ruleW, 2},
+                         fui::Paint::solid(fui::Color::Black));
+  }
+  // First row where Settings' first row starts.
+  screen.spacer(static_cast<int16_t>(metrics.topPadding + metrics.verticalSpacing - 9 - headerTop));
 }
 
 void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
