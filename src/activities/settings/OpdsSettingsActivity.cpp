@@ -8,6 +8,8 @@
 #include "OpdsServerStore.h"
 #include "activities/util/KeyboardEntryActivity.h"
 #include "components/UITheme.h"
+#include "components/UiAppHelpers.h"
+#include "fontIds.h"
 
 namespace fui = freeink::ui;
 
@@ -163,21 +165,21 @@ void OpdsSettingsActivity::handleSelection() {
 }
 
 void OpdsSettingsActivity::buildScreen(UiScreen& screen) {
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints; derived
   // from the safe area so board bezel insets apply (same as LanguageSelect).
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   screen.setContentMargin(
-      fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - 6),
+      fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - 3),
                   static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
                   static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + metrics.buttonHintsHeight),
                   static_cast<int16_t>(safe.x)});
 
   // URL hint where the old sub-header band sat.
-  const fui::Rect band = screen.takeTop(static_cast<int16_t>(metrics.tabBarHeight));
-  const int16_t pad = screen.theme().headerSidePadding;
-  screen.target().text(band.inset(fui::Insets{0, pad, 0, pad}), tr(STR_CALIBRE_URL_HINT), screen.theme().smallText);
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   // fieldRowItems' labels/actionValue were set once in the constructor; only
   // the live value pointers (already pointing at editServer's own fields, no
@@ -191,11 +193,14 @@ void OpdsSettingsActivity::buildScreen(UiScreen& screen) {
   props.items = fieldRowItems;
   props.count = static_cast<uint16_t>(getMenuItemCount());
   props.action = ACTION_ROW;
-  props.valueInset = 8;               // air between the value and the row edge
+  props.valueInset = 3;
+  props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
+  props.rowGap = 0;
   // Label at the value's font size: both sides of the row read as one unit.
   // maxLines=2 also marks the style caller-owned (see textStyleUnset).
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 2;
+  props.labelText.lineGap = 6;
   syncListViewport(screen, props);
   screen.list(props);
 }
@@ -208,6 +213,16 @@ const char* OpdsSettingsActivity::headerTitle() const {
 
 void OpdsSettingsActivity::drawFooter() {
   UiListActivity::drawFooter();
+  {
+    const auto& m = UITheme::getInstance().getMetrics();
+    const int lh = renderer.getLineHeight(UI_10_FONT_ID);
+    const int hintTop = renderer.getScreenHeight() - m.buttonHintsHeight;
+    const int hintWidth = renderer.getScreenWidth() - m.contentSidePadding * 2;
+    const int hintLines = renderer.getTextWidth(UI_10_FONT_ID, tr(STR_CALIBRE_URL_HINT)) > hintWidth ? 2 : 1;
+    const Rect hintBounds{m.contentSidePadding, hintTop - 12 - hintLines * lh, hintWidth, hintLines * lh};
+    UITheme::drawCenteredWrappedText(renderer, hintBounds, UI_10_FONT_ID, tr(STR_CALIBRE_URL_HINT), 2, true,
+                                     EpdFontFamily::Style::REGULAR, UITheme::TextVerticalAlignment::TOP);
+  }
   if (showSaveError) {
     GUI.drawPopup(renderer, tr(STR_ERROR_GENERAL_FAILURE));
   }
