@@ -32,10 +32,12 @@ BrowseMenuActivity::BrowseMenuActivity(GfxRenderer& renderer, MappedInputManager
 
 int BrowseMenuActivity::listCount() const { return MENU_ITEM_COUNT; }
 
-const char* BrowseMenuActivity::headerTitle() const { return ""; }
+const char* BrowseMenuActivity::headerTitle() const { return "Menu"; }
 
 void BrowseMenuActivity::drawChrome() {
-  // Minuta Browse menu intentionally has no header.
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, renderer.getScreenWidth(), metrics.headerHeight},
+                 headerTitle());
 }
 
 void BrowseMenuActivity::activateIndex(const int index) {
@@ -52,30 +54,28 @@ void BrowseMenuActivity::activateIndex(const int index) {
 void BrowseMenuActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
 
-  // Minuta's two-item Browse menu uses a larger display size.
-  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_14_FONT_ID);
+  // Same 10pt text as the other list screens.
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
 
   // Centre Settings + Library as one block in the usable screen area.
   // Minuta's two-item Browse menu is deliberately spacious.
-  const int browseRowHeight = metrics.listRowHeight + 18;
+  const int browseRowHeight = metrics.listRowHeight;
   const int browseRowGap = 0;
   const int listHeight =
       MENU_ITEM_COUNT * browseRowHeight +
       (MENU_ITEM_COUNT - 1) * browseRowGap;
 
-  const int usableHeight =
-      renderer.getScreenHeight() - metrics.buttonHintsHeight;
-
-  const int topInset =
-      std::max(0, (usableHeight - listHeight) / 2);
+  (void)listHeight;
+  const int topInset = metrics.topPadding + metrics.headerHeight - 3;
 
   screen.setContentMargin(
       fui::Insets{
           static_cast<int16_t>(topInset),
-          40,
+          0,
           static_cast<int16_t>(metrics.buttonHintsHeight),
-          40});
+          0});
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   fui::ListProps props;
   props.rowHeight = static_cast<int16_t>(browseRowHeight);
