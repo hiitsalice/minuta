@@ -91,7 +91,7 @@ void UsbDriveActivity::render(RenderLock&&) {
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int pageWidth = renderer.getScreenWidth();
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.headerHeight}, tr(STR_USB_DRIVE));
+  GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight}, tr(STR_USB_DRIVE));
 
   renderUi();
 
@@ -135,7 +135,7 @@ void UsbDriveActivity::buildDriveScreen(UiScreen& screen) const {
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   screen.setContentMargin(fui::Insets{
-      static_cast<int16_t>(metrics.topPadding + metrics.headerHeight), static_cast<int16_t>(metrics.contentSidePadding),
+      static_cast<int16_t>((metrics.topPadding - 6) + metrics.headerHeight), static_cast<int16_t>(metrics.contentSidePadding),
       static_cast<int16_t>(metrics.buttonHintsHeight), static_cast<int16_t>(metrics.contentSidePadding)});
 
   auto messageStyle = screen.theme().smallText;

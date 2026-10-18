@@ -6,6 +6,7 @@
 #include "MappedInputManager.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
+#include "fontIds.h"
 
 namespace fui = freeink::ui;
 
@@ -18,22 +19,6 @@ constexpr StrId menuItems[NetworkModeSelectionActivity::MENU_ITEM_COUNT] = {
     StrId::STR_USB_DRIVE,
 #endif
 };
-constexpr StrId menuDescs[NetworkModeSelectionActivity::MENU_ITEM_COUNT] = {
-    StrId::STR_JOIN_DESC,
-    StrId::STR_CALIBRE_DESC,
-    StrId::STR_HOTSPOT_DESC,
-#if FREEINK_CAP_USB_MSC
-    StrId::STR_USB_DRIVE_DESC,
-#endif
-};
-constexpr UIIcon menuIcons[NetworkModeSelectionActivity::MENU_ITEM_COUNT] = {
-    UIIcon::Wifi,
-    UIIcon::Library,
-    UIIcon::Hotspot,
-#if FREEINK_CAP_USB_MSC
-    UIIcon::Usb,
-#endif
-};
 }  // namespace
 
 NetworkModeSelectionActivity::NetworkModeSelectionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
@@ -42,8 +27,6 @@ NetworkModeSelectionActivity::NetworkModeSelectionActivity(GfxRenderer& renderer
   for (int i = 0; i < MENU_ITEM_COUNT; i++) {
     fui::ListItem item;
     item.label = I18N.get(menuItems[i]);
-    item.subtitle = I18N.get(menuDescs[i]);
-    item.icon = listIconFor(menuIcons[i], 36);  // subtitle rows carry the larger icon
     item.actionValue = static_cast<int16_t>(i);
     rowItems_[i] = item;
   }
@@ -63,31 +46,28 @@ void NetworkModeSelectionActivity::activateIndex(const int index) {
 }
 
 void NetworkModeSelectionActivity::buildScreen(UiScreen& screen) {
-  const auto& metrics = UITheme::getInstance().getMetrics();
-  // Content below the GUI.drawHeader band, above the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
-                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
-  screen.spacer(
-      static_cast<int16_t>(metrics.verticalSpacing - 2));
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
 
-  // rowItems_ was built once in the constructor and is reused here on every
-  // repaint.
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  // Same list layout as Settings: first row at the same height, no bottom padding.
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 3), 0,
+                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
+
+  // rowItems_ was built once in the constructor and is reused here on every repaint.
   fui::ListProps props;
   props.items = rowItems_;
   props.count = static_cast<uint16_t>(MENU_ITEM_COUNT);
   props.action = ACTION_ROW;
-  props.subtitleText = screen.theme().smallText;
-  props.subtitleText.maxLines = 2;
-  props.subtitleGap = 3;
-  props.textGap = 21;
-  props.sidePadding =
-      static_cast<int16_t>(screen.theme().listSidePadding + 16);
-  // File Transfer rows contain both a title and description, so give them
-  // additional breathing room without enlarging lists elsewhere.
-  props.rowHeight = static_cast<int16_t>(
-      metrics.listWithSubtitleRowHeight +
-      metrics.verticalSpacing * 2 - 6);
-  syncListViewport(screen, props, /*hasSubtitle=*/true);
+  props.valueInset = 3;
+  props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
+  props.rowGap = 0;
+  props.labelText = screen.theme().smallText;
+  props.labelText.maxLines = 2;
+  props.labelText.lineGap = 6;
+  syncListViewport(screen, props);
   screen.list(props);
 }
 

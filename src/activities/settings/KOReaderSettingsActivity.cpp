@@ -140,7 +140,7 @@ void KOReaderSettingsActivity::buildScreen(UiScreen& screen) {
         if (schemeEnd != std::string::npos) {
           defaultUrl.erase(0, schemeEnd + 3);
         }
-        rowValues_[i] = std::string(tr(STR_DEFAULT_VALUE)) + ": " + defaultUrl;
+        rowValues_[i] = defaultUrl;
       }
     } else if (i == 3) {
       rowValues_[i] =

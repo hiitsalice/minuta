@@ -13,6 +13,8 @@
 #include "activities/browser/OpdsBookBrowserActivity.h"
 #include "activities/util/KeyboardEntryActivity.h"
 #include "components/UITheme.h"
+#include "components/UiAppHelpers.h"
+#include "fontIds.h"
 #include "util/OpdsFilename.h"
 
 namespace fui = freeink::ui;
@@ -82,7 +84,6 @@ void OpdsServerListActivity::rebuildRowItems() {
   for (int i = 0; i < serverCount; i++) {
     fui::ListItem item;
     item.label = servers[i].name.empty() ? servers[i].url.c_str() : servers[i].name.c_str();
-    if (!servers[i].name.empty()) item.subtitle = servers[i].url.c_str();
     item.actionValue = static_cast<int16_t>(i);
     rowItems_.push_back(item);
   }
@@ -185,16 +186,19 @@ void OpdsServerListActivity::handleSelection() {
 }
 
 void OpdsServerListActivity::buildScreen(UiScreen& screen) {
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints; derived
   // from the safe area so board bezel insets apply (same as LanguageSelect).
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   screen.setContentMargin(
-      fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - 6),
+      fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - 3),
                   static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
                   static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + metrics.buttonHintsHeight),
                   static_cast<int16_t>(safe.x)});
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   const int itemCount = getItemCount();
   if (itemCount == 0) {
@@ -208,16 +212,22 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
   // reassignment onto already-owned strings — no allocation).
   if (!pickerMode) {
     const auto serverCount = static_cast<int>(OPDS_STORE.getServers().size());
-    rowItems_[serverCount + 1].subtitle =
+    rowItems_[serverCount + 1].value =
         SETTINGS.opdsDownloadFolder[0] ? SETTINGS.opdsDownloadFolder : tr(STR_OPDS_SD_ROOT);
-    rowItems_[serverCount + 2].subtitle = I18N.get(opdsFormatLabel(SETTINGS.opdsFilenameFormat));
+    rowItems_[serverCount + 2].value = I18N.get(opdsFormatLabel(SETTINGS.opdsFilenameFormat));
   }
 
   fui::ListProps props;
   props.items = rowItems_.data();
   props.count = static_cast<uint16_t>(rowItems_.size());
   props.action = ACTION_ROW;
-  syncListViewport(screen, props, /*hasSubtitle=*/true);
+  props.valueInset = 3;
+  props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
+  props.rowGap = 0;
+  props.labelText = screen.theme().smallText;
+  props.labelText.maxLines = 2;
+  props.labelText.lineGap = 6;
+  syncListViewport(screen, props, /*hasSubtitle=*/false);
   screen.list(props);
 }
 
