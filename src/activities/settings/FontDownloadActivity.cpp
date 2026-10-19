@@ -19,6 +19,7 @@
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "network/HttpDownloader.h"
+#include "activities/ActivityManager.h"
 
 namespace fui = freeink::ui;
 
@@ -52,6 +53,10 @@ fui::ListNav& FontDownloadActivity::activeNav() { return state_ == GROUP_LIST ? 
 
 void FontDownloadActivity::onBackButton() {
   if (state_ != FAMILY_LIST || !hasGroupScreen()) {
+    if (state_ == GROUP_LIST || state_ == FAMILY_LIST) {
+      activityManager.goHome();  // top-level list: leave to Home, not back to the Browse menu
+      return;
+    }
     finish();
     return;
   }
@@ -825,7 +830,7 @@ void FontDownloadActivity::render(RenderLock&&) {
     renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_LOADING_FONT_LIST));
   } else if (state_ == GROUP_LIST) {
     renderUi();
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_OPEN), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+    const auto labels = mappedInput.mapLabels(tr(STR_HOME), tr(STR_OPEN), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state_ == FAMILY_LIST) {
     renderUi();
@@ -835,7 +840,7 @@ void FontDownloadActivity::render(RenderLock&&) {
                                : isSelectedFamilyDeletable()  ? tr(STR_DELETE)
                                : isUpdateAllRow(nav.selected) ? tr(STR_UPDATE)
                                                               : "Install";
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabel, hasVisibleFamilies ? tr(STR_DIR_UP) : "",
+    const auto labels = mappedInput.mapLabels(hasGroupScreen() ? tr(STR_HOME) : tr(STR_BACK), confirmLabel, hasVisibleFamilies ? tr(STR_DIR_UP) : "",
                                               hasVisibleFamilies ? tr(STR_DIR_DOWN) : "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state_ == DOWNLOADING) {

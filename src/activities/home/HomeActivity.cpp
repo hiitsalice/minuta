@@ -257,7 +257,7 @@ void HomeActivity::loop() {
     }
 
     if (mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, 700)) {
-      onRecentsOpen();
+      switchTheme(MappedInputManager::Button::Confirm);
       return;
     }
 
@@ -325,7 +325,7 @@ void HomeActivity::loop() {
     }
 
     if (mappedInput.wasLongPressed(MappedInputManager::Button::Right, 700)) {
-      onRecentsOpen();
+      switchTheme(MappedInputManager::Button::Right);
       return;
     }
 
@@ -448,6 +448,26 @@ void HomeActivity::onSelectBook(const std::string& path) { activityManager.goToR
 void HomeActivity::onFileBrowserOpen() { activityManager.goToFileBrowser(); }
 
 void HomeActivity::onRecentsOpen() { activityManager.goToRecentBooks(); }
+
+// Hold Read: switch between Solum and Quartum, with a full refresh in between.
+void HomeActivity::switchTheme(const MappedInputManager::Button heldButton) {
+  // The release of the held button must not act in the other theme.
+  mappedInput.suppressRelease(heldButton);
+
+  const bool toQuartum = SETTINGS.uiTheme != CrossPointSettings::UI_THEME::QUARTUM;
+  SETTINGS.uiTheme = toQuartum ? CrossPointSettings::UI_THEME::QUARTUM : CrossPointSettings::UI_THEME::SOLUM;
+  SETTINGS.saveToFile();
+  UITheme::getInstance().reload();
+
+  {
+    // Clean white full refresh so nothing of the old look ghosts into the new one.
+    RenderLock lock(*this);
+    renderer.clearScreen();
+    renderer.displayBuffer(HalDisplay::FULL_REFRESH);
+  }
+
+  onEnter();  // rebuild Home (covers, selection) for the new theme
+}
 
 void HomeActivity::onSettingsOpen() { activityManager.goToSettings(); }
 

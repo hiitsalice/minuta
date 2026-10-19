@@ -84,12 +84,10 @@ void SettingsActivity::rebuildSettingsLists() {
   });
 
   addSettingsSection("Appearance", [&] {
-    appendSetting(deviceSettings, StrId::STR_UI_THEME);
     appendSetting(deviceSettings, StrId::STR_SUNLIGHT_FADING_FIX);
   });
 
   addSettingsSection("Reading", [&] {
-    deviceSettings.push_back(SettingInfo::Action(StrId::STR_FONT_BROWSER, SettingAction::DownloadFonts));
     appendSetting(deviceSettings, StrId::STR_DICTIONARY);
   });
 

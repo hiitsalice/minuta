@@ -5,7 +5,9 @@
 
 #include <algorithm>
 
+#include "CrossPointSettings.h"
 #include "activities/ActivityManager.h"
+#include "activities/settings/FontDownloadActivity.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 #include "fontIds.h"
@@ -16,6 +18,8 @@ namespace {
 constexpr StrId menuItems[BrowseMenuActivity::MENU_ITEM_COUNT] = {
     StrId::STR_SETTINGS_TITLE,
     StrId::STR_LIBRARY,
+    StrId::STR_MENU_RECENT_BOOKS,
+    StrId::STR_FONT_BROWSER,
 };
 }  // namespace
 
@@ -44,10 +48,20 @@ void BrowseMenuActivity::activateIndex(const int index) {
   app.clearTapFlash();
   nav.selected = index;
 
-  if (index == 0) {
-    activityManager.goToSettings();
-  } else {
-    activityManager.goToFileBrowser();
+  switch (index) {
+    case 0:
+      activityManager.goToSettings();
+      break;
+    case 1:
+      activityManager.goToFileBrowser();
+      break;
+    case 2:
+      activityManager.goToRecentBooks();
+      break;
+    default:
+      startActivityForResult(std::make_unique<FontDownloadActivity>(renderer, mappedInput),
+                             [](const ActivityResult&) { SETTINGS.saveToFile(); });
+      break;
   }
 }
 
