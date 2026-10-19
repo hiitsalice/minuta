@@ -20,6 +20,7 @@
 #include "fontIds.h"
 #include "network/HttpDownloader.h"
 #include "activities/ActivityManager.h"
+#include "components/UiAppHelpers.h"
 
 namespace fui = freeink::ui;
 
@@ -622,13 +623,16 @@ void FontDownloadActivity::activateSelected() {
 }
 
 void FontDownloadActivity::buildScreen(UiScreen& screen) {
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints. Top
   // trimmed slightly, bottom trimmed substantially (list rows no longer
   // need the full button-hints band reserved above them).
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 3), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   if (state_ == FAMILY_LIST && filteredIndices_.empty()) {
     screen.centeredText(tr(STR_NO_FONTS_AVAILABLE), screen.theme().bodyText);
@@ -644,8 +648,8 @@ void FontDownloadActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems_.data();
   props.count = static_cast<uint16_t>(rowItems_.size());
   props.action = ACTION_ROW;
-  props.sidePadding = 7;
-  props.rowInset = static_cast<int16_t>(state_ == GROUP_LIST ? 33 : 22);
+  if (state_ == FAMILY_LIST) props.sidePadding = 12;
+  if (state_ == FAMILY_LIST) props.rowInset = 18;
   props.valueInset = static_cast<int16_t>(state_ == GROUP_LIST ? 3 : 0);               // air between the status and the row edge
   // Font name at 10pt, description at 8pt (smaller than the theme's default
   // 12pt menu rows), with a matching shorter row height so unused vertical
@@ -653,11 +657,25 @@ void FontDownloadActivity::buildScreen(UiScreen& screen) {
   props.labelText = screen.theme().bodyText;
   props.labelText.font = fui::GfxRendererTarget::FONT_BODY;
   props.labelText.bold = (state_ == FAMILY_LIST);
+  if (state_ == GROUP_LIST) props.labelText.align = fui::TextAlign::Center;
   props.subtitleText.font = fui::GfxRendererTarget::FONT_BODY;
+  if (state_ == FAMILY_LIST) {
+    props.labelText.maxLines = 1;
+    props.labelText.lineGap = 1;
+    props.subtitleText = screen.theme().smallText;
+    props.subtitleText.maxLines = 1;
+    props.subtitleText.lineGap = 1;
+    props.subtitleText.bold = false;
+    props.subtitleText.font = fui::GfxRendererTarget::FONT_BODY;
+  }
   props.subtitleGap = 6;  // air between the font name and its description (includes 1px lower shift)
-  props.labelYOffset = static_cast<int16_t>(state_ == FAMILY_LIST ? 2 : 0);  // FAMILY_LIST: 2px, GROUP_LIST: 0px
+  props.labelYOffset = static_cast<int16_t>(state_ == FAMILY_LIST ? 1 : 0);
   const int16_t lineHeight = screen.target().lineHeight(fui::GfxRendererTarget::FONT_BODY);
-  props.rowHeight = static_cast<int16_t>(state_ == FAMILY_LIST ? lineHeight * 2 + 26 : lineHeight + 12);
+  (void)lineHeight;
+  props.rowHeight = state_ == FAMILY_LIST
+      ? static_cast<int16_t>(metrics.listWithSubtitleRowHeight + 2)
+      : static_cast<int16_t>(metrics.listRowHeight);
+  props.rowGap = 0;
   syncListViewport(screen, props, /*hasSubtitle=*/state_ == FAMILY_LIST);
   screen.list(props);
 }
@@ -695,7 +713,7 @@ void FontDownloadActivity::rebuildGroupRowItems() {
       item.label = scriptGroupLabels_[rowIndex - 1].c_str();
       rowLabels_[rowIndex] = std::to_string(groupMemberCount(rowIndex - 1));
     }
-    item.value = rowLabels_[rowIndex].c_str();
+    item.value = nullptr;  // no count on the right
     item.actionValue = static_cast<int16_t>(rowIndex);
     rowItems_.push_back(item);
   }
@@ -802,24 +820,8 @@ void FontDownloadActivity::render(RenderLock&&) {
 
   renderer.clearScreen();
 
-  const char* headerSubtitle = nullptr;
-  if (state_ == FAMILY_LIST && hasGroupScreen()) {
-    const int scriptGroupIndex = groupNav_.selected - 1;
-    headerSubtitle = scriptGroupIndex >= 0 && scriptGroupIndex < static_cast<int>(scriptGroupLabels_.size())
-                         ? scriptGroupLabels_[scriptGroupIndex].c_str()
-                         : tr(STR_ALL_FONTS);
-  }
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_FONT_BROWSER),
                  nullptr);
-
-  if (headerSubtitle != nullptr) {
-    const int16_t labelHeight = static_cast<int16_t>(renderer.getLineHeight(UI_10_FONT_ID));
-    const int16_t labelWidth = static_cast<int16_t>(renderer.getTextWidth(UI_10_FONT_ID, headerSubtitle));
-    const int16_t labelX = static_cast<int16_t>(pageWidth - metrics.headerSidePadding - labelWidth);
-    const int16_t labelY = static_cast<int16_t>(
-        metrics.topPadding - 6 + metrics.headerHeight - metrics.headerUnderlineSize - 10 - labelHeight);
-    renderer.drawText(UI_10_FONT_ID, labelX, labelY, headerSubtitle);
-  }
 
   const auto lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
   const auto contentTop = metrics.topPadding - 6 + metrics.headerHeight + metrics.verticalSpacing;

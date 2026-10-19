@@ -189,8 +189,8 @@ void RecentBooksActivity::buildScreen(UiScreen& screen) {
   props.rowHeight = 36;
   props.labelYOffset = 1;
   props.rowGap = 0;
-  syncListViewport(screen, props, false, 36);
-  screen.list(props, static_cast<int16_t>(screen.body().height - 36));
+  syncListViewport(screen, props, false, 0);
+  screen.list(props, static_cast<int16_t>(screen.body().height));
 }
 
 void RecentBooksActivity::drawFooter() {
@@ -198,19 +198,4 @@ void RecentBooksActivity::drawFooter() {
   const auto labels = mappedInput.mapLabels(tr(STR_HOME), empty ? "" : tr(STR_SELECT), empty ? "" : tr(STR_DIR_UP),
                                             empty ? "" : tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
-  if (empty) return;
-
-  // Same box and position as "Hold SELECT to delete" in the highlight list.
-  const char* helpText = "Hold SELECT to delete";
-  const int helpLineHeight = renderer.getLineHeight(UI_10_FONT_ID);
-  const int textHeight = renderer.getTextHeight(UI_10_FONT_ID);
-  const int hintTop = renderer.getScreenHeight() - UITheme::getInstance().getMetrics().buttonHintsHeight;
-  const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, helpText);
-  const int textX = (renderer.getScreenWidth() - textWidth) / 2;
-  const int textY = hintTop - 15 - helpLineHeight + 2;
-
-  constexpr int boxPadding = 6;
-  renderer.fillRectDither(textX - boxPadding, textY - boxPadding, textWidth + boxPadding * 2,
-                          textHeight + boxPadding * 2, Color::LightGray);
-  renderer.drawText(UI_10_FONT_ID, textX, textY, helpText, true, EpdFontFamily::REGULAR);
 }
