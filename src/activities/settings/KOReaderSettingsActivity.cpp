@@ -11,6 +11,8 @@
 #include "MappedInputManager.h"
 #include "activities/util/KeyboardEntryActivity.h"
 #include "components/UITheme.h"
+#include "components/UiAppHelpers.h"
+#include "fontIds.h"
 
 namespace fui = freeink::ui;
 
@@ -115,11 +117,14 @@ void KOReaderSettingsActivity::activateIndex(const int index) {
 }
 
 void KOReaderSettingsActivity::buildScreen(UiScreen& screen) {
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
   const auto& metrics = UITheme::getInstance().getMetrics();
   // Content below the GUI.drawHeader band, above the button hints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 6), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 3), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   // rowItems_'s labels/actionValue were set once in the constructor; only the
   // live value text needs refreshing here, by assigning into the existing
@@ -160,7 +165,9 @@ void KOReaderSettingsActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems_;
   props.count = static_cast<uint16_t>(MENU_ITEMS);
   props.action = ACTION_ROW;
-  props.valueInset = 8;               // air between the value and the row edge
+  props.valueInset = 3;
+  props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
+  props.rowGap = 0;
   // Label at the value's font size: both sides of the row read as one unit.
   // maxLines=2 also marks the style caller-owned (see textStyleUnset).
   props.labelText = screen.theme().smallText;

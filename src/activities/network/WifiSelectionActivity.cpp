@@ -14,6 +14,7 @@
 #include "activities/util/KeyboardEntryActivity.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
+#include "components/UiAppHelpers.h"
 
 namespace fui = freeink::ui;
 
@@ -795,19 +796,17 @@ void WifiSelectionActivity::listScreen(UiScreen& screen, void* user) {
 }
 
 void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   // Content below the header, down to the button hints.
   screen.setContentMargin(fui::Insets{
-      // Tighter gap between the MAC subheader and the first row (12px
-      // instead of the default verticalSpacing), scoped to this screen only.
       static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + 7),
-      // Highlight box extended 9px beyond the header-aligned edges on each
-      // side, for visible padding around the row content (sidePadding and
-      // valueInset below pull the text back 3px to partially offset it).
-      static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width) - metrics.headerSidePadding + 5),
+      static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
       static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height)),
-      static_cast<int16_t>(safe.x - 12)});
+      static_cast<int16_t>(safe.x)});
 
   if (networks.empty()) {
     // renderNetworkList() now draws the full "No networks found" screen
@@ -822,21 +821,20 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
   props.items = networkRowItems.data();
   props.count = static_cast<uint16_t>(networkRowItems.size());
   props.action = ACTION_ROW;
-  props.valueInset = 1;  // air between the signal bars and the row edge
+  props.valueInset = 3;
   props.valueSignalYOffset = 2;  // raise only the signal bars
-  props.sidePadding = 11;  // air between the row edge and the name text
-  props.rowInset = 33;
   // Long SSIDs wrap onto a second line inside the row (two body lines always
   // fit the theme row height) instead of truncating; the trailing value is
   // just the short status glyphs, so skip the balanced 60%-band wrap cap.
   props.labelText = screen.theme().bodyText;
   props.labelText.maxLines = 1;
-  props.labelYOffset = 1;
   props.balanceWrappedLabelWithValue = false;
   listNav.selected = static_cast<int>(selectedNetworkIndex);
   const int16_t lineHeight = screen.target().lineHeight(fui::GfxRendererTarget::FONT_BODY);
-  const int16_t rowHeight = static_cast<int16_t>(lineHeight + 18);
+  (void)lineHeight;
+  const int16_t rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.rowHeight = rowHeight;
+  props.rowGap = 0;
   listNav.syncToProps(screen.body(), rowHeight, screen.theme().listRowGap, static_cast<int>(networks.size()), props);
   screen.list(props);
 }

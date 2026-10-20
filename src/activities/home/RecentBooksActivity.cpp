@@ -186,9 +186,9 @@ void RecentBooksActivity::buildScreen(UiScreen& screen) {
   props.labelText = label;
   props.balanceWrappedLabelWithValue = false;
   props.partialTrailingRow = false;
-  props.rowHeight = 36;
-  props.labelYOffset = 1;
+  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight);
   props.rowGap = 0;
+  props.valueInset = 3;
   syncListViewport(screen, props, false, 0);
   screen.list(props, static_cast<int16_t>(screen.body().height));
 }

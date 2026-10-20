@@ -6,6 +6,7 @@
 #include "MappedInputManager.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
+#include "components/UiAppHelpers.h"
 
 namespace fui = freeink::ui;
 
@@ -59,11 +60,14 @@ void EpubReaderFootnotesActivity::buildScreen(UiScreen& screen) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   // Content: the safe area minus the header band GUI.drawHeader paints.
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - 6),
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - 3),
                                       static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
                                       static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height)),
                                       static_cast<int16_t>(safe.x)});
-  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   if (footnotes.empty()) {
     renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_NO_FOOTNOTES));
@@ -76,10 +80,12 @@ void EpubReaderFootnotesActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems.data();
   props.count = static_cast<uint16_t>(rowItems.size());
   props.action = ACTION_ROW;
+  props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listRowHeight);
+  props.rowGap = 0;
+  props.valueInset = 3;
   fui::TextStyle label = screen.theme().bodyText;
   label.align = fui::TextAlign::Center;
   props.labelText = label;
-  props.labelYOffset = 1;
   syncListViewport(screen, props);
   screen.list(props);
 }

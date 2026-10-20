@@ -669,7 +669,6 @@ void FontDownloadActivity::buildScreen(UiScreen& screen) {
     props.subtitleText.font = fui::GfxRendererTarget::FONT_BODY;
   }
   props.subtitleGap = 6;  // air between the font name and its description (includes 1px lower shift)
-  props.labelYOffset = static_cast<int16_t>(state_ == FAMILY_LIST ? 1 : 0);
   const int16_t lineHeight = screen.target().lineHeight(fui::GfxRendererTarget::FONT_BODY);
   (void)lineHeight;
   props.rowHeight = state_ == FAMILY_LIST

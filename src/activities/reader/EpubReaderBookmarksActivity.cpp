@@ -289,7 +289,6 @@ void EpubReaderBookmarksActivity::buildScreen(UiScreen& screen) {
   props.subtitleText.bold = false;
   props.subtitleText.font = fui::GfxRendererTarget::FONT_SMALL;
   props.subtitleGap = 6;
-  props.labelYOffset = 1;
   props.rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listWithSubtitleRowHeight + 2);
   props.rowInset = 18;
   props.sidePadding = 12;
