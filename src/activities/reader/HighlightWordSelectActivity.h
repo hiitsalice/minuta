@@ -31,6 +31,9 @@ class HighlightWordSelectActivity final : public Activity {
     int16_t width;
     uint16_t row;
     std::string text;
+    std::string separatorAfter;
+    int16_t separatorX = 0;
+    int16_t separatorWidth = 0;
     EpdFontFamily::Style style;
     uint32_t visibleTextOffset;
     uint32_t endVisibleTextOffset;

@@ -112,10 +112,89 @@ void HighlightWordSelectActivity::extractWords() {
 
   renderer.ensureSdCardFontReady(fontId, pageText.c_str(), styleMask);
 
-  for (auto& word : words) {
-    word.width = static_cast<int16_t>(
-        renderer.getTextAdvanceX(fontId, word.text.c_str(), word.style));
+  // Split dash-connected tokens into selectable word parts. ASCII hyphens
+  // connect compound parts; en/em dashes separate words. Dash-only fragments
+  // are discarded, so no selectable item starts or ends with a dash.
+  const auto utf8Length = [](const std::string& text) -> uint32_t {
+    uint32_t count = 0;
+    for (const unsigned char c : text) {
+      if ((c & 0xC0) != 0x80) ++count;
+    }
+    return count;
+  };
+
+  std::vector<WordBox> splitWords;
+  splitWords.reserve(words.size() * 2);
+
+  for (const auto& original : words) {
+    const std::string& text = original.text;
+    struct Part {
+      size_t start;
+      size_t end;
+    };
+    std::vector<Part> parts;
+
+    size_t start = 0;
+    size_t pos = 0;
+    while (pos < text.size()) {
+      size_t dashLength = 0;
+      const auto c = static_cast<unsigned char>(text[pos]);
+
+      if (c == '-') {
+        dashLength = 1;
+      } else if (pos + 2 < text.size() && c == 0xE2 &&
+                 static_cast<unsigned char>(text[pos + 1]) == 0x80 &&
+                 (static_cast<unsigned char>(text[pos + 2]) == 0x93 ||
+                  static_cast<unsigned char>(text[pos + 2]) == 0x94)) {
+        dashLength = 3;
+      }
+
+      if (dashLength != 0) {
+        if (pos > start) parts.push_back({start, pos});
+        pos += dashLength;
+        start = pos;
+      } else {
+        ++pos;
+      }
+    }
+    if (start < text.size()) parts.push_back({start, text.size()});
+
+    if (parts.empty()) continue;
+
+    for (size_t p = 0; p < parts.size(); ++p) {
+      const auto part = parts[p];
+      WordBox item = original;
+      item.text = text.substr(part.start, part.end - part.start);
+
+      const std::string prefix = text.substr(0, part.start);
+      item.x = static_cast<int16_t>(
+          original.x + renderer.getTextAdvanceX(fontId, prefix.c_str(), original.style));
+      item.width = static_cast<int16_t>(
+          renderer.getTextAdvanceX(fontId, item.text.c_str(), item.style));
+      item.visibleTextOffset = original.visibleTextOffset + utf8Length(prefix);
+      item.endVisibleTextOffset = item.visibleTextOffset + utf8Length(item.text);
+      item.separatorAfter.clear();
+      item.separatorX = 0;
+      item.separatorWidth = 0;
+
+      if (p + 1 < parts.size()) {
+        const size_t separatorStart = part.end;
+        const size_t separatorEnd = parts[p + 1].start;
+        item.separatorAfter = text.substr(separatorStart, separatorEnd - separatorStart);
+
+        const std::string throughPart = text.substr(0, part.end);
+        item.separatorX = static_cast<int16_t>(
+            original.x + renderer.getTextAdvanceX(
+                             fontId, throughPart.c_str(), original.style));
+        item.separatorWidth = static_cast<int16_t>(
+            renderer.getTextAdvanceX(fontId, item.separatorAfter.c_str(), original.style));
+      }
+
+      splitWords.push_back(std::move(item));
+    }
   }
+
+  words = std::move(splitWords);
 }
 
 int HighlightWordSelectActivity::closestInRow(const uint16_t row, const int centerX) const {
@@ -248,6 +327,13 @@ bool HighlightWordSelectActivity::drawSelection() {
 
     renderer.fillRect(wx, wy, ww, wh, true);
     renderer.drawText(fontId, word.x, word.y, word.text.c_str(), false, word.style);
+
+    // A dash is highlighted only when the selection continues across it.
+    if (i < last && !word.separatorAfter.empty() && word.separatorWidth > 0) {
+      renderer.fillRect(word.separatorX, wy, word.separatorWidth, wh, true);
+      renderer.drawText(fontId, word.separatorX, word.y,
+                        word.separatorAfter.c_str(), false, word.style);
+    }
   }
 
   return saved;
@@ -277,8 +363,12 @@ HighlightEntry HighlightWordSelectActivity::saveHighlight() const {
 
   // Store the complete selected text, regardless of how many lines it spans.
   for (int i = first; i <= last; i++) {
-    if (!highlight.summary.empty()) {
-      highlight.summary += " ";
+    if (i > first) {
+      if (!words[i - 1].separatorAfter.empty()) {
+        highlight.summary += words[i - 1].separatorAfter;
+      } else {
+        highlight.summary += " ";
+      }
     }
     highlight.summary += words[i].text;
   }
