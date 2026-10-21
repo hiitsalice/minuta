@@ -256,33 +256,55 @@ void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int 
       const uint32_t wordStart = wordVisibleOffset(i);
       const uint32_t wordEnd = wordStart + utf8Length(word);
 
-      bool wordHighlighted = false;
-      bool highlightContinuesToNextWord = false;
-
-      for (const auto& highlight : *highlights) {
-        if (highlight.startVisibleTextOffset < wordEnd &&
-            highlight.endVisibleTextOffset > wordStart) {
-          wordHighlighted = true;
-
-          if (i + 1 < numWords &&
-              highlight.endVisibleTextOffset > wordVisibleOffset(i + 1)) {
-            highlightContinuesToNextWord = true;
-          }
-        }
-      }
-
-      if (wordHighlighted && SETTINGS.highlightMarkerEnabled) {
-        const int width = renderer.getTextAdvanceX(fontId, word, currentStyle);
-
-        const int highlightX = drawX - 2;
+      if (SETTINGS.highlightMarkerEnabled) {
+        const uint32_t wordLength = wordEnd - wordStart;
         const int highlightY = wordY + 8;
-        const int highlightWidth =
-            (highlightContinuesToNextWord ? xposArr[i + 1] - xposArr[i] : width) + 4;
         const int highlightHeight = renderer.getLineHeight(fontId) - 9;
 
-        renderer.fillRectDither(highlightX, highlightY,
-                                highlightWidth, highlightHeight,
-                                Color::LightGray);
+        for (const auto& highlight : *highlights) {
+          const uint32_t selectedStart =
+              std::max(highlight.startVisibleTextOffset, wordStart);
+          const uint32_t selectedEnd =
+              std::min(highlight.endVisibleTextOffset, wordEnd);
+
+          if (selectedStart >= selectedEnd) {
+            continue;
+          }
+
+          // Convert the selected character offsets into UTF-8 byte offsets.
+          // Renderer measurements use byte strings, while visible-text offsets
+          // count Unicode code points.
+          const uint32_t prefixChars = selectedStart - wordStart;
+          const uint32_t selectedChars = selectedEnd - selectedStart;
+          const char* cursor = word;
+          uint32_t chars = 0;
+
+          while (*cursor && chars < prefixChars) {
+            const unsigned char c = static_cast<unsigned char>(*cursor);
+            cursor += (c < 0x80) ? 1 : ((c & 0xE0) == 0xC0) ? 2
+                                      : ((c & 0xF0) == 0xE0) ? 3 : 4;
+            ++chars;
+          }
+
+          const std::string prefix(word, cursor - word);
+          const char* selectedBegin = cursor;
+          while (*cursor && chars < prefixChars + selectedChars) {
+            const unsigned char c = static_cast<unsigned char>(*cursor);
+            cursor += (c < 0x80) ? 1 : ((c & 0xE0) == 0xC0) ? 2
+                                      : ((c & 0xF0) == 0xE0) ? 3 : 4;
+            ++chars;
+          }
+
+          const std::string selectedText(selectedBegin, cursor - selectedBegin);
+          const int prefixWidth =
+              renderer.getTextAdvanceX(fontId, prefix.c_str(), currentStyle);
+          const int selectedWidth =
+              renderer.getTextAdvanceX(fontId, selectedText.c_str(), currentStyle);
+
+          renderer.fillRectDither(drawX + prefixWidth - 2, highlightY,
+                                  selectedWidth + 4, highlightHeight,
+                                  Color::LightGray);
+        }
       }
     }
 
