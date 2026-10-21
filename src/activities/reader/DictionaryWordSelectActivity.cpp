@@ -1,3 +1,4 @@
+#include <utility>
 #include "DictionaryWordSelectActivity.h"
 
 #include <FontCacheManager.h>
@@ -48,12 +49,8 @@ void DictionaryWordSelectActivity::onEnter() {
   // full-repaint path as the fallback.
   snapshot = makeUniqueNoThrow<uint8_t[]>(SNAPSHOT_CAPACITY);
   extractWords();
-  // Start on the middle row's word nearest mid-screen instead of top-left:
-  // any word on the page is then at most half a page of moves away.
-  if (!words.empty()) {
-    const int initial = closestInRow(rowCount / 2, renderer.getScreenWidth() / 2);
-    if (initial >= 0) selected = initial;
-  }
+  // Begin at the first selectable word in reading order.
+  if (!words.empty()) selected = 0;
   requestUpdate();
 }
 
@@ -111,8 +108,83 @@ void DictionaryWordSelectActivity::extractWords() {
   }
   if (styleMask == 0) styleMask = 0x01;  // REGULAR
   renderer.ensureSdCardFontReady(fontId, pageText.c_str(), styleMask);
-  for (auto& word : words) {
-    word.width = static_cast<int16_t>(renderer.getTextAdvanceX(fontId, word.text.c_str(), word.style));
+  {
+    std::vector<WordBox> splitWords;
+    splitWords.reserve(words.size());
+
+    for (const auto& original : words) {
+      const std::string& text = original.text;
+      std::vector<std::pair<size_t, size_t>> parts;
+      size_t start = 0;
+      size_t pos = 0;
+
+      while (pos < text.size()) {
+        size_t dashLength = 0;
+        const unsigned char c = static_cast<unsigned char>(text[pos]);
+
+        if (c == '-') {
+          dashLength = 1;
+        } else if (pos + 2 < text.size() &&
+                   c == 0xE2 &&
+                   static_cast<unsigned char>(text[pos + 1]) == 0x80 &&
+                   (static_cast<unsigned char>(text[pos + 2]) == 0x93 ||
+                    static_cast<unsigned char>(text[pos + 2]) == 0x94)) {
+          dashLength = 3;
+        }
+
+        if (dashLength != 0) {
+          if (pos > start) parts.emplace_back(start, pos);
+          pos += dashLength;
+          start = pos;
+        } else {
+          ++pos;
+        }
+      }
+      if (start < text.size()) parts.emplace_back(start, text.size());
+
+      if (parts.size() <= 1) {
+        WordBox item = original;
+        item.width = static_cast<int16_t>(
+            renderer.getTextAdvanceX(fontId, item.text.c_str(), item.style));
+        item.compoundText = item.text;
+        item.compoundX = item.x;
+        item.compoundWidth = item.width;
+        item.compoundStart = static_cast<int>(splitWords.size());
+        item.compoundEnd = item.compoundStart;
+        splitWords.push_back(std::move(item));
+        continue;
+      }
+
+      const int compoundStart = static_cast<int>(splitWords.size());
+      const int compoundWidth =
+          renderer.getTextAdvanceX(fontId, text.c_str(), original.style);
+
+      for (const auto& part : parts) {
+        WordBox item = original;
+        item.text = text.substr(part.first, part.second - part.first);
+
+        const std::string prefix = text.substr(0, part.first);
+        item.x = static_cast<int16_t>(
+            original.x + renderer.getTextAdvanceX(
+                            fontId, prefix.c_str(), original.style));
+        item.width = static_cast<int16_t>(
+            renderer.getTextAdvanceX(fontId, item.text.c_str(), item.style));
+
+        item.compoundText = text;
+        item.compoundX = original.x;
+        item.compoundWidth = static_cast<int16_t>(compoundWidth);
+        item.compoundStart = compoundStart;
+        item.compoundEnd = -1;
+        splitWords.push_back(std::move(item));
+      }
+
+      const int compoundEnd = static_cast<int>(splitWords.size()) - 1;
+      for (int i = compoundStart; i <= compoundEnd; ++i) {
+        splitWords[i].compoundEnd = compoundEnd;
+      }
+    }
+
+    words = std::move(splitWords);
   }
 }
 
@@ -167,7 +239,11 @@ void DictionaryWordSelectActivity::performLookup() {
   std::string definition;
   std::string headword;
   Dictionary::LookupResult result = Dictionary::LookupResult::NotFound;
-  const bool found = ok && dict.lookup(words[selected].text.c_str(), definition, headword, &result);
+  const std::string& lookupWord =
+      (expanded && words[selected].compoundEnd > words[selected].compoundStart)
+          ? words[selected].compoundText
+          : words[selected].text;
+  const bool found = ok && dict.lookup(lookupWord.c_str(), definition, headword, &result);
 
   if (found) {
     popup = Popup::None;
@@ -234,12 +310,32 @@ void DictionaryWordSelectActivity::loop() {
     finish();
     return;
   }
+  if (!words.empty() &&
+      words[selected].compoundEnd > words[selected].compoundStart &&
+      mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, 700)) {
+    expanded = true;
+    snapshotIdx = -1;
+    requestUpdate();
+    return;
+  }
+
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm) && !words.empty()) {
     performLookup();
     return;
   }
 
   if (words.empty()) return;
+
+  const bool wasExpanded = expanded;
+  if (expanded &&
+      (mappedInput.wasPressed(MappedInputManager::Button::ScreenLeft) ||
+       mappedInput.wasPressed(MappedInputManager::Button::ScreenRight) ||
+       mappedInput.wasPressed(MappedInputManager::Button::ScreenUp) ||
+       mappedInput.wasPressed(MappedInputManager::Button::ScreenDown))) {
+    expanded = false;
+    snapshotIdx = -1;
+    requestUpdate();
+  }
 
   const bool hasNextWord = selected + 1 < static_cast<int>(words.size());
   if (mappedInput.wasPressed(MappedInputManager::Button::ScreenLeft) && selected > 0) {
@@ -261,11 +357,18 @@ void DictionaryWordSelectActivity::loop() {
 // next cursor move must do a full repaint.
 bool DictionaryWordSelectActivity::drawHighlightWithSnapshot() {
   const WordBox& word = words[selected];
-  int hx = word.x - 2;
+  const bool showCompound =
+      expanded && word.compoundEnd > word.compoundStart;
+  const int drawX = showCompound ? word.compoundX : word.x;
+  const int drawWidth = showCompound ? word.compoundWidth : word.width;
+  const std::string& drawText =
+      showCompound ? word.compoundText : word.text;
+
+  int hx = drawX - 2;
   int hy = word.y - 2;
-  int hw = word.width + 4;
+  int hw = drawWidth + 4;
   int hh = lineHeight + 4;
-  // Clamp to the panel so save, draw and restore all use the same box.
+
   if (hx < 0) {
     hw += hx;
     hx = 0;
@@ -276,9 +379,11 @@ bool DictionaryWordSelectActivity::drawHighlightWithSnapshot() {
   }
 
   bool saved = false;
-  if (snapshot && hw > 0 && hh > 0) {
-    saved = renderer.readFramebufferRegion(hx, hy, hw, hh, snapshot.get(), SNAPSHOT_CAPACITY) > 0;
+  if (!showCompound && snapshot && hw > 0 && hh > 0) {
+    saved = renderer.readFramebufferRegion(
+        hx, hy, hw, hh, snapshot.get(), SNAPSHOT_CAPACITY) > 0;
   }
+
   snapshotX = static_cast<int16_t>(hx);
   snapshotY = static_cast<int16_t>(hy);
   snapshotW = static_cast<int16_t>(hw);
@@ -286,15 +391,10 @@ bool DictionaryWordSelectActivity::drawHighlightWithSnapshot() {
   snapshotIdx = saved ? selected : -1;
 
   renderer.fillRect(hx, hy, hw, hh, true);
-  renderer.drawText(fontId, word.x, word.y, word.text.c_str(), false, word.style);
+  renderer.drawText(fontId, drawX, word.y, drawText.c_str(), false, word.style);
   return saved;
 }
 
-// Front-button bar (Back/Confirm/Left/Right). Drawn last on every repaint
-// path, including the differential highlight-only path, so it always ends
-// up as the top layer even when a highlighted word's box falls under a
-// hint's screen area. No side-button hints: the full-bleed reader page has no
-// spare gutter for them, so a hint box there would hide text.
 void DictionaryWordSelectActivity::drawHints() const {
   // No selectable word on this page: Confirm and navigation are all no-ops
   // (guarded by words.empty() in loop()/performLookup), so only Back does
@@ -314,7 +414,7 @@ void DictionaryWordSelectActivity::render(RenderLock&&) {
   // still holds a clean page (no popup or sub-activity since the last full
   // repaint). Restore the pixels under the old highlight, draw the new one,
   // and push — skipping the two-pass page render entirely.
-  if (popup == Popup::None && snapshotIdx >= 0 && !words.empty() && selected != snapshotIdx) {
+  if (popup == Popup::None && !expanded && snapshotIdx >= 0 && !words.empty() && selected != snapshotIdx) {
     renderer.writeFramebufferRegion(snapshotX, snapshotY, snapshotW, snapshotH, snapshot.get());
     // The full path's PrewarmScope cleared the glyph cache on exit; batch-load
     // just the highlighted word's glyphs before drawing them white-on-black.

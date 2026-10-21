@@ -37,6 +37,11 @@ class DictionaryWordSelectActivity final : public Activity {
     uint16_t row;
     std::string text;
     EpdFontFamily::Style style;
+    std::string compoundText;
+    int16_t compoundX = 0;
+    int16_t compoundWidth = 0;
+    int compoundStart = -1;
+    int compoundEnd = -1;
   };
 
   enum class Popup : uint8_t { None, Busy, NotFound, Error };
@@ -80,4 +85,5 @@ class DictionaryWordSelectActivity final : public Activity {
   int16_t snapshotW = 0;
   int16_t snapshotH = 0;
   int snapshotIdx = -1;
+  bool expanded = false;
 };
