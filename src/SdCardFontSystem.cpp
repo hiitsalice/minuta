@@ -67,6 +67,16 @@ void SdCardFontSystem::begin(GfxRenderer& renderer) {
   LOG_DBG("SDFS", "SD font system ready (%d families discovered)", registry_.getFamilyCount());
 }
 
+void SdCardFontSystem::rescanNow() {
+  registryDirty_.store(false, std::memory_order_release);
+  registry_.discover();
+  if (SETTINGS.sdFontFamilyName[0] != '\0' && !registry_.findFamily(SETTINGS.sdFontFamilyName)) {
+    LOG_DBG("SDFS", "Saved SD font family is gone: %s (clearing)", SETTINGS.sdFontFamilyName);
+    SETTINGS.clearSdFontFamily();
+    SETTINGS.saveToFile();
+  }
+}
+
 void SdCardFontSystem::ensureLoaded(GfxRenderer& renderer) {
   // If the web server (or another task) installed/deleted fonts, re-discover.
   // Track whether we just re-discovered so we can force a reload below even

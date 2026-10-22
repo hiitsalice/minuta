@@ -22,6 +22,7 @@
 #include "activities/ActivityManager.h"
 #include "components/UiAppHelpers.h"
 
+
 namespace fui = freeink::ui;
 
 FontDownloadActivity::FontDownloadActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
@@ -432,7 +433,6 @@ void FontDownloadActivity::downloadFamily(ManifestFamily& family) {
     cancelRequested_ = false;
   }
   requestUpdateAndWait();
-
   if (!fontInstaller_.ensureFamilyDir(family.name.c_str())) {
     RenderLock lock(*this);
     state_ = ERROR;
@@ -448,7 +448,6 @@ void FontDownloadActivity::downloadFamily(ManifestFamily& family) {
       fileProgress_ = 0;
       fileTotal_ = file.size;
     }
-    requestUpdateAndWait();
 
     char destPath[128];
     FontInstaller::buildFontPath(family.name.c_str(), file.name.c_str(), destPath, sizeof(destPath));
@@ -461,15 +460,11 @@ void FontDownloadActivity::downloadFamily(ManifestFamily& family) {
           fileProgress_ = downloaded;
           fileTotal_ = total;
           mappedInput.update();
-          if (mappedInput.isPressed(MappedInputManager::Button::Back) ||
-              mappedInput.wasPressed(MappedInputManager::Button::Back)) {
-            cancelRequested_ = true;
-          }
-          requestUpdate(true);
         },
         &cancelRequested_);
 
     if (result == HttpDownloader::ABORTED) {
+      mappedInput.suppressRelease(MappedInputManager::Button::Back);
       fontInstaller_.deleteFamily(family.name.c_str());
       family.installed = false;
       family.hasUpdate = false;
@@ -615,7 +610,24 @@ void FontDownloadActivity::activateSelected() {
       currentFileTotal_ = family.files.size();
       downloadFamily(family);
     } else {
-      promptDeleteSelectedFamily();
+      // Delete right away (no confirmation screen), then refresh the whole screen.
+      if (fontInstaller_.deleteFamily(family.name.c_str()) != FontInstaller::Error::OK) {
+        RenderLock lock(*this);
+        state_ = ERROR;
+        errorMessage_ = "Failed to delete font";
+      } else {
+        fontInstaller_.refreshRegistry();
+        family.installed = false;
+        family.hasUpdate = false;
+        rowsDirty_ = true;
+        // The "Install ..." rows can appear or vanish: keep the selection on the same font.
+        const auto it = std::find(filteredIndices_.begin(), filteredIndices_.end(), familyIndex);
+        if (it != filteredIndices_.end()) {
+          nav.selected = static_cast<int>(it - filteredIndices_.begin()) + specialRowCount();
+        }
+        renderer.promoteNextRefresh(HalDisplay::FULL_REFRESH);
+      }
+      requestUpdate();
       return;
     }
   }
@@ -738,12 +750,8 @@ void FontDownloadActivity::rebuildFamilyRowItems() {
       if (!family.description.empty()) item.subtitle = family.description.c_str();
       if (family.hasUpdate) {
         item.value = tr(STR_UPDATE_AVAILABLE);
-      } else if (family.installed) {
-        item.value = tr(STR_INSTALLED);
-        // Dimmed but still tappable (opens the delete prompt): visual-only
-        // disabled state, the row stays enabled for hit registration.
-        item.state = fui::StateDisabled;
       }
+      item.italic = family.installed;  // installed fonts read in italic, with no label
     }
     item.actionValue = static_cast<int16_t>(i);
     rowItems_.push_back(item);
@@ -764,6 +772,12 @@ bool FontDownloadActivity::handleCustomInput() {
     int y = 0;
     if (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
         mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+      if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+        mappedInput.suppressRelease(MappedInputManager::Button::Back);
+      }
+      if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+        mappedInput.suppressRelease(MappedInputManager::Button::Confirm);
+      }
       {
         RenderLock lock(*this);
         state_ = FAMILY_LIST;
@@ -773,6 +787,7 @@ bool FontDownloadActivity::handleCustomInput() {
     }
   } else if (state_ == ERROR) {
     if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+      mappedInput.suppressRelease(MappedInputManager::Button::Back);
       {
         RenderLock lock(*this);
         state_ = FAMILY_LIST;
@@ -845,34 +860,15 @@ void FontDownloadActivity::render(RenderLock&&) {
                                               hasVisibleFamilies ? tr(STR_DIR_DOWN) : "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state_ == DOWNLOADING) {
-    const auto& family = families_[downloadingFamilyIndex_];
-
-    std::string statusText = std::string(tr(STR_DOWNLOADING)) + " " + family.name + " (" +
-                             std::to_string(currentFileIndex_ + 1) + "/" + std::to_string(currentFileTotal_) + ")";
-    renderer.drawCenteredText(UI_10_FONT_ID, centerY - lineHeight, statusText.c_str());
-
-    float progress = 0;
-    if (fileTotal_ > 0) {
-      progress = static_cast<float>(fileProgress_) / static_cast<float>(fileTotal_);
-    }
-
-    int barY = centerY + metrics.verticalSpacing;
-    GUI.drawProgressBar(
-        renderer,
-        Rect{metrics.contentSidePadding, barY, pageWidth - metrics.contentSidePadding * 2, metrics.progressBarHeight},
-        static_cast<int>(progress * 100), 100);
-
-    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "", "", "");
-    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    renderer.drawCenteredText(UI_10_FONT_ID, 420, "Installing...", true, EpdFontFamily::REGULAR);
   } else if (state_ == COMPLETE) {
-    renderer.drawCenteredText(UI_10_FONT_ID, centerY, tr(STR_FONT_INSTALLED), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_FONT_INSTALLED), true, EpdFontFamily::REGULAR);
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state_ == ERROR) {
-    renderer.drawCenteredText(UI_10_FONT_ID, centerY - lineHeight, tr(STR_FONT_INSTALL_FAILED), true,
-                              EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 404, tr(STR_FONT_INSTALL_FAILED), true, EpdFontFamily::BOLD);
     if (!errorMessage_.empty()) {
-      renderer.drawCenteredText(UI_10_FONT_ID, centerY + metrics.verticalSpacing, errorMessage_.c_str());
+      renderer.drawCenteredText(UI_10_FONT_ID, 432, errorMessage_.c_str());
     }
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_RETRY), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);

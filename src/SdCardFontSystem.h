@@ -22,6 +22,10 @@ class SdCardFontSystem {
   /// Also re-discovers if the registry has been marked dirty (e.g. by web upload).
   void ensureLoaded(GfxRenderer& renderer);
 
+  /// Re-scan the SD card right now. If the saved SD font family has disappeared
+  /// (deleted by hand or from the font browser), fall back to the built-in font.
+  void rescanNow();
+
   /// Resolve an SD card font ID from family name + reader point size.
   /// Returns 0 if not found. Used by CrossPointSettings::getReaderFontId().
   int resolveFontId(const char* familyName, uint8_t pointSize) const;
