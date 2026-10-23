@@ -34,6 +34,7 @@
 #include "activities/settings/SdFirmwareUpdateActivity.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
+#include "activities/util/LowBatteryWarningActivity.h"
 #include "images/LoadingIcon.h"
 #include "platform/UsbSerialJtagHandoff.h"
 #include "util/ButtonNavigator.h"
@@ -332,6 +333,8 @@ void setupDisplayAndFonts(bool seamless = false) {
   LOG_DBG("MAIN", "Fonts setup");
 }
 
+static bool lowBatteryWarningActive = false;
+
 void setup() {
   BoardConfig::holdPowerRails();
 
@@ -484,6 +487,10 @@ void setup() {
   } else if (rebootedFromPanic) {
     // If we rebooted from a panic, go to crash report screen to show the panic info
     activityManager.goToCrashReport();
+  } else if (powerManager.getBatteryPercentage() == 0) {
+    lowBatteryWarningActive = true;
+    activityManager.replaceActivity(
+        std::make_unique<LowBatteryWarningActivity>(renderer, mappedInputManager));
   } else if (resume == BootResume::Silent && snapshotTarget == SILENT_REBOOT_TARGET_READER &&
              !APP_STATE.openEpubPath.empty()) {
     activityManager.goToReader(APP_STATE.openEpubPath);
@@ -578,6 +585,25 @@ void loop() {
   // a page turn, refresh, or other short power-button action.
   if (wakePowerReleasePending && !gpio.isPressed(HalGPIO::BTN_POWER)) {
     wakePowerReleasePending = false;
+    return;
+  }
+
+  // In low-battery mode, ignore all input except holding POWER to sleep.
+  // Waking restarts setup(), which checks the battery percentage again.
+  if (lowBatteryWarningActive) {
+    static bool powerReleasedSinceLowBatteryWake = false;
+    if (!gpio.isPressed(HalGPIO::BTN_POWER)) {
+      powerReleasedSinceLowBatteryWake = true;
+    }
+
+    if (powerReleasedSinceLowBatteryWake && millis() >= allowSleepAt &&
+        gpio.isPressed(HalGPIO::BTN_POWER) &&
+        gpio.getPowerButtonHeldTime() > SETTINGS.getPowerButtonDuration()) {
+      enterDeepSleep();
+      return;
+    }
+
+    delay(10);
     return;
   }
 
