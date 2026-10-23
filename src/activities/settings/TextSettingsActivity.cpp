@@ -139,13 +139,17 @@ int TextSettingsActivity::previewHeightPx() const {
   const int afterHeader = m.topPadding + m.headerHeight - 6 + m.verticalSpacing;
   const int bottomReserved = m.buttonHintsHeight + m.verticalSpacing;
   const int usable = renderer.getScreenHeight() - afterHeader - bottomReserved;
-  return usable * m.previewHeightPercent / 100;
+  return usable * m.previewHeightPercent / 100 + 12;
 }
 
-// The preview's bottom edge sits 12px above the button hints.
+// Center the preview between the Anti-aliasing selection row and button hints.
 int TextSettingsActivity::previewTopPx() const {
   const auto& m = UITheme::getInstance().getMetrics();
-  return renderer.getScreenHeight() - m.buttonHintsHeight - 12 - previewHeightPx();
+  const int listTop = m.topPadding + m.headerHeight - 3 +
+                      (m.verticalSpacing > 6 ? m.verticalSpacing - 6 : 0);
+  const int antiAliasingBottom = listTop + ROW_COUNT * m.listRowHeight;
+  const int hintsTop = renderer.getScreenHeight() - m.buttonHintsHeight;
+  return (antiAliasingBottom + hintsTop - previewHeightPx()) / 2 - 6;
 }
 
 void TextSettingsActivity::buildScreen(UiScreen& screen) {
@@ -208,11 +212,6 @@ void TextSettingsActivity::drawFooter() {
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_TOGGLE), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
-  if (focusedRowHasNoPreview()) {
-    const auto& metrics = UITheme::getInstance().getMetrics();
-    const int capY = previewTopPx() - renderer.getTextHeight(SMALL_FONT_ID);
-    renderer.drawText(SMALL_FONT_ID, metrics.previewPadding, capY, tr(STR_NOT_IN_PREVIEW));
-  }
 }
 
 void TextSettingsActivity::activateIndex(const int index) {
