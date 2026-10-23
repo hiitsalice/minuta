@@ -7,71 +7,64 @@
 #include <vector>
 
 #include "TextSettingsPreview.h"
-#include "activities/UiTabListActivity.h"
+#include "activities/UiListActivity.h"
 #include "components/OptionPopup.h"
 #include "components/themes/BaseTheme.h"
 
-// Reader text settings with a shared live preview pane: tab bar
-// (Font | Size | Layout | Style) is position 0 of the Up/Down nav ring, same
-// idiom as SettingsActivity. Family/Size rows apply on Confirm; Layout/Style
-// rows toggle or open an OptionPopup picker. (Tab::Family/Style are the enum
-// names for the Font/Style tabs.)
-class TextSettingsActivity final : public UiTabListActivity {
+// Reader text settings: one flat list (Font, Size, then the layout and style rows) with the live
+// preview pinned to the bottom of the screen, just above the button hints. Confirm cycles the
+// focused row to its next value.
+class TextSettingsActivity final : public UiListActivity {
  public:
+  // Kept so callers can still say which part of the list to open on.
   enum class Tab : uint8_t { Family, Size, Layout, Style, Count };
 
   TextSettingsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const SdCardFontRegistry* registry,
                        Tab initialTab = Tab::Family);
 
   void onEnter() override;
-  void render(RenderLock&&) override;
 
  private:
-  // Row indices per tab. enum class (not plain enum) so a LayoutRow can't be
-  // silently confused with a StyleRow of equal value.
+  enum class Row : uint8_t {
+    Font,
+    Size,
+    LineSpacing,
+    ParaSpacing,
+    Alignment,
+    ScreenMargin,
+    FocusReading,
+    Hyphenation,
+    EmbeddedStyle,
+    AntiAliasing,
+    Count
+  };
+  static constexpr int ROW_COUNT = static_cast<int>(Row::Count);
+
   enum class LayoutRow { LineSpacing, ParaSpacing, Alignment, ScreenMargin, Count };
   enum class StyleRow { FocusReading, Hyphenation, EmbeddedStyle, AntiAliasing, Count };
 
-  // --- UiTabListActivity contract ---
-  int listCount() const override;
-  int tabCount() const override { return static_cast<int>(Tab::Count); }
-  int activeTab() const override { return static_cast<int>(tab_); }
-  const char* tabLabel(int index) const override;
+  int listCount() const override { return ROW_COUNT; }
+  const char* headerTitle() const override;
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
-  void onTabAction(int index) override;
-  void stepTab(int direction) override { switchTab(direction); }
-  void navigateButtons() override;
-  bool handleButtons() override;
-  bool handleCustomInput() override;
+  void drawChrome() override;
+  void drawFooter() override;
 
+  void cycleFont();
+  void cycleSize();
   void applyFamily(int listIndex);
   void applySize(int listIndex);
-  // Repopulates sizes_ (and currentSizeIndex_) from the active family's
-  // installed point sizes. Call after any family change.
+  // Repopulates sizes_ (and currentSizeIndex_) from the active family's installed point sizes.
   void rebuildSizeList();
   void confirmLayoutRow(int row);
   void confirmStyleRow(int row);
-  // Applies the row at the given list index for the active tab (Confirm and tap share this).
-  void activateRow(int row);
 
   std::string layoutValueText(int row) const;
   std::string styleValueText(int row) const;
-  // Button-hint label for Confirm at the current ring position.
-  const char* confirmLabelText() const;
-  // True when the focused list row is a setting the preview cannot reflect.
+  // True when the focused row is a setting the preview cannot reflect.
   bool focusedRowHasNoPreview() const;
-  void switchTab(int direction = 1);
-
-  // Row storage for the active tab: rowItems_ (label/actionValue) is
-  // rebuilt only when the tab or its backing data changes (rebuildRowItems(),
-  // called from onEnter()/onTabAction()/switchTab()); rowValues_ holds the
-  // live per-row value text, refreshed every buildScreen() call by assigning
-  // into the existing strings (no vector growth), so steady-state rendering
-  // never allocates/frees row storage.
-  std::vector<std::string> rowValues_;
-  std::vector<freeink::ui::ListItem> rowItems_;
-  void rebuildRowItems();
+  int previewHeightPx() const;
+  int previewTopPx() const;
 
   struct FontEntry {
     std::string name;
@@ -80,23 +73,19 @@ class TextSettingsActivity final : public UiTabListActivity {
   };
 
   struct SizeEntry {
-    std::string name;  // the point size, rendered for display ("14 pt")
+    std::string name;
     uint8_t pointSize;
   };
 
   const SdCardFontRegistry* registry_;
-  OptionPopup optionPopup_;
   std::vector<FontEntry> fonts_;
   std::vector<SizeEntry> sizes_;
-  textsettings::PreviewLayout previewLayout_;  // cached preview line layout; relaid only on setting/geometry change
-
-  Tab tab_;
+  textsettings::PreviewLayout previewLayout_;  // cached preview layout; relaid only on setting/geometry change
+  Tab initialTab_;
   int currentFamilyIndex_ = 0;
   int currentSizeIndex_ = 0;
 
-  ThemeMetrics metrics_ = {};
-  int afterHeader = 0;
-  int bottomReserved = 0;
-  int usableHeight = 0;
-  int previewHeight = 0;
+  // Labels/actionValue are set once in onEnter(); values are refreshed in place every buildScreen().
+  std::string rowValues_[ROW_COUNT];
+  freeink::ui::ListItem rowItems_[ROW_COUNT]{};
 };
