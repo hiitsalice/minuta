@@ -418,7 +418,7 @@ bool FileBrowserActivity::handleButtons() {
         setResult(std::move(res));
         finish();
       } else {
-        onGoHome();
+        activityManager.goToBrowseMenu();
       }
     }
     return true;
@@ -523,7 +523,7 @@ void FileBrowserActivity::drawChrome() {
 }
 
 void FileBrowserActivity::drawFooter() {
-  const char* backLabel = (basepath == "/") ? (mode == Mode::PickFirmware ? tr(STR_BACK) : tr(STR_HOME)) : tr(STR_BACK);
+  const char* backLabel = (basepath == "/") ? (mode == Mode::PickFirmware ? tr(STR_BACK) : "Menu") : tr(STR_BACK);
   const char* confirmLabel = files.empty() ? "" : tr(STR_SELECT);
   const auto labels = mappedInput.mapLabels(backLabel, confirmLabel, files.empty() ? "" : tr(STR_DIR_UP),
                                             files.empty() ? "" : tr(STR_DIR_DOWN));

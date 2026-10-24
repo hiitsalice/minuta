@@ -294,7 +294,7 @@ bool SettingsActivity::handleButtons() {
 
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     SETTINGS.saveToFile();
-    onGoHome();
+    activityManager.goToBrowseMenu();
     return true;
   }
 
@@ -558,7 +558,7 @@ void SettingsActivity::render(RenderLock&&) {
   const int ring = ringPos();
   const auto confirmLabel = ring == 0 ? "" : tr(STR_SELECT);
 
-  const auto labels = mappedInput.mapLabels(tr(STR_HOME), confirmLabel, "Up", "Down");
+  const auto labels = mappedInput.mapLabels("Menu", confirmLabel, "Up", "Down");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   // Always use standard refresh for settings screen
