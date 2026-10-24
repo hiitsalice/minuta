@@ -326,13 +326,29 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
     props.styles.normal.borderWidth = tokens.headerUnderline;
   }
   fui::header(ui.frame, band, props);
+
+  // Headers without a battery use the legacy short underline; battery headers
+  // use the header component's bottom border.
+  int16_t existingRuleWidth = band.width;
   if (!showBattery && title != nullptr) {
-    // Short black rule under the title: half the band's width, 2px thick, flush with the band's bottom edge.
     constexpr int16_t kRuleThickness = 2;
-    const int16_t ruleWidth = static_cast<int16_t>(band.width / 2);
-    ui.target.fill(fui::Rect{static_cast<int16_t>(band.x + (band.width - ruleWidth) / 2),
-                             static_cast<int16_t>(band.bottom() - kRuleThickness), ruleWidth, kRuleThickness},
-                   fui::Paint::solid(fui::Color::Black));
+    existingRuleWidth = static_cast<int16_t>(band.width / 2);
+    ui.target.fill(
+        fui::Rect{static_cast<int16_t>(band.x + (band.width - existingRuleWidth) / 2),
+                  static_cast<int16_t>(band.bottom() - kRuleThickness), existingRuleWidth, kRuleThickness},
+        fui::Paint::solid(fui::Color::Black));
+  }
+
+  // Add a centered secondary rule below the existing black underline.
+  if (title != nullptr) {
+    constexpr int16_t kSecondaryRuleGap = 6;
+    constexpr int16_t kSecondaryRuleThickness = 1;
+    const int16_t secondaryRuleWidth = static_cast<int16_t>(existingRuleWidth * 3 / 4);
+    ui.target.fill(
+        fui::Rect{static_cast<int16_t>(band.x + (band.width - secondaryRuleWidth) / 2),
+                  static_cast<int16_t>(band.bottom() + kSecondaryRuleGap),
+                  secondaryRuleWidth, kSecondaryRuleThickness},
+        fui::Paint::solid(fui::Color::Black));
   }
 
   if (showBattery) {
