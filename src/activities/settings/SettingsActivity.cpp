@@ -556,7 +556,7 @@ void SettingsActivity::render(RenderLock&&) {
   renderUi();
 
   const int ring = ringPos();
-  const auto confirmLabel = ring == 0 ? "" : tr(STR_TOGGLE);
+  const auto confirmLabel = ring == 0 ? "" : tr(STR_SELECT);
 
   const auto labels = mappedInput.mapLabels(tr(STR_HOME), confirmLabel, "Up", "Down");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);

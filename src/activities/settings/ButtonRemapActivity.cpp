@@ -16,7 +16,7 @@ constexpr uint8_t kRoleCount = 4;
 constexpr uint8_t kUnassigned = 0xFF;
 constexpr int kResetRow = kRoleCount;  // row after the four roles
 
-const char* const kRoleNames[kRoleCount] = {"Home/Back", "Select/Confirm", "Up/Left", "Down/Right"};
+const char* const kRoleNames[kRoleCount] = {"Home/Back", "Select", "Up/Left", "Down/Right"};
 const char* const kButtonNames[kRoleCount] = {"1st Button", "2nd Button", "3rd Button", "4th Button"};
 
 MappedInputManager::Button buttonForRole(const uint8_t role) {
@@ -188,7 +188,7 @@ void ButtonRemapActivity::render(RenderLock&&) {
 
   renderUi();
 
-  const auto labels = mappedInput.mapLabels("Done", tr(STR_TOGGLE), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+  const auto labels = mappedInput.mapLabels("Done", tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();
