@@ -49,7 +49,7 @@ constexpr int MARGIN_MAX = CrossPointSettings::SCREEN_MARGIN_MAX;
 constexpr int MARGIN_STEP = CrossPointSettings::SCREEN_MARGIN_STEP;
 
 // Size names shown in the list; any other point size falls back to "N pt".
-void sizeLabel(const uint8_t pt, char* out, const size_t len) {
+void sizeLabel(const uint8_t pt, char* out, const size_t len, const bool youngSerif) {
   switch (pt) {
     case 12:
       snprintf(out, len, "Tiny");
@@ -62,6 +62,9 @@ void sizeLabel(const uint8_t pt, char* out, const size_t len) {
       break;
     case 18:
       snprintf(out, len, "Large");
+      break;
+    case 20:
+      snprintf(out, len, youngSerif ? "Magnuta" : "20 pt");
       break;
     default:
       snprintf(out, len, "%u pt", pt);
@@ -128,7 +131,7 @@ void TextSettingsActivity::rebuildSizeList() {
   currentSizeIndex_ = 0;
   for (const uint8_t pt : points) {
     char label[12];
-    sizeLabel(pt, label, sizeof(label));
+    sizeLabel(pt, label, sizeof(label), SETTINGS.sdFontFamilyName[0] == '\0');
     if (pt == selectedPt) currentSizeIndex_ = static_cast<int>(sizes_.size());
     sizes_.push_back({label, pt});
   }

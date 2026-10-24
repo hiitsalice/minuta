@@ -480,6 +480,8 @@ int CrossPointSettings::getReaderFontId() const {
       return YOUNGSERIF_16_FONT_ID;
     case 18:
       return YOUNGSERIF_18_FONT_ID;
+    case 20:
+      return YOUNGSERIF_20_FONT_ID;
     case 14:
     default:
       return YOUNGSERIF_14_FONT_ID;

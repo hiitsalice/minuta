@@ -108,7 +108,11 @@ inline SettingInfo buildFontSizeSetting(const SdCardFontRegistry* registry) {
   std::vector<std::string> labels;
   labels.reserve(sizes.size());
   for (const uint8_t pt : sizes) {
-    labels.push_back(std::to_string(pt) + " pt");
+    if (pt == 20 && SETTINGS.sdFontFamilyName[0] == '\0') {
+      labels.push_back("Magnuta");
+    } else {
+      labels.push_back(std::to_string(pt) + " pt");
+    }
   }
 
   SettingInfo s;

@@ -122,6 +122,12 @@ EpdFont youngserif18ItalicFont(&youngserif_18_italic);
 EpdFont youngserif18BoldItalicFont(&youngserif_18_bolditalic);
 EpdFontFamily youngserif18FontFamily(&youngserif18RegularFont, &youngserif18BoldFont, &youngserif18ItalicFont,
                                      &youngserif18BoldItalicFont);
+EpdFont youngserif20RegularFont(&youngserif_20_regular);
+EpdFont youngserif20BoldFont(&youngserif_20_bold);
+EpdFont youngserif20ItalicFont(&youngserif_20_italic);
+EpdFont youngserif20BoldItalicFont(&youngserif_20_bolditalic);
+EpdFontFamily youngserif20FontFamily(&youngserif20RegularFont, &youngserif20BoldFont, &youngserif20ItalicFont,
+                                     &youngserif20BoldItalicFont);
 
 
 #endif  // OMIT_FONTS
@@ -316,6 +322,7 @@ void setupDisplayAndFonts(bool seamless = false) {
   renderer.insertFont(YOUNGSERIF_12_FONT_ID, youngserif12FontFamily);
   renderer.insertFont(YOUNGSERIF_16_FONT_ID, youngserif16FontFamily);
   renderer.insertFont(YOUNGSERIF_18_FONT_ID, youngserif18FontFamily);
+  renderer.insertFont(YOUNGSERIF_20_FONT_ID, youngserif20FontFamily);
 
 #endif  // OMIT_FONTS
   renderer.insertFont(DICTIONARY_FONT_ID, andika12FontFamily);

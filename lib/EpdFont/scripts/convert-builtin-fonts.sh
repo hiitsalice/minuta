@@ -5,7 +5,7 @@ set -e
 cd "$(dirname "$0")"
 
 READER_FONT_STYLES=("Regular" "Italic" "Bold" "BoldItalic")
-YOUNGSERIF_FONT_SIZES=(12 14 16 18)
+YOUNGSERIF_FONT_SIZES=(12 14 16 18 20)
 
 for size in ${YOUNGSERIF_FONT_SIZES[@]}; do
   for style in ${READER_FONT_STYLES[@]}; do

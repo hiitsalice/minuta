@@ -20,6 +20,11 @@
 #include <builtinFonts/youngserif_18_italic.h>
 #include <builtinFonts/youngserif_18_regular.h>
 
+#include <builtinFonts/youngserif_20_bold.h>
+#include <builtinFonts/youngserif_20_bolditalic.h>
+#include <builtinFonts/youngserif_20_italic.h>
+#include <builtinFonts/youngserif_20_regular.h>
+
 
 
 
