@@ -5,6 +5,9 @@
 
 #include "CrossPointSettings.h"
 #include "MappedInputManager.h"
+#include "util/DictionaryRegistry.h"
+
+#include <cstring>
 #include "ReaderUtils.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
@@ -42,11 +45,11 @@ void EpubReaderMenuActivity::rebuildVisibleRows() {
   constexpr size_t NAVIGATION_START = 0;
   constexpr size_t NAVIGATION_END = 4;
   constexpr size_t TOOLS_START = 4;
-  constexpr size_t TOOLS_END = 9;
-  constexpr size_t APPEARANCE_START = 9;
-  constexpr size_t APPEARANCE_END = 12;
-  constexpr size_t UTILITIES_START = 12;
-  constexpr size_t UTILITIES_END = 15;
+  constexpr size_t TOOLS_END = 10;
+  constexpr size_t APPEARANCE_START = 10;
+  constexpr size_t APPEARANCE_END = 13;
+  constexpr size_t UTILITIES_START = 13;
+  constexpr size_t UTILITIES_END = 16;
 
   const auto addCategory = [this](const Category category, const size_t start, const size_t end) {
     const size_t categoryIndex = static_cast<size_t>(category);
@@ -89,9 +92,14 @@ void EpubReaderMenuActivity::buildMenuRowItems() {
       item.leadingTriangleIndicator = true;
       item.triangleDown = categoryExpanded[categoryIndex];
     } else {
-      item.label = menuItems[row.menuIndex].action == MenuAction::DICTIONARY
-                       ? "Dictionary"
-                       : I18N.get(menuItems[row.menuIndex].labelId);
+      const auto action = menuItems[row.menuIndex].action;
+      if (action == MenuAction::DICTIONARY) {
+        item.label = "Dictionary";
+      } else if (action == MenuAction::SELECT_DICTIONARY) {
+        item.label = I18N.get(StrId::STR_DICTIONARY_SET);
+      } else {
+        item.label = I18N.get(menuItems[row.menuIndex].labelId);
+      }
     }
 
     item.actionValue = static_cast<int16_t>(i);
@@ -101,7 +109,7 @@ void EpubReaderMenuActivity::buildMenuRowItems() {
 
 void EpubReaderMenuActivity::buildMenuItems(std::vector<MenuItem>& items, bool hasFootnotes, bool hasBookmarks) {
   items.clear();
-  items.reserve(15);
+  items.reserve(16);
 
   (void)hasFootnotes;  // Endnote List is always listed.
   (void)hasBookmarks;  // Highlight List is always listed.
@@ -117,6 +125,7 @@ void EpubReaderMenuActivity::buildMenuItems(std::vector<MenuItem>& items, bool h
   items.push_back({MenuAction::HIGHLIGHT_MARKER, StrId::STR_HIGHLIGHT_MARKER});
   items.push_back({MenuAction::BOOKMARKS, StrId::STR_HIGHLIGHT_LIST});
   items.push_back({MenuAction::DICTIONARY, StrId::STR_LOOKUP});
+  items.push_back({MenuAction::SELECT_DICTIONARY, StrId::STR_DICTIONARY_SET});
   items.push_back({MenuAction::SCREENSHOT, StrId::STR_SCREENSHOT_BUTTON});
 
   // Appearance
@@ -194,6 +203,36 @@ void EpubReaderMenuActivity::activateIndex(const int index) {
     return;
   }
 
+  if (selectedAction == MenuAction::SELECT_DICTIONARY) {
+    std::vector<DictionaryEntry> dictionaries;
+    DictionaryRegistry::discover(dictionaries);
+
+    // Cycle through None, then each installed dictionary.
+    size_t currentIndex = 0;
+    for (size_t i = 0; i < dictionaries.size(); ++i) {
+      if (std::strncmp(dictionaries[i].name.c_str(), SETTINGS.dictionaryName,
+                       sizeof(SETTINGS.dictionaryName) - 1) == 0) {
+        currentIndex = i + 1;
+        break;
+      }
+    }
+
+    const size_t nextIndex = (currentIndex + 1) % (dictionaries.size() + 1);
+    if (nextIndex == 0) {
+      SETTINGS.dictionaryName[0] = '\0';
+    } else {
+      std::strncpy(SETTINGS.dictionaryName,
+                   dictionaries[nextIndex - 1].name.c_str(),
+                   sizeof(SETTINGS.dictionaryName) - 1);
+      SETTINGS.dictionaryName[sizeof(SETTINGS.dictionaryName) - 1] = '\0';
+    }
+
+    SETTINGS.saveToFile();
+    buildMenuRowItems();
+    requestUpdate();
+    return;
+  }
+
   if (selectedRow) *selectedRow = nav.selected;
   setResult(MenuResult{static_cast<int>(selectedAction), pendingOrientation, selectedPageTurnOption});
   finish();
@@ -253,6 +292,11 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
       menuRowItems[i].value = I18N.get(orientationLabels[pendingOrientation]);
     } else if (action == MenuAction::AUTO_PAGE_TURN) {
       menuRowItems[i].value = pageTurnLabels[selectedPageTurnOption];
+    } else if (action == MenuAction::SELECT_DICTIONARY) {
+      selectedDictionaryValue = SETTINGS.dictionaryName[0] != '\0'
+                                    ? SETTINGS.dictionaryName
+                                    : I18N.get(StrId::STR_NONE_OPT);
+      menuRowItems[i].value = selectedDictionaryValue.c_str();
     } else {
       menuRowItems[i].value = nullptr;
     }

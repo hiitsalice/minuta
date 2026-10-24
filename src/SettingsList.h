@@ -149,7 +149,7 @@ inline SettingInfo buildDictionarySetting(const std::vector<DictionaryEntry>& di
                  [](const DictionaryEntry& d) { return d.name; });
 
   SettingInfo s;
-  s.nameId = StrId::STR_DICTIONARY;
+  s.nameId = StrId::STR_DICTIONARY_SET;
   s.type = SettingType::ENUM;
   s.enumStringValues.reserve(folderNames.size() + 1);
   s.enumStringValues.push_back(I18N.get(StrId::STR_NONE_OPT));
@@ -375,11 +375,6 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
       *it = buildFontSizeSetting(registry);
     }
   }
-  if (dictionaries) {
-    // Insert at the end of the Reader category (just before the first Controls entry).
-    auto it =
-        std::find_if(v.begin(), v.end(), [](const SettingInfo& s) { return s.category == StrId::STR_CAT_CONTROLS; });
-    v.insert(it, buildDictionarySetting(*dictionaries));
-  }
+  (void)dictionaries;  // Dictionary selection lives in the reader menu.
   return v;
 }

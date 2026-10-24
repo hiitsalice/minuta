@@ -28,7 +28,8 @@ class EpubReaderMenuActivity final : public UiListActivity {
     GO_HOME,
     SYNC,
     DELETE_CACHE,
-    DICTIONARY
+    DICTIONARY,
+    SELECT_DICTIONARY
   };
 
   struct MenuItem {
@@ -60,9 +61,10 @@ class EpubReaderMenuActivity final : public UiListActivity {
   bool handleHomeGesture() override;
 
  private:
-  // Four category rows + fifteen action rows when everything is expanded.
-  static constexpr size_t MAX_MENU_ITEMS = 19;
+  // Four category rows + sixteen action rows when everything is expanded.
+  static constexpr size_t MAX_MENU_ITEMS = 20;
   freeink::ui::ListItem menuRowItems[MAX_MENU_ITEMS]{};
+  std::string selectedDictionaryValue;
 
   // Visible rows are rebuilt when a category expands/collapses. The action
   // enum itself remains unchanged so EpubReaderActivity keeps its existing

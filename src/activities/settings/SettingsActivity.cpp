@@ -52,12 +52,7 @@ void SettingsActivity::rebuildSettingsLists() {
   // reader activity ran — otherwise the font-family picker shows stale list.
   sdFontSystem.rescanNow();
 
-  // Rescan /dictionaries on every rebuild: cheap (one directory listing) and
-  // picks up dictionaries copied to the SD card since the last visit.
-  std::vector<DictionaryEntry> dictionaries;
-  DictionaryRegistry::discover(dictionaries);
-
-  const auto allSettings = getSettingsList(&sdFontSystem.registry(), &dictionaries);
+  const auto allSettings = getSettingsList(&sdFontSystem.registry());
 
   const auto appendSetting = [&](std::vector<SettingInfo>& destination, const StrId nameId) {
     const auto it =
@@ -85,10 +80,6 @@ void SettingsActivity::rebuildSettingsLists() {
 
   addSettingsSection("Appearance", [&] {
     appendSetting(deviceSettings, StrId::STR_SUNLIGHT_FADING_FIX);
-  });
-
-  addSettingsSection("Reading", [&] {
-    appendSetting(deviceSettings, StrId::STR_DICTIONARY);
   });
 
   addSettingsSection("Controls", [&] {
