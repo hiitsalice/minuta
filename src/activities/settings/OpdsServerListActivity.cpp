@@ -163,8 +163,17 @@ void OpdsServerListActivity::handleSelection() {
 
   // "Filename format": cycle in place, no popup.
   if (nav.selected == serverCount + 2) {
-    SETTINGS.opdsFilenameFormat = static_cast<uint8_t>(
-        (SETTINGS.opdsFilenameFormat + 1) % static_cast<int>(OpdsFilenameFormat::Count));
+    switch (SETTINGS.opdsFilenameFormat) {
+      case static_cast<uint8_t>(OpdsFilenameFormat::TitleAuthor):
+        SETTINGS.opdsFilenameFormat = static_cast<uint8_t>(OpdsFilenameFormat::AuthorTitle);
+        break;
+      case static_cast<uint8_t>(OpdsFilenameFormat::AuthorTitle):
+        SETTINGS.opdsFilenameFormat = static_cast<uint8_t>(OpdsFilenameFormat::TitleOnly);
+        break;
+      default:
+        SETTINGS.opdsFilenameFormat = static_cast<uint8_t>(OpdsFilenameFormat::TitleAuthor);
+        break;
+    }
     SETTINGS.saveToFile();
     requestUpdate();
     return;

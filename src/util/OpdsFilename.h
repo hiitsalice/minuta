@@ -6,8 +6,8 @@
 // uint8_t in CrossPointSettings; cast to this enum at the call sites. `Count` is
 // the number of selectable formats (used to cycle the setting in the UI).
 enum class OpdsFilenameFormat : uint8_t {
-  AuthorTitle = 0,  // "Author - Title.epub" (default; matches legacy behaviour)
-  TitleAuthor = 1,  // "Title - Author.epub"
+  AuthorTitle = 0,  // "Author - Title.epub"
+  TitleAuthor = 1,  // "Title - Author.epub" (default)
   TitleOnly = 2,    // "Title.epub"
   Count = 3,
 };
