@@ -314,7 +314,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   }
   // Title nudge in pixels (negative = up), added to the header's own title position.
   // 0 is the original placement. Home keeps its battery header untouched.
-  constexpr int kTitleNudge = -1;
+  constexpr int kTitleNudge = 2;
   if (!showBattery) {
     props.titleOffsetY = static_cast<int16_t>(props.titleOffsetY + kTitleNudge);
   }

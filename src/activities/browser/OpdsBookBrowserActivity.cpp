@@ -205,7 +205,7 @@ void OpdsBookBrowserActivity::screenHeader(UiScreen& screen, const bool withSear
     const int bandH = tokens.headerHeight;
     const int bandShift = headerTop - (metrics.topPadding - 6);
     header.titleOffsetY = static_cast<int16_t>((bandH - tokens.headerUnderline - tokens.spaceMd - titleLh) -
-                                               (bandH - titleLh) / 2 - 1 - bandShift);
+                                               (bandH - titleLh) / 2 + 2 - bandShift);
   }
   if (withSearch && !searchTemplate.empty()) {
     header.trailingIcon = fui::bitmapFromIcon(icon_search_32);
@@ -214,7 +214,7 @@ void OpdsBookBrowserActivity::screenHeader(UiScreen& screen, const bool withSear
     // line cell by the font's internal leading; drop the button to match.
     const int titleFontId = uiScaleSpec().titleFontId;
     header.actionOffsetY =
-        static_cast<int16_t>((renderer.getLineHeight(titleFontId) - renderer.getTextHeight(titleFontId)) / 2);
+        static_cast<int16_t>((renderer.getLineHeight(titleFontId) - renderer.getTextHeight(titleFontId)) / 2 + 3);
   }
   screen.header(header);
   {
