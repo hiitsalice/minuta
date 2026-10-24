@@ -16,7 +16,7 @@ constexpr uint8_t kRoleCount = 4;
 constexpr uint8_t kUnassigned = 0xFF;
 constexpr int kResetRow = kRoleCount;  // row after the four roles
 
-const char* const kRoleNames[kRoleCount] = {"Home/Back", "Select", "Up/Left", "Down/Right"};
+const char* const kRoleNames[kRoleCount] = {"Back", "Select", "Prev", "Next"};
 const char* const kButtonNames[kRoleCount] = {"1st Button", "2nd Button", "3rd Button", "4th Button"};
 
 MappedInputManager::Button buttonForRole(const uint8_t role) {
