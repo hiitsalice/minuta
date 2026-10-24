@@ -120,7 +120,34 @@ void CrossPointWebServerActivity::onExit() {
   LOG_DBG("WEBACT", "Free heap at onExit end: %d bytes", ESP.getFreeHeap());
 }
 
-void CrossPointWebServerActivity::onNetworkModeSelected(const NetworkMode mode) {
+void CrossPointWebServerActivity::returnToNetworkModeSelection() {
+  state = WebServerActivityState::SHUTTING_DOWN;
+  webServer.reset();
+  stopDnsServer();
+  MDNS.end();
+
+  if (WiFi.getMode() != WIFI_MODE_NULL) {
+    if (isApMode) {
+      WiFi.softAPdisconnect(true);
+    } else {
+      WiFi.disconnect(false);
+    }
+    delay(30);
+    WiFi.mode(WIFI_MODE_NULL);
+  }
+
+  state = WebServerActivityState::MODE_SELECTION;
+  startActivityForResult(std::make_unique<NetworkModeSelectionActivity>(renderer, mappedInput),
+                         [this](const ActivityResult& result) {
+                           if (result.isCancelled) {
+                             finish();
+                           } else {
+                             onNetworkModeSelected(std::get<NetworkModeResult>(result.data).mode);
+                           }
+                         });
+}
+
+void CrossPointWebServerActivity::onNetworkModeSelected(NetworkMode mode) {
   const char* modeName = "Join Network";
   if (mode == NetworkMode::CONNECT_CALIBRE) {
     modeName = "Connect to Calibre";
@@ -377,7 +404,7 @@ void CrossPointWebServerActivity::loop() {
           // This update consumes the one-shot Home event before ActivityManager
           // can see it, so handle Home here alongside Back.
           if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-            finish();
+            returnToNetworkModeSelection();
             return;
           }
         }
@@ -387,7 +414,7 @@ void CrossPointWebServerActivity::loop() {
 
     // Also check outside the request-processing loop.
     if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-      finish();
+      returnToNetworkModeSelection();
       return;
     }
   }
@@ -479,7 +506,7 @@ void CrossPointWebServerActivity::renderServerRunning() const {
     renderer.drawCenteredText(UI_10_FONT_ID, startY, hostnameUrl.c_str(), true);
   }
 
-  const auto labels = mappedInput.mapLabels(tr(STR_EXIT), "", "", "");
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
