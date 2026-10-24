@@ -406,10 +406,6 @@ void CrossPointWebServerActivity::render(RenderLock&&) {
                    isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_FILE_TRANSFER), nullptr);
 
     if (state == WebServerActivityState::SERVER_RUNNING) {
-      if (!isApMode) {
-        GUI.drawSubHeader(renderer, Rect{0, (metrics.topPadding - 6) + metrics.headerHeight + 6, pageWidth, metrics.tabBarHeight - 6},
-                          connectedSSID.c_str());
-      }
       renderServerRunning();
     } else {
       const auto height = renderer.getLineHeight(UI_10_FONT_ID);
@@ -426,16 +422,8 @@ void CrossPointWebServerActivity::renderServerRunning() const {
 
   GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight},
                  isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_FILE_TRANSFER), nullptr);
-  if (!isApMode) {
-    GUI.drawSubHeader(renderer, Rect{0, (metrics.topPadding - 6) + metrics.headerHeight + 6, pageWidth, metrics.tabBarHeight - 6},
-                      connectedSSID.c_str());
-  }
 
-  if (!isApMode) {
-    renderWifiIndicator((metrics.topPadding - 6) + metrics.headerHeight);
-  }
-
-  int startY = (metrics.topPadding - 6) + metrics.headerHeight + metrics.tabBarHeight + metrics.verticalSpacing * 2;
+  int startY = (metrics.topPadding - 6) + metrics.headerHeight + metrics.verticalSpacing * 2;
   int height10 = renderer.getLineHeight(UI_10_FONT_ID);
   if (isApMode) {
     // AP mode display
