@@ -760,7 +760,11 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
 
   // Draw Progress Text
   const auto screenHeight = renderer.getScreenHeight();
-  auto textY = (screenHeight - UITheme::getInstance().getStatusBarHeight() - orientedMarginBottom - paddingBottom) - 1;
+  // The progress bar is drawn 3px thicker than the layout reserves for it, so the status text rises 3px with it.
+  // getStatusBarHeight() (and with it the reader's page margin) is deliberately left unchanged.
+  const int progressBarBoost = sb.showsProgressBar() ? 3 : 0;
+  auto textY = (screenHeight - UITheme::getInstance().getStatusBarHeight() - orientedMarginBottom - paddingBottom) - 1 -
+               progressBarBoost;
   // Text sits 2px below the icon row so every written status item shares
   // the same baseline as the battery percentage.
   const auto statusTextY = textY + 2;
@@ -816,7 +820,7 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
     const int barMarginLeft = fillMargin ? 0 : orientedMarginLeft;
     const int barMarginRight = fillMargin ? 0 : orientedMarginRight;
     const int progressBarMaxWidth = renderer.getScreenWidth() - barMarginLeft - barMarginRight;
-    const int barHeight = sb.progressBarHeightPx + (fillMargin ? orientedMarginBottom - 1 : 0);
+    const int barHeight = sb.progressBarHeightPx + progressBarBoost + (fillMargin ? orientedMarginBottom - 1 : 0);
 
     // Anchor the bar directly against the bottom boundary.
     // paddingBottom still keeps previews above their button-hint area.
