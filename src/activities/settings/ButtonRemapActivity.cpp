@@ -188,7 +188,19 @@ void ButtonRemapActivity::render(RenderLock&&) {
 
   renderUi();
 
-  const auto labels = mappedInput.mapLabels("Done", tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+  bool allAssigned = true;
+  bool noneAssigned = true;
+  for (uint8_t i = 0; i < kRoleCount; ++i) {
+    if (tempMapping[i] == kUnassigned) {
+      allAssigned = false;
+    } else {
+      noneAssigned = false;
+    }
+  }
+
+  // Show Done only when the mapping can be saved safely.
+  const char* doneLabel = (allAssigned || noneAssigned) ? "Done" : "";
+  const auto labels = mappedInput.mapLabels(doneLabel, tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer();
