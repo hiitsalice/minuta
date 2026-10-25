@@ -701,8 +701,8 @@ Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message, cons
   const int marginY = metrics.popupMarginY;
   const int frameThickness = metrics.popupFrameThickness;
   const EpdFontFamily::Style popupFontFamily = metrics.popupTextBold ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
-  const int textWidth = renderer.getTextWidth(UI_12_FONT_ID, message, popupFontFamily);
-  const int textHeight = renderer.getLineHeight(UI_12_FONT_ID);
+  const int textWidth = renderer.getTextWidth(UI_10_FONT_ID, message, popupFontFamily);
+  const int textHeight = renderer.getLineHeight(UI_10_FONT_ID);
   const int w = textWidth + marginX * 2;
   const int h = textHeight + marginY * 2;
   const int x = (renderer.getScreenWidth() - w) / 2;
@@ -720,7 +720,7 @@ Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message, cons
 
   // Minuta popup/status messages consistently use Steinem 12pt.
   (void)indexingStyle;
-  const int drawFontId = UI_12_FONT_ID;
+  const int drawFontId = UI_10_FONT_ID;
   const int drawTextWidth = renderer.getTextWidth(drawFontId, message, popupFontFamily);
   const int drawLineHeight = renderer.getLineHeight(drawFontId);
   const int textX = x + (w - drawTextWidth) / 2;

@@ -223,7 +223,7 @@ void BmpViewerActivity::doSetSleepCover() {
     SETTINGS.saveToFile();
     GUI.drawPopup(renderer, tr(STR_DONE));
   } else {
-    GUI.drawPopup(renderer, tr(STR_FAILED_LOWER));
+    GUI.drawPopup(renderer, tr(STR_BMP_FAILED));
   }
 
   delay(1000);

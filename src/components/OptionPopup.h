@@ -142,14 +142,10 @@ class OptionPopup {
     props.options = options;
     props.optionCount = count;
     props.verticalOptions = true;
-    props.titleText.font = compactMode
-        ? fui::GfxRendererTarget::FONT_SMALL
-        : fui::GfxRendererTarget::FONT_BODY;
+    props.titleText.font = fui::GfxRendererTarget::FONT_SMALL;
     props.titleText.bold = true;
     props.titleText.align = fui::TextAlign::Center;
-    props.buttonText.font = compactMode
-        ? fui::GfxRendererTarget::FONT_SMALL
-        : fui::GfxRendererTarget::FONT_BODY;
+    props.buttonText.font = fui::GfxRendererTarget::FONT_SMALL;
 
     const int16_t innerPadding = static_cast<int16_t>(
         compactMode ? 18 : metrics.optionPopupInnerPadding);
@@ -173,10 +169,7 @@ class OptionPopup {
     props.styles.disabled = props.styles.normal;
     props.buttonHeight =
         fui::clampI16(
-            target.lineHeight(
-                compactMode
-                    ? fui::GfxRendererTarget::FONT_SMALL
-                    : fui::GfxRendererTarget::FONT_BODY) +
+            target.lineHeight(fui::GfxRendererTarget::FONT_SMALL) +
             (compactMode ? 10 : metrics.optionPopupSelectionVPadding * 2));
 
     // Fixed fraction of the screen, clamped by the theme's side margins; the
