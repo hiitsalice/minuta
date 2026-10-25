@@ -64,9 +64,11 @@ void NetworkModeSelectionActivity::buildScreen(UiScreen& screen) {
   props.valueInset = 3;
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.rowGap = 0;
-  props.labelText = screen.theme().smallText;
-  props.labelText.maxLines = 2;
-  props.labelText.lineGap = 6;
+  fui::TextStyle label = screen.theme().smallText;
+  label.align = fui::TextAlign::Center;
+  label.maxLines = 2;
+  label.lineGap = 6;
+  props.labelText = label;
   syncListViewport(screen, props);
   screen.list(props);
 }
