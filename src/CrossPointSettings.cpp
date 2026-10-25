@@ -260,13 +260,6 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
           (old == 1) ? (uint8_t)NEXT_PREV : (uint8_t)PREV_NEXT;
     }
 
-    if (!doc["longPressBackDestination"].isNull()) {
-      const uint8_t old = doc["longPressBackDestination"] | (uint8_t)0;
-      // old: 0 settings, 1 library
-      longPressBackDestination =
-          (old == 1) ? (uint8_t)LONG_PRESS_BACK_LIBRARY : (uint8_t)LONG_PRESS_BACK_SETTINGS;
-    }
-
     if (!doc["fontFamily"].isNull()) {
       const uint8_t old = doc["fontFamily"] | (uint8_t)0;
       // old: 0 Young Serif, 1 DM Sans (removed), 2+ SD-card fonts
@@ -289,14 +282,6 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
       // v2: 0 dictionary, 1 sync
       longPressMenuFunction =
           (old == 0) ? (uint8_t)LP_MENU_DICTIONARY : (uint8_t)LP_MENU_DICTIONARY;
-    }
-
-    if (!doc["longPressBackDestination"].isNull()) {
-      const uint8_t old = doc["longPressBackDestination"] | (uint8_t)0;
-      // v1: 0 settings, 1 library
-      // v2: 0 library, 1 settings
-      longPressBackDestination =
-          (old == 1) ? (uint8_t)LONG_PRESS_BACK_LIBRARY : (uint8_t)LONG_PRESS_BACK_SETTINGS;
     }
 
     needsResave = true;

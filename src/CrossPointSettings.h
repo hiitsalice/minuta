@@ -129,12 +129,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // Persisted in settings.json by index: any new function (e.g. dictionary, bookmark) MUST use a
   // value >= 2 and be appended at the END of the enumValues array in SettingsList.h, otherwise the
   // stored indices shift and existing saves are silently misinterpreted.
-  enum LONG_PRESS_BACK_DESTINATION {
-  LONG_PRESS_BACK_LIBRARY = 0,
-  LONG_PRESS_BACK_SETTINGS = 1,
-  LONG_PRESS_BACK_DESTINATION_COUNT
-};
-
 enum LONG_PRESS_MENU_FUNCTION {
     LP_MENU_DICTIONARY = 0,
     LP_MENU_HIGHLIGHT = 1,
@@ -243,9 +237,6 @@ enum LONG_PRESS_MENU_FUNCTION {
   // Short press Back goes to file browser instead of home (0 = disabled, 1 = enabled)
   uint8_t backShortToFileBrowser = 0;
 
-  // Destination for a long-press of logical Back while reading.
-  // 0 = Library, 1 = Settings.
-  uint8_t longPressBackDestination = LONG_PRESS_BACK_LIBRARY;
   // Image rendering mode in EPUB reader
   uint8_t imageRendering = IMAGES_DISPLAY;
   // Language setting (Language enum index, default 0 = EN)

@@ -239,6 +239,10 @@ bool EpubReaderActivity::loadBook() {
   return true;
 }
 
+void EpubReaderActivity::onLongBackPress() {
+  activityManager.goToBrowseMenu();
+}
+
 void EpubReaderActivity::openReaderMenu() {
   pendingManualTurn = 0;
   const int currentPage = section ? section->currentPage + 1 : nextPageNumber + 1;

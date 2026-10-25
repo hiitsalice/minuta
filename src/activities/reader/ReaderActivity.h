@@ -36,6 +36,7 @@ class ReaderActivity : public Activity {
   virtual void onEndOfBookRendered() {}
 
   bool handleBackNavigation();
+  virtual void onLongBackPress();
   bool handleEndOfBookMenu(bool suppressConfirmRelease = false);
   bool handleEndOfBookPageTurn(bool prevTriggered, bool nextTriggered);
   void clearEndOfBookOptionsIfNeeded();

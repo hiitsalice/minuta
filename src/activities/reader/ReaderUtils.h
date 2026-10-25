@@ -113,14 +113,10 @@ struct BackNavCallback {
 };
 
 // Returns true if the back button was consumed (caller should return).
-// Long press (>= GO_BACK_OR_HOME_MS):
-// - default: go to file browser
-// - with backShortToFileBrowser: go home
-// Short press (< GO_BACK_OR_HOME_MS):
-// - default: go home
-// - with backShortToFileBrowser: go to file browser.
+// Long press (>= GO_BACK_OR_HOME_MS) invokes the reader-specific callback.
+// Short press (< GO_BACK_OR_HOME_MS) follows backShortToFileBrowser.
 inline bool handleBackNavigation(const MappedInputManager& mappedInput, ActivityManager& activityManager,
-                                 const char* filePath, BackNavCallback goHome) {
+                                 const char* filePath, BackNavCallback goHome, BackNavCallback longBack) {
   // The reading surface deliberately has no left-edge swipe-to-exit path: in
   // swipe page-turn mode a right swipe must page back instead. Home remains
   // available through the board's dedicated Home gesture/key. Back swipes stay
@@ -135,12 +131,7 @@ inline bool handleBackNavigation(const MappedInputManager& mappedInput, Activity
       mappedInput.wasLongPressed(MappedInputManager::Button::Back, GO_BACK_OR_HOME_MS);
 
   if (longPress) {
-    if (SETTINGS.longPressBackDestination == CrossPointSettings::LONG_PRESS_BACK_SETTINGS) {
-      activityManager.goToSettings();
-    } else {
-      // Long-press Back -> Library always opens the outermost Library.
-      activityManager.goToFileBrowser("/");
-    }
+    longBack.fn(longBack.ctx);
     return true;
   }
 

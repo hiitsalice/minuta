@@ -97,6 +97,7 @@ class EpubReaderActivity final : public ReaderActivity {
   bool saveProgress(int spineIndex, int currentPage, int pageCount);
   void jumpToPercent(int percent);
   void onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction action);
+  void onLongBackPress() override;
   void openReaderMenu();
   void openDictionaryWordSelect();
   void openHighlightWordSelect();

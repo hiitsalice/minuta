@@ -80,9 +80,15 @@ void ReaderActivity::onExit() {
   endOfBookOptionsReady.store(false, std::memory_order_release);
 }
 
+void ReaderActivity::onLongBackPress() {
+  activityManager.goToFileBrowser("/");
+}
+
 bool ReaderActivity::handleBackNavigation() {
-  return ReaderUtils::handleBackNavigation(mappedInput, activityManager, bookPath.c_str(),
-                                           {this, [](void* ctx) { static_cast<ReaderActivity*>(ctx)->onGoHome(); }});
+  return ReaderUtils::handleBackNavigation(
+      mappedInput, activityManager, bookPath.c_str(),
+      {this, [](void* ctx) { static_cast<ReaderActivity*>(ctx)->onGoHome(); }},
+      {this, [](void* ctx) { static_cast<ReaderActivity*>(ctx)->onLongBackPress(); }});
 }
 
 void ReaderActivity::clearEndOfBookOptionsIfNeeded() {

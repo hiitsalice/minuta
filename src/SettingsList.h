@@ -269,9 +269,6 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
         SettingInfo::Enum(StrId::STR_SIDE_BTN_LAYOUT, &CrossPointSettings::sideButtonLayout,
                           {StrId::STR_PREV_NEXT, StrId::STR_NEXT_PREV}, "sideButtonLayout",
                           StrId::STR_CAT_CONTROLS),
-        SettingInfo::Enum(StrId::STR_LONG_PRESS_BACK_DESTINATION, &CrossPointSettings::longPressBackDestination,
-                          {StrId::STR_LIBRARY, StrId::STR_SETTINGS_TITLE},
-                          "longPressBackDestination", StrId::STR_CAT_CONTROLS),
         SettingInfo::Enum(StrId::STR_LONG_PRESS_MENU, &CrossPointSettings::longPressMenuFunction,
                           {StrId::STR_DICTIONARY, StrId::STR_HIGHLIGHT, StrId::STR_SCREENSHOT_BUTTON},
                           "longPressMenuFunction", StrId::STR_CAT_CONTROLS)
