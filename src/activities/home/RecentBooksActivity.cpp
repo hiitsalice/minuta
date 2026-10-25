@@ -197,5 +197,5 @@ void RecentBooksActivity::drawFooter() {
   const bool empty = recentBooks.empty();
   const auto labels = mappedInput.mapLabels("Menu", empty ? "" : tr(STR_SELECT), empty ? "" : tr(STR_DIR_UP),
                                             empty ? "" : tr(STR_DIR_DOWN));
-  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listNeedsScrolling());
 }

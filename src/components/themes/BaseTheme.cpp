@@ -156,7 +156,7 @@ void BaseTheme::drawHintLabel(GfxRenderer& renderer, const int fontId, const cha
 }
 
 void BaseTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const char* btn2, const char* btn3,
-                                const char* btn4, const int fontId) const {
+                                const char* btn4, const int fontId, const bool drawDivider) const {
   const GfxRenderer::Orientation orig_orientation = renderer.getOrientation();
   renderer.setOrientation(GfxRenderer::Orientation::Portrait);
 
@@ -172,6 +172,16 @@ void BaseTheme::drawButtonHints(GfxRenderer& renderer, const char* btn1, const c
   const int* buttonPositions = renderer.getScreenWidth() >= 528 ? wideButtonPositions : narrowButtonPositions;
   const char* labels[] = {btn1, btn2, btn3, btn4};
   const int labelFontId = fontId > 0 ? fontId : UI_10_FONT_ID;
+
+  if (drawDivider) {
+    constexpr int dividerGap = 9;
+    const int screenWidth = renderer.getScreenWidth();
+    // Match the header's secondary rule: 3/4 of its half-width main rule.
+    const int dividerWidth = screenWidth * 3 / 8;
+    const int dividerX = (screenWidth - dividerWidth) / 2;
+    const int dividerY = pageHeight - buttonY - dividerGap;
+    renderer.drawLine(dividerX, dividerY, dividerX + dividerWidth - 1, dividerY);
+  }
 
   for (int i = 0; i < 4; i++) {
     // Only draw if the label is non-empty

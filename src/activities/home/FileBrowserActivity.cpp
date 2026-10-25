@@ -527,7 +527,7 @@ void FileBrowserActivity::drawFooter() {
   const char* confirmLabel = files.empty() ? "" : tr(STR_SELECT);
   const auto labels = mappedInput.mapLabels(backLabel, confirmLabel, files.empty() ? "" : tr(STR_DIR_UP),
                                             files.empty() ? "" : tr(STR_DIR_DOWN));
-  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listNeedsScrolling());
 
 }
 

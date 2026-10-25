@@ -102,5 +102,5 @@ void EpubReaderFootnotesActivity::drawChrome() {
 void EpubReaderFootnotesActivity::drawFooter() {
   const auto labels = footnotes.empty() ? mappedInput.mapLabels(tr(STR_BACK), "", "", "")
                                         : mappedInput.mapLabels(tr(STR_BACK), tr(STR_SELECT), "", "");
-  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listNeedsScrolling());
 }

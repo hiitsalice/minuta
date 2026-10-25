@@ -36,6 +36,7 @@ class EpubReaderChapterSelectionActivity final : public UiListActivity {
   void drawChrome() override;
 
  public:
+  bool drawButtonHintDivider() const override { return true; }
   explicit EpubReaderChapterSelectionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                               const std::shared_ptr<Epub>& epub, int currentSpineIndex);
   void onEnter() override;

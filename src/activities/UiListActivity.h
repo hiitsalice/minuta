@@ -62,6 +62,7 @@ class UiListActivity : public Activity, protected UiAppHost {
   virtual void drawChrome();
   // Button hints, drawn after the app renders. Default: Back/Select/Up/Down.
   virtual void drawFooter();
+  virtual bool drawButtonHintDivider() const { return false; }
 
   // --- helpers ---------------------------------------------------------------
   // Measure visibleRows for the screen band, apply follow-on-build, clamp the
@@ -71,6 +72,7 @@ class UiListActivity : public Activity, protected UiAppHost {
   // hardware the denser override below uses the theme's *-with-subtitle row
   // height instead of its single-line one (see syncListViewport()).
   void syncListViewport(UiScreen& screen, freeink::ui::ListProps& props, bool hasSubtitle = false, int16_t bottomInset = 0);
+  bool listNeedsScrolling();
   // Move the selection to index and pull the viewport to it.
   void moveSelectionTo(int index);
 

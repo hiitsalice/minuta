@@ -28,7 +28,7 @@ void ButtonShortcutsActivity::render(RenderLock&&) {
   GUI.drawHeader(renderer, headerRect, tr(STR_BUTTON_SHORTCUTS), nullptr);
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
-  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1);
 
   renderer.displayBuffer();
 }

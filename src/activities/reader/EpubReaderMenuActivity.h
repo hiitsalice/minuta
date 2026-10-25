@@ -10,6 +10,7 @@
 
 class EpubReaderMenuActivity final : public UiListActivity {
  public:
+  bool drawButtonHintDivider() const override { return true; }
   // Menu actions available from the reader menu.
   enum class MenuAction {
     SELECT_CHAPTER,
