@@ -6,8 +6,8 @@
 
 #include "activities/UiListActivity.h"
 
-// Hidden shortcuts guide: a collapsible list like Settings. Every row can be selected; only the
-// bold section rows can be opened or closed, and the rows under them are for reading.
+// Hidden shortcuts guide: section rows expand/collapse; the reader tool value can be changed,
+// and all other rows are informational.
 class ButtonShortcutsActivity final : public UiListActivity {
  public:
   explicit ButtonShortcutsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);
@@ -22,6 +22,7 @@ class ButtonShortcutsActivity final : public UiListActivity {
     int section;
     std::string text;
     std::string boldTail;
+    bool toolSelector = false;
   };
 
   int listCount() const override { return static_cast<int>(rows_.size()); }

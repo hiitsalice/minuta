@@ -21,6 +21,7 @@ struct Entry {
   const char* text;
   const char* boldTail;
   bool currentTheme = false;
+  bool currentTool = false;
 };
 
 constexpr Entry kGeneral[] = {{1, "Hold POWER", nullptr},
@@ -36,7 +37,9 @@ constexpr Entry kLibrary[] = {{1, "Hold MENU", nullptr},
                               {1, "Hold SELECT", nullptr},
                               {2, "Delete file |", " No prompt"}};
 constexpr Entry kRecent[] = {{1, "Hold SELECT", nullptr}, {2, "Remove from list |", " No prompt"}};
-constexpr Entry kReader[] = {{1, "Hold BACK", nullptr},
+constexpr Entry kReader[] = {{1, "Hold SELECT", nullptr},
+                             {2, "Use tool:", nullptr, false, true},
+                             {1, "Hold BACK", nullptr},
                              {2, "To main menu", nullptr},
                              {1, "Hold PREV", nullptr},
                              {2, "To previous chapter", nullptr},
@@ -103,7 +106,23 @@ void ButtonShortcutsActivity::rebuildRows() {
             SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM ? "Quartum" : "Solum";
         boldTail = std::string(" ") + themeName;
       }
-      rows_.push_back({e.level == 1 ? Level::Trigger : Level::Action, s, e.text, boldTail});
+      if (e.currentTool) {
+        const char* toolName = tr(STR_DICTIONARY);
+        switch (SETTINGS.longPressMenuFunction) {
+          case CrossPointSettings::LP_MENU_HIGHLIGHT:
+            toolName = tr(STR_HIGHLIGHT);
+            break;
+          case CrossPointSettings::LP_MENU_SCREENSHOT:
+            toolName = tr(STR_SCREENSHOT_BUTTON);
+            break;
+          case CrossPointSettings::LP_MENU_DICTIONARY:
+          default:
+            break;
+        }
+        boldTail = std::string(" ") + toolName;
+      }
+      rows_.push_back({e.level == 1 ? Level::Trigger : Level::Action, s, e.text, boldTail,
+                       e.currentTool});
     }
   }
 
@@ -157,10 +176,26 @@ void ButtonShortcutsActivity::buildScreen(UiScreen& screen) {
   screen.list(props);
 }
 
-// Only the section rows do anything; every other row is for reading.
+// Section headings expand/collapse; the tool value row cycles the reader's long-press tool.
 void ButtonShortcutsActivity::activateIndex(const int index) {
   app.clearTapFlash();
   if (index < 0 || index >= static_cast<int>(rows_.size())) return;
+
+  if (rows_[index].toolSelector) {
+    SETTINGS.longPressMenuFunction = static_cast<uint8_t>(
+        (SETTINGS.longPressMenuFunction + 1) %
+        CrossPointSettings::LONG_PRESS_MENU_FUNCTION_COUNT);
+    SETTINGS.saveToFile();
+    {
+      RenderLock lock(*this);
+      rebuildRows();
+      nav.selected = index;
+      nav.followOnBuild = true;
+    }
+    requestUpdate();
+    return;
+  }
+
   if (rows_[index].level != Level::Section) return;
 
   const int section = rows_[index].section;
@@ -175,9 +210,10 @@ void ButtonShortcutsActivity::activateIndex(const int index) {
 }
 
 void ButtonShortcutsActivity::drawFooter() {
-  const bool onSection = nav.selected >= 0 && nav.selected < static_cast<int>(rows_.size()) &&
-                         rows_[nav.selected].level == Level::Section;
-  const auto labels = mappedInput.mapLabels(tr(STR_BACK), onSection ? tr(STR_SELECT) : "", tr(STR_DIR_UP),
-                                            tr(STR_DIR_DOWN));
+  const bool validSelection = nav.selected >= 0 && nav.selected < static_cast<int>(rows_.size());
+  const bool onSection = validSelection && rows_[nav.selected].level == Level::Section;
+  const bool onToolSelector = validSelection && rows_[nav.selected].toolSelector;
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), (onSection || onToolSelector) ? tr(STR_SELECT) : "",
+                                            tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
