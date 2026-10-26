@@ -1,5 +1,7 @@
 #include "ButtonShortcutsActivity.h"
 
+#include "CrossPointSettings.h"
+
 #include <GfxRenderer.h>
 #include <I18n.h>
 
@@ -18,6 +20,7 @@ struct Entry {
   int level;
   const char* text;
   const char* boldTail;
+  bool currentTheme = false;
 };
 
 constexpr Entry kGeneral[] = {{1, "Hold POWER", nullptr},
@@ -25,26 +28,26 @@ constexpr Entry kGeneral[] = {{1, "Hold POWER", nullptr},
                               {1, "Press POWER", nullptr},
                               {2, "Refresh screen", nullptr}};
 constexpr Entry kHome[] = {{1, "Hold READ", nullptr},
-                           {2, "Switch theme", nullptr},
+                           {2, "Switch theme | Currently:", nullptr, true},
                            {1, "Hold BACK", nullptr},
                            {2, "Clear all reading caches", nullptr}};
 constexpr Entry kLibrary[] = {{1, "Hold MENU", nullptr},
                               {2, "Show/hide hidden files", nullptr},
                               {1, "Hold SELECT", nullptr},
-                              {2, "Delete file", " immediately"}};
-constexpr Entry kRecent[] = {{1, "Hold SELECT", nullptr}, {2, "Remove from list", " immediately"}};
+                              {2, "Delete file |", " No prompt"}};
+constexpr Entry kRecent[] = {{1, "Hold SELECT", nullptr}, {2, "Remove from list |", " No prompt"}};
 constexpr Entry kReader[] = {{1, "Hold BACK", nullptr},
                              {2, "To main menu", nullptr},
                              {1, "Hold PREV", nullptr},
                              {2, "To previous chapter", nullptr},
                              {1, "Hold NEXT", nullptr},
                              {2, "To next chapter", nullptr}};
-constexpr Entry kHighlight[] = {{1, "Hold SELECT", nullptr}, {2, "Delete highlight", " immediately"}};
+constexpr Entry kHighlight[] = {{1, "Hold SELECT", nullptr}, {2, "Delete highlight |", " No prompt"}};
 constexpr Entry kDictionary[] = {{1, "Hold SELECT on word beside - or \xE2\x80\x93 or \xE2\x80\x94", nullptr},
                                  {2, "Select the compound expression", nullptr}};
-constexpr Entry kWifi[] = {{1, "+", nullptr},
+constexpr Entry kWifi[] = {{1, "Symbol: +", nullptr},
                            {2, "Saved Wi-Fi", nullptr},
-                           {1, "*", nullptr},
+                           {1, "Symbol: *", nullptr},
                            {2, "Encrypted Wi-Fi", nullptr}};
 constexpr Entry kOpds[] = {{1, "Add /opds to URL", nullptr},
                            {2, "Use Calibre", nullptr}};
@@ -59,7 +62,7 @@ constexpr SectionDef kSections[] = {
     {"General", kGeneral, static_cast<int>(std::size(kGeneral))},
     {"Home", kHome, static_cast<int>(std::size(kHome))},
     {"Library", kLibrary, static_cast<int>(std::size(kLibrary))},
-    {"Recent Books", kRecent, static_cast<int>(std::size(kRecent))},
+    {"Recent Book(s)", kRecent, static_cast<int>(std::size(kRecent))},
     {"Reader", kReader, static_cast<int>(std::size(kReader))},
     {"Highlight List", kHighlight, static_cast<int>(std::size(kHighlight))},
     {"Dictionary", kDictionary, static_cast<int>(std::size(kDictionary))},
@@ -90,19 +93,25 @@ void ButtonShortcutsActivity::rebuildRows() {
   rows_.clear();
   items_.clear();
   for (int s = 0; s < kSectionCount; ++s) {
-    rows_.push_back({Level::Section, s, kSections[s].title, nullptr});
+    rows_.push_back({Level::Section, s, kSections[s].title, ""});
     if (!expanded_[s]) continue;
     for (int i = 0; i < kSections[s].count; ++i) {
       const Entry& e = kSections[s].entries[i];
-      rows_.push_back({e.level == 1 ? Level::Trigger : Level::Action, s, e.text, e.boldTail});
+      std::string boldTail = e.boldTail ? e.boldTail : "";
+      if (e.currentTheme) {
+        const char* themeName =
+            SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM ? "Quartum" : "Solum";
+        boldTail = std::string(" ") + themeName;
+      }
+      rows_.push_back({e.level == 1 ? Level::Trigger : Level::Action, s, e.text, boldTail});
     }
   }
 
   items_.reserve(rows_.size());
   for (size_t i = 0; i < rows_.size(); ++i) {
     fui::ListItem item;
-    item.label = rows_[i].text;
-    item.labelBoldTail = rows_[i].boldTail;
+    item.label = rows_[i].text.c_str();
+    item.labelBoldTail = rows_[i].boldTail.empty() ? nullptr : rows_[i].boldTail.c_str();
     item.actionValue = static_cast<int16_t>(i);
     switch (rows_[i].level) {
       case Level::Section:

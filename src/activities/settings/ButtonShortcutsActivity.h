@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "activities/UiListActivity.h"
@@ -19,8 +20,8 @@ class ButtonShortcutsActivity final : public UiListActivity {
   struct Row {
     Level level;
     int section;
-    const char* text;
-    const char* boldTail;
+    std::string text;
+    std::string boldTail;
   };
 
   int listCount() const override { return static_cast<int>(rows_.size()); }
