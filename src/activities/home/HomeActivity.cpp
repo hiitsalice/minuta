@@ -460,10 +460,10 @@ void HomeActivity::switchTheme(const MappedInputManager::Button heldButton) {
   UITheme::getInstance().reload();
 
   {
-    // Clean white full refresh so nothing of the old look ghosts into the new one.
+    // Clear the old theme before applying the new one with a half refresh.
     RenderLock lock(*this);
     renderer.clearScreen();
-    renderer.displayBuffer(HalDisplay::FULL_REFRESH);
+    renderer.displayBuffer(HalDisplay::HALF_REFRESH);
   }
 
   onEnter();  // rebuild Home (covers, selection) for the new theme

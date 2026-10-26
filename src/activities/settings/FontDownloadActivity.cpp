@@ -610,7 +610,7 @@ void FontDownloadActivity::activateSelected() {
       currentFileTotal_ = family.files.size();
       downloadFamily(family);
     } else {
-      // Delete right away (no confirmation screen), then refresh the whole screen.
+      // Delete right away (no confirmation screen), then use a half refresh.
       if (fontInstaller_.deleteFamily(family.name.c_str()) != FontInstaller::Error::OK) {
         RenderLock lock(*this);
         state_ = ERROR;
@@ -625,7 +625,7 @@ void FontDownloadActivity::activateSelected() {
         if (it != filteredIndices_.end()) {
           nav.selected = static_cast<int>(it - filteredIndices_.begin()) + specialRowCount();
         }
-        renderer.promoteNextRefresh(HalDisplay::FULL_REFRESH);
+        renderer.promoteNextRefresh(HalDisplay::HALF_REFRESH);
       }
       requestUpdate();
       return;
