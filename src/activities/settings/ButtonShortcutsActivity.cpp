@@ -42,8 +42,12 @@ constexpr Entry kReader[] = {{1, "Hold BACK", nullptr},
 constexpr Entry kHighlight[] = {{1, "Hold SELECT", nullptr}, {2, "Delete highlight", " immediately"}};
 constexpr Entry kDictionary[] = {{1, "Hold SELECT on word beside - or \xE2\x80\x93 or \xE2\x80\x94", nullptr},
                                  {2, "Select the compound expression", nullptr}};
-constexpr Entry kWifi[] = {{2, "+ = Saved Wi-Fi", nullptr}, {2, "* = Encrypted Wi-Fi", nullptr}};
-constexpr Entry kOpds[] = {{2, "For Calibre, add /opds to your URL", nullptr}};
+constexpr Entry kWifi[] = {{1, "+", nullptr},
+                           {2, "Saved Wi-Fi", nullptr},
+                           {1, "*", nullptr},
+                           {2, "Encrypted Wi-Fi", nullptr}};
+constexpr Entry kOpds[] = {{1, "Add /opds to URL", nullptr},
+                           {2, "Use Calibre", nullptr}};
 
 struct SectionDef {
   const char* title;
@@ -65,8 +69,8 @@ constexpr SectionDef kSections[] = {
 constexpr int kSectionCount = static_cast<int>(std::size(kSections));
 
 constexpr int16_t kSectionX = 21;  // same as the section rows in Settings
-constexpr int16_t kTriggerX = 12;
-constexpr int16_t kActionX = 36;
+constexpr int16_t kTriggerX = 36;
+constexpr int16_t kActionX = 72;
 }  // namespace
 
 ButtonShortcutsActivity::ButtonShortcutsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
@@ -109,6 +113,7 @@ void ButtonShortcutsActivity::rebuildRows() {
         break;
       case Level::Trigger:
         item.labelXOffset = kTriggerX;
+        item.leaderLine = true;
         break;
       case Level::Action:
         item.labelXOffset = kActionX;
