@@ -13,22 +13,41 @@
 namespace fui = freeink::ui;
 
 namespace {
-constexpr const char* kGeneral[] = {"Hold POWER: Sleep", "Press POWER: Refresh screen"};
-constexpr const char* kHome[] = {"Hold READ: Switch theme", "Hold BACK: Clear all reading caches"};
-constexpr const char* kLibrary[] = {"Hold MENU: Show hidden files", "Hold SELECT: Delete file immediately"};
-constexpr const char* kRecent[] = {"Hold SELECT: Remove from list immediately"};
-constexpr const char* kReader[] = {"Hold BACK: Open main menu", "Hold PREV: Previous chapter",
-                                   "Hold NEXT: Next chapter"};
-constexpr const char* kHighlight[] = {"Hold SELECT: Delete highlight immediately"};
-// One note, three display lines: it takes the height of three ordinary rows.
-constexpr const char* kDictionary[] = {"Hold SELECT on a word beside", "a hyphen, en dash or em dash:",
-                                       "Select the compound expression"};
-constexpr const char* kWifi[] = {"+ = Saved Wi-Fi", "* = Encrypted Wi-Fi"};
-constexpr const char* kOpds[] = {"For Calibre, add /opds to your URL"};
+// level 1 = the button to hold or press, level 2 = what it does.
+struct Entry {
+  int level;
+  const char* text;
+  const char* boldTail;
+};
+
+constexpr Entry kGeneral[] = {{1, "Hold POWER", nullptr},
+                              {2, "Sleep", nullptr},
+                              {1, "Press POWER", nullptr},
+                              {2, "Refresh screen", nullptr}};
+constexpr Entry kHome[] = {{1, "Hold READ", nullptr},
+                           {2, "Switch theme", nullptr},
+                           {1, "Hold BACK", nullptr},
+                           {2, "Clear all reading caches", nullptr}};
+constexpr Entry kLibrary[] = {{1, "Hold MENU", nullptr},
+                              {2, "Show/hide hidden files", nullptr},
+                              {1, "Hold SELECT", nullptr},
+                              {2, "Delete file", " immediately"}};
+constexpr Entry kRecent[] = {{1, "Hold SELECT", nullptr}, {2, "Remove from list", " immediately"}};
+constexpr Entry kReader[] = {{1, "Hold BACK", nullptr},
+                             {2, "To main menu", nullptr},
+                             {1, "Hold PREV", nullptr},
+                             {2, "To previous chapter", nullptr},
+                             {1, "Hold NEXT", nullptr},
+                             {2, "To next chapter", nullptr}};
+constexpr Entry kHighlight[] = {{1, "Hold SELECT", nullptr}, {2, "Delete highlight", " immediately"}};
+constexpr Entry kDictionary[] = {{1, "Hold SELECT on word beside - or \xE2\x80\x93 or \xE2\x80\x94", nullptr},
+                                 {2, "Select the compound expression", nullptr}};
+constexpr Entry kWifi[] = {{2, "+ = Saved Wi-Fi", nullptr}, {2, "* = Encrypted Wi-Fi", nullptr}};
+constexpr Entry kOpds[] = {{2, "For Calibre, add /opds to your URL", nullptr}};
 
 struct SectionDef {
   const char* title;
-  const char* const* lines;
+  const Entry* entries;
   int count;
 };
 
@@ -44,6 +63,10 @@ constexpr SectionDef kSections[] = {
     {"OPDS Server", kOpds, static_cast<int>(std::size(kOpds))},
 };
 constexpr int kSectionCount = static_cast<int>(std::size(kSections));
+
+constexpr int16_t kSectionX = 21;  // same as the section rows in Settings
+constexpr int16_t kTriggerX = 12;
+constexpr int16_t kActionX = 36;
 }  // namespace
 
 ButtonShortcutsActivity::ButtonShortcutsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
@@ -63,23 +86,34 @@ void ButtonShortcutsActivity::rebuildRows() {
   rows_.clear();
   items_.clear();
   for (int s = 0; s < kSectionCount; ++s) {
-    rows_.push_back({true, s, kSections[s].title});
-    if (expanded_[s]) {
-      for (int i = 0; i < kSections[s].count; ++i) {
-        rows_.push_back({false, s, kSections[s].lines[i]});
-      }
+    rows_.push_back({Level::Section, s, kSections[s].title, nullptr});
+    if (!expanded_[s]) continue;
+    for (int i = 0; i < kSections[s].count; ++i) {
+      const Entry& e = kSections[s].entries[i];
+      rows_.push_back({e.level == 1 ? Level::Trigger : Level::Action, s, e.text, e.boldTail});
     }
   }
+
   items_.reserve(rows_.size());
   for (size_t i = 0; i < rows_.size(); ++i) {
     fui::ListItem item;
     item.label = rows_[i].text;
+    item.labelBoldTail = rows_[i].boldTail;
     item.actionValue = static_cast<int16_t>(i);
-    if (rows_[i].isHeader) {
-      item.labelXOffset = 21;
-      item.bold = true;
-      item.leadingTriangleIndicator = true;
-      item.triangleDown = expanded_[rows_[i].section] != 0;
+    switch (rows_[i].level) {
+      case Level::Section:
+        item.labelXOffset = kSectionX;
+        item.bold = true;
+        item.leadingTriangleIndicator = true;
+        item.triangleDown = expanded_[rows_[i].section] != 0;
+        break;
+      case Level::Trigger:
+        item.labelXOffset = kTriggerX;
+        break;
+      case Level::Action:
+        item.labelXOffset = kActionX;
+        item.leaderLine = true;
+        break;
     }
     items_.push_back(item);
   }
@@ -103,24 +137,17 @@ void ButtonShortcutsActivity::buildScreen(UiScreen& screen) {
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.rowGap = 0;
   props.labelText = screen.theme().smallText;
-  props.labelText.maxLines = 1;  // one line per row, so every row is exactly one row high
+  props.labelText.maxLines = 1;
   props.labelText.lineGap = 6;
   syncListViewport(screen, props);
   screen.list(props);
 }
 
+// Only the section rows do anything; every other row is for reading.
 void ButtonShortcutsActivity::activateIndex(const int index) {
   app.clearTapFlash();
   if (index < 0 || index >= static_cast<int>(rows_.size())) return;
-
-  if (!rows_[index].isHeader) {
-    // Notes are read-only: a stray tap goes back to the section the note belongs to.
-    int h = index;
-    while (h > 0 && !rows_[h].isHeader) --h;
-    nav.selected = h;
-    requestUpdate();
-    return;
-  }
+  if (rows_[index].level != Level::Section) return;
 
   const int section = rows_[index].section;
   {
@@ -133,37 +160,10 @@ void ButtonShortcutsActivity::activateIndex(const int index) {
   requestUpdate();
 }
 
-// Only the section rows can be landed on, so every direction button steps to the neighbouring section.
-void ButtonShortcutsActivity::moveToHeader(const int direction) {
-  std::vector<int> headers;
-  for (size_t i = 0; i < rows_.size(); ++i) {
-    if (rows_[i].isHeader) headers.push_back(static_cast<int>(i));
-  }
-  if (headers.empty()) return;
-
-  const int n = static_cast<int>(headers.size());
-  int pos = 0;
-  for (int h = 0; h < n; ++h) {
-    if (headers[h] <= nav.selected) pos = h;
-  }
-  const int next = (pos + direction + n) % n;
-  {
-    RenderLock lock(*this);
-    nav.selected = headers[next];
-    nav.follow(listCount());
-  }
-  requestUpdate();
-}
-
-void ButtonShortcutsActivity::navigateButtons() {
-  using Button = MappedInputManager::Button;
-  navigator_.onRelease({Button::Down, Button::Right}, [this] { moveToHeader(1); });
-  navigator_.onRelease({Button::Up, Button::Left}, [this] { moveToHeader(-1); });
-  navigator_.onContinuous({Button::Down, Button::Right}, [this] { moveToHeader(1); });
-  navigator_.onContinuous({Button::Up, Button::Left}, [this] { moveToHeader(-1); });
-}
-
 void ButtonShortcutsActivity::drawFooter() {
-  const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_TOGGLE), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+  const bool onSection = nav.selected >= 0 && nav.selected < static_cast<int>(rows_.size()) &&
+                         rows_[nav.selected].level == Level::Section;
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), onSection ? tr(STR_SELECT) : "", tr(STR_DIR_UP),
+                                            tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }

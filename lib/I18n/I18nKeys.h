@@ -214,7 +214,6 @@ enum class StrId : uint16_t {
   STR_BACK,
   STR_HOME,
   STR_SELECT,
-  STR_TOGGLE,
   STR_CONFIRM,
   STR_CANCEL,
   STR_CONNECT,
