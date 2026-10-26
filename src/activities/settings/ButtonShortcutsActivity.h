@@ -30,6 +30,7 @@ class ButtonShortcutsActivity final : public UiListActivity {
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
   void drawFooter() override;
+  bool drawButtonHintDivider() const override { return true; }
 
   void rebuildRows();
 
