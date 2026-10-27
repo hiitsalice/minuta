@@ -45,6 +45,14 @@ constexpr Entry kReader[] = {{1, "Hold SELECT", nullptr},
                              {2, "To previous chapter", nullptr},
                              {1, "Hold NEXT", nullptr},
                              {2, "To next chapter", nullptr}};
+constexpr Entry kSettings[] = {{1, "Hold UP", nullptr},
+                               {2, "To previous section", nullptr},
+                               {1, "Hold DOWN", nullptr},
+                               {2, "To next section", nullptr}};
+constexpr Entry kReaderMenu[] = {{1, "Hold UP", nullptr},
+                                 {2, "To previous section", nullptr},
+                                 {1, "Hold DOWN", nullptr},
+                                 {2, "To next section", nullptr}};
 constexpr Entry kHighlight[] = {{1, "Hold SELECT", nullptr}, {2, "Delete highlight |", " No prompt"}};
 constexpr Entry kDictionary[] = {{1, "Hold SELECT on word beside - or \xE2\x80\x93 or \xE2\x80\x94", nullptr},
                                  {2, "Select the compound expression", nullptr}};
@@ -64,9 +72,11 @@ struct SectionDef {
 constexpr SectionDef kSections[] = {
     {"General", kGeneral, static_cast<int>(std::size(kGeneral))},
     {"Home", kHome, static_cast<int>(std::size(kHome))},
+    {"Settings", kSettings, static_cast<int>(std::size(kSettings))},
     {"Library", kLibrary, static_cast<int>(std::size(kLibrary))},
     {"Recent Book(s)", kRecent, static_cast<int>(std::size(kRecent))},
     {"Reader", kReader, static_cast<int>(std::size(kReader))},
+    {"Reader Menu", kReaderMenu, static_cast<int>(std::size(kReaderMenu))},
     {"Highlight List", kHighlight, static_cast<int>(std::size(kHighlight))},
     {"Dictionary", kDictionary, static_cast<int>(std::size(kDictionary))},
     {"Wi-Fi Networks", kWifi, static_cast<int>(std::size(kWifi))},
