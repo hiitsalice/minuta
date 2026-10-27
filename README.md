@@ -60,7 +60,7 @@ Minuta is intentionally built around XTEINK X4 only. Removing unused device supp
 
 Baseline refers to the firmware size of the CrossPoint build Minuta was forked from.
 
-### Current resource usage (Minuta 1.4)
+### Current resource usage (Minuta 1.5)
 
 | Measure                   | Result                          |
 |----------------------------|----------------------------------|
