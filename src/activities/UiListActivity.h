@@ -72,7 +72,10 @@ class UiListActivity : public Activity, protected UiAppHost {
   // hardware the denser override below uses the theme's *-with-subtitle row
   // height instead of its single-line one (see syncListViewport()).
   void syncListViewport(UiScreen& screen, freeink::ui::ListProps& props, bool hasSubtitle = false, int16_t bottomInset = 0);
-  bool listNeedsScrolling();
+  bool listFillsArea();
+  // How many rows of the configured height fit the list area. Set from geometry by
+  // syncListViewport() / syncTabListViewport(), never from what was drawn.
+  int listCapacityRows_ = 0;
   // Move the selection to index and pull the viewport to it.
   void moveSelectionTo(int index);
 

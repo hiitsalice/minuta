@@ -858,7 +858,7 @@ void FontDownloadActivity::render(RenderLock&&) {
                                                               : "Install";
     const auto labels = mappedInput.mapLabels(hasGroupScreen() ? tr(STR_BACK) : "Menu", confirmLabel, hasVisibleFamilies ? tr(STR_DIR_UP) : "",
                                               hasVisibleFamilies ? tr(STR_DIR_DOWN) : "");
-    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listNeedsScrolling());
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea());
   } else if (state_ == DOWNLOADING) {
     renderer.drawCenteredText(UI_10_FONT_ID, 420, "Installing...", true, EpdFontFamily::REGULAR);
   } else if (state_ == COMPLETE) {

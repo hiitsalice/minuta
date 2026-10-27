@@ -107,12 +107,18 @@ void UiListActivity::syncListViewport(UiScreen& screen, fui::ListProps& props, c
   if (bottomInset > 0 && listBody.height > bottomInset)
     listBody.height = static_cast<int16_t>(listBody.height - bottomInset);
 
+  listCapacityRows_ = static_cast<int>(fui::listVisibleRows(listBody, rowHeight, rowGap));
   activeNav().syncToProps(
       listBody, rowHeight, rowGap, listCount(), props);
 }
 
-bool UiListActivity::listNeedsScrolling() {
-  return listCount() > activeNav().pageRows();
+// True when the list scrolls, or when it is full: no further row would fit below the last one, so the last
+// row sits at the bottom of the available area. Decides whether the button-hint divider is drawn.
+// kDividerSlackRows is a tuning knob: 1 makes the divider appear one row earlier, -1 one row later.
+bool UiListActivity::listFillsArea() {
+  constexpr int kDividerSlackRows = 0;
+  const int count = listCount();
+  return count > 0 && listCapacityRows_ > 0 && count + kDividerSlackRows >= listCapacityRows_;
 }
 
 void UiListActivity::drawChrome() {
@@ -125,7 +131,7 @@ void UiListActivity::drawChrome() {
 void UiListActivity::drawFooter() {
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4,
-                      -1, drawButtonHintDivider() && listNeedsScrolling());
+                      -1, drawButtonHintDivider() && listFillsArea());
 }
 
 void UiListActivity::render(RenderLock&&) {

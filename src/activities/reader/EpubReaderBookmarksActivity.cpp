@@ -320,7 +320,7 @@ void EpubReaderBookmarksActivity::render(RenderLock&&) {
 
   const auto confirmLabel = savedRows.empty() ? "" : tr(STR_SELECT);
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabel, tr(STR_DIR_UP), tr(STR_DIR_DOWN));
-  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listNeedsScrolling());
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea());
 
   renderer.displayBuffer();
 }
