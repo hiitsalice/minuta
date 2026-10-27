@@ -167,6 +167,61 @@ void ButtonShortcutsActivity::rebuildRows() {
   }
 }
 
+void ButtonShortcutsActivity::navigateButtons() {
+  const int count = listCount();
+  if (count <= 0) return;
+
+  // Taps move one row, as in an ordinary list.
+  buttonNavigator.onNextRelease(
+      [this, count] { moveSelectionTo(ButtonNavigator::nextIndex(activeNav().selected, count)); });
+  buttonNavigator.onPreviousRelease(
+      [this, count] { moveSelectionTo(ButtonNavigator::previousIndex(activeNav().selected, count)); });
+
+  // Holds jump between section headings.
+  buttonNavigator.onNextContinuous([this] { jumpToAdjacentSection(1); });
+  buttonNavigator.onPreviousContinuous([this] { jumpToAdjacentSection(-1); });
+}
+
+void ButtonShortcutsActivity::jumpToAdjacentSection(const int direction) {
+  std::vector<size_t> headers;
+  for (size_t i = 0; i < rows_.size(); ++i) {
+    if (rows_[i].level == Level::Section) headers.push_back(i);
+  }
+  if (headers.empty()) return;
+
+  const int selected = activeNav().selected;
+  size_t target = 0;
+
+  if (selected < 0) {
+    target = direction > 0 ? 0 : headers.size() - 1;
+  } else {
+    if (static_cast<size_t>(selected) >= rows_.size()) return;
+
+    size_t position = 0;
+    for (size_t h = 0; h < headers.size(); ++h) {
+      if (headers[h] <= static_cast<size_t>(selected)) {
+        position = h;
+      } else {
+        break;
+      }
+    }
+
+    const bool onHeader =
+        rows_[static_cast<size_t>(selected)].level == Level::Section;
+
+    if (direction < 0 && !onHeader) {
+      // First reach the current section heading.
+      target = position;
+    } else {
+      // Move to the adjacent section heading, wrapping at either end.
+      target = direction > 0 ? (position + 1) % headers.size()
+                             : (position + headers.size() - 1) % headers.size();
+    }
+  }
+
+  moveSelectionTo(static_cast<int>(headers[target]));
+}
+
 void ButtonShortcutsActivity::buildScreen(UiScreen& screen) {
   uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
   uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);

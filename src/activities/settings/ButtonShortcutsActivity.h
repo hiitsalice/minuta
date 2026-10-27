@@ -27,6 +27,8 @@ class ButtonShortcutsActivity final : public UiListActivity {
 
   int listCount() const override { return static_cast<int>(rows_.size()); }
   const char* headerTitle() const override;
+  void navigateButtons() override;
+  void jumpToAdjacentSection(int direction);
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
   void drawFooter() override;
