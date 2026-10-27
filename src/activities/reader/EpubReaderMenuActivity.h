@@ -85,6 +85,8 @@ class EpubReaderMenuActivity final : public UiListActivity {
   // Back closes on RELEASE and Confirm activates on RELEASE; everything else
   // (row navigation, page jumps) falls through to the base handler.
   bool handleButtons() override;
+  void navigateButtons() override;
+  void jumpToAdjacentCategory(int direction);
   // Header via GUI.drawHeader inside the safe area for the battery indicator.
   void drawChrome() override;
 

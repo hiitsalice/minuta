@@ -242,6 +242,59 @@ bool EpubReaderMenuActivity::handleCustomInput() {
   return optionPopup.handleInput(mappedInput, [this] { requestUpdate(); });
 }
 
+void EpubReaderMenuActivity::navigateButtons() {
+  const int count = listCount();
+  if (count <= 0) return;
+
+  // Taps move one row, just like ordinary lists.
+  buttonNavigator.onNextRelease(
+      [this, count] { moveSelectionTo(ButtonNavigator::nextIndex(activeNav().selected, count)); });
+  buttonNavigator.onPreviousRelease(
+      [this, count] { moveSelectionTo(ButtonNavigator::previousIndex(activeNav().selected, count)); });
+
+  // Holds jump between category headings, matching Settings navigation.
+  buttonNavigator.onNextContinuous([this] { jumpToAdjacentCategory(1); });
+  buttonNavigator.onPreviousContinuous([this] { jumpToAdjacentCategory(-1); });
+}
+
+void EpubReaderMenuActivity::jumpToAdjacentCategory(const int direction) {
+  std::vector<size_t> headers;
+  for (size_t i = 0; i < visibleRows.size(); ++i) {
+    if (visibleRows[i].isCategory) headers.push_back(i);
+  }
+  if (headers.empty()) return;
+
+  const int selected = activeNav().selected;
+  size_t target = 0;
+
+  if (selected < 0) {
+    target = direction > 0 ? 0 : headers.size() - 1;
+  } else {
+    if (static_cast<size_t>(selected) >= visibleRows.size()) return;
+
+    const Category currentCategory = visibleRows[static_cast<size_t>(selected)].category;
+    size_t position = 0;
+    for (size_t h = 0; h < headers.size(); ++h) {
+      if (visibleRows[headers[h]].category == currentCategory) {
+        position = h;
+        break;
+      }
+    }
+
+    const bool onHeader = visibleRows[static_cast<size_t>(selected)].isCategory;
+    if (direction < 0 && !onHeader) {
+      // First reach this category's own heading.
+      target = position;
+    } else {
+      // Move to the adjacent category heading, wrapping at either end.
+      target = direction > 0 ? (position + 1) % headers.size()
+                             : (position + headers.size() - 1) % headers.size();
+    }
+  }
+
+  moveSelectionTo(static_cast<int>(headers[target]));
+}
+
 bool EpubReaderMenuActivity::handleButtons() {
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     closeCancelled();
