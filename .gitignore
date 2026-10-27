@@ -31,3 +31,6 @@ lib/EpdFont/scripts/output/
 /sdkconfig.*
 flake.*
 minuta-*.bin
+sim.log
+build.log
+firmware.bin
