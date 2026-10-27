@@ -76,9 +76,6 @@ void SettingsActivity::rebuildSettingsLists() {
     appendSetting(deviceSettings, StrId::STR_TIME_TO_SLEEP);
     appendSetting(deviceSettings, StrId::STR_SLEEP_SCREEN);
     appendSetting(deviceSettings, StrId::STR_REFRESH_FREQ);
-  });
-
-  addSettingsSection("Appearance", [&] {
     appendSetting(deviceSettings, StrId::STR_SUNLIGHT_FADING_FIX);
   });
 
