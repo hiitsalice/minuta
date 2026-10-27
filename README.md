@@ -56,6 +56,7 @@ Minuta is intentionally built around XTEINK X4 only. Removing unused device supp
 | Minuta 1.2 | 4,005,049 bytes / 3.82 MiB | -28,170 bytes / -27.5 KiB   | -11.15%                        |
 | Minuta 1.3 | 3,608,981 bytes / 3.44 MiB | -396,068 bytes / -386.8 KiB | -19.94%                        |
 | Minuta 1.4 | 3,703,499 bytes / 3.53 MiB | +94,518 bytes / +92.3 KiB   | -17.84%                        |
+| Minuta 1.5 | 3,817,264 bytes / 3.64 MiB | +113,765 bytes / +111.1 KiB | -15.31%                        |
 
 Baseline refers to the firmware size of the CrossPoint build Minuta was forked from.
 
@@ -63,8 +64,8 @@ Baseline refers to the firmware size of the CrossPoint build Minuta was forked f
 
 | Measure                   | Result                          |
 |----------------------------|----------------------------------|
-| Flash used                 | 3,690,859 bytes / 56.3%         |
-| RAM used                   | 55,708 bytes / 17.0%            |
+| Flash used                 | 3,803,483 bytes / 58.0%         |
+| RAM used                   | 55,796 bytes / 17.0%            |
 
 These are firmware-size measurements rather than promises about page-turn speed or battery life. Minuta was made smaller so the X4 has less unnecessary firmware to carry around.
 
