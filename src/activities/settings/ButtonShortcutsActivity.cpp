@@ -30,7 +30,7 @@ constexpr Entry kGeneral[] = {{1, "Hold POWER", nullptr},
                               {2, "Refresh screen", nullptr}};
 constexpr Entry kHome[] = {{1, "Hold READ", nullptr},
                            {2, "Switch theme | Currently:", nullptr, true},
-                           {1, "Hold BACK", nullptr},
+                           {1, "Hold MENU", nullptr},
                            {2, "Clear all reading caches", nullptr}};
 constexpr Entry kLibrary[] = {{1, "Hold MENU", nullptr},
                               {2, "Show/hide hidden files", nullptr},
