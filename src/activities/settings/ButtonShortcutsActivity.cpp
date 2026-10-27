@@ -56,6 +56,10 @@ constexpr Entry kReaderMenu[] = {{1, "Hold UP", nullptr},
 constexpr Entry kHighlight[] = {{1, "Hold SELECT", nullptr}, {2, "Delete highlight |", " No prompt"}};
 constexpr Entry kDictionary[] = {{1, "Hold SELECT on word beside - or \xE2\x80\x93 or \xE2\x80\x94", nullptr},
                                  {2, "Select the compound expression", nullptr}};
+constexpr Entry kHiddenFeatures[] = {{1, "Hold UP", nullptr},
+                                     {2, "To previous section", nullptr},
+                                     {1, "Hold DOWN", nullptr},
+                                     {2, "To next section", nullptr}};
 constexpr Entry kWifi[] = {{1, "Symbol: +", nullptr},
                            {2, "Saved Wi-Fi", nullptr},
                            {1, "Symbol: *", nullptr},
@@ -79,6 +83,7 @@ constexpr SectionDef kSections[] = {
     {"Reader Menu", kReaderMenu, static_cast<int>(std::size(kReaderMenu))},
     {"Highlight List", kHighlight, static_cast<int>(std::size(kHighlight))},
     {"Dictionary", kDictionary, static_cast<int>(std::size(kDictionary))},
+    {"Hidden Features", kHiddenFeatures, static_cast<int>(std::size(kHiddenFeatures))},
     {"Wi-Fi Networks", kWifi, static_cast<int>(std::size(kWifi))},
     {"OPDS Server", kOpds, static_cast<int>(std::size(kOpds))},
 };
