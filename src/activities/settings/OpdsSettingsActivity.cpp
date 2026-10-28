@@ -213,16 +213,6 @@ const char* OpdsSettingsActivity::headerTitle() const {
 
 void OpdsSettingsActivity::drawFooter() {
   UiListActivity::drawFooter();
-  {
-    const auto& m = UITheme::getInstance().getMetrics();
-    const int lh = renderer.getLineHeight(UI_10_FONT_ID);
-    const int hintTop = renderer.getScreenHeight() - m.buttonHintsHeight;
-    const int hintWidth = renderer.getScreenWidth() - m.contentSidePadding * 2;
-    const int hintLines = renderer.getTextWidth(UI_10_FONT_ID, tr(STR_CALIBRE_URL_HINT)) > hintWidth ? 2 : 1;
-    const Rect hintBounds{m.contentSidePadding, hintTop - 12 - hintLines * lh, hintWidth, hintLines * lh};
-    UITheme::drawCenteredWrappedText(renderer, hintBounds, UI_10_FONT_ID, tr(STR_CALIBRE_URL_HINT), 2, true,
-                                     EpdFontFamily::Style::REGULAR, UITheme::TextVerticalAlignment::TOP);
-  }
   if (showSaveError) {
     GUI.drawPopup(renderer, tr(STR_ERROR_GENERAL_FAILURE));
   }

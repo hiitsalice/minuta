@@ -78,6 +78,7 @@ void FontDownloadActivity::onEnter() {
   UiListActivity::onEnter();
   // Outer screen, font names, and descriptions all at 10pt.
   uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
+
   WiFi.mode(WIFI_STA);
   startActivityForResult(std::make_unique<WifiSelectionActivity>(renderer, mappedInput),
                          [this](const ActivityResult& result) { onWifiSelectionComplete(!result.isCancelled); });
@@ -744,13 +745,11 @@ void FontDownloadActivity::rebuildFamilyRowItems() {
     } else if (isUpdateAllRow(i)) {
       rowLabels_[i] = std::string(tr(STR_UPDATE_ALL)) + " (" + formatSize(totalUpdateSize()) + ")";
       item.label = rowLabels_[i].c_str();
+      item.subtitle = "Update installed fonts";
     } else {
       const auto& family = families_[familyIndexFromList(i)];
       item.label = family.name.c_str();
       if (!family.description.empty()) item.subtitle = family.description.c_str();
-      if (family.hasUpdate) {
-        item.value = tr(STR_UPDATE_AVAILABLE);
-      }
       item.italic = family.installed;  // installed fonts read in italic, with no label
     }
     item.actionValue = static_cast<int16_t>(i);
