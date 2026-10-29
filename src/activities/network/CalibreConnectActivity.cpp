@@ -56,6 +56,7 @@ void CalibreConnectActivity::onEnter() {
 void CalibreConnectActivity::onExit() {
   Activity::onExit();
 
+#ifndef SIMULATOR
   MDNS.end();
 
   if (WiFi.getMode() != WIFI_MODE_NULL) {
@@ -63,6 +64,7 @@ void CalibreConnectActivity::onExit() {
     delay(30);
     WiFi.mode(WIFI_MODE_NULL);
   }
+#endif
 }
 
 void CalibreConnectActivity::onWifiSelectionComplete(const bool connected) {
@@ -114,6 +116,9 @@ void CalibreConnectActivity::stopWebServer() {
 }
 
 void CalibreConnectActivity::loop() {
+  const bool confirmPressed = mappedInput.wasPressed(MappedInputManager::Button::Confirm);
+  const bool backPressed = mappedInput.wasPressed(MappedInputManager::Button::Back);
+
   // Keep the prior frame's transfer state so a Back press made during a
   // transfer is still ignored if the transfer completes in this loop.
   const bool wasReceivingAtStart = lastProgressTotal > 0;
@@ -153,8 +158,8 @@ void CalibreConnectActivity::loop() {
       currentUploadName.clear();
       changed = true;
     }
-    // Only update lastCompleteAt if the server has a NEW value (not one we already processed)
-    // This prevents restoring an old value after the 6s timeout clears it
+    // Only process a new completion timestamp once, keeping the result on screen
+    // until the user dismisses it or another transfer supersedes it.
     if (status.lastCompleteAt != 0 && status.lastCompleteAt != lastProcessedCompleteAt) {
       lastCompleteAt = status.lastCompleteAt;
       lastCompleteName = status.lastCompleteName;
@@ -172,22 +177,18 @@ void CalibreConnectActivity::loop() {
       lastProcessedErrorAt = status.lastErrorAt;
       changed = true;
     }
-    // A new transfer supersedes an old error message.
-    if (status.inProgress && lastErrorAt > 0) {
-      lastErrorAt = 0;
-      lastErrorName.clear();
-      changed = true;
-    }
-    if (lastCompleteAt > 0 && (millis() - lastCompleteAt) >= 6000) {
-      lastCompleteAt = 0;
-      lastCompleteName.clear();
-      // Note: we DON'T reset lastProcessedCompleteAt here, so we won't re-process the old server value
-      changed = true;
-    }
-    if (lastErrorAt > 0 && (millis() - lastErrorAt) >= 6000) {
-      lastErrorAt = 0;
-      lastErrorName.clear();
-      changed = true;
+    // A new transfer supersedes previous completion and failure messages.
+    if (status.inProgress) {
+      if (lastErrorAt > 0) {
+        lastErrorAt = 0;
+        lastErrorName.clear();
+        changed = true;
+      }
+      if (lastCompleteAt > 0) {
+        lastCompleteAt = 0;
+        lastCompleteName.clear();
+        changed = true;
+      }
     }
     if (changed) {
       requestUpdate();
@@ -198,20 +199,18 @@ void CalibreConnectActivity::loop() {
                                 ? webServer->getWsUploadStatus()
                                 : CrossPointWebServer::WsUploadStatus{};
   const bool transferActive = wasReceivingAtStart || inputStatus.inProgress || lastProgressTotal > 0;
-  const bool transferCompleteVisible = lastCompleteAt > 0 && (millis() - lastCompleteAt) < 6000;
-  const bool transferErrorVisible = lastErrorAt > 0 && (millis() - lastErrorAt) < 6000 &&
-                                     (!transferCompleteVisible || lastErrorAt >= lastCompleteAt);
-  const bool backPressed = mappedInput.wasPressed(MappedInputManager::Button::Back);
-  if (transferActive) {
-    // Consume the button event without acting on it while receiving a book.
-  } else if (backPressed) {
-    if (state == CalibreConnectState::SERVER_RUNNING && transferErrorVisible) {
-      // Done dismisses an error but keeps the wireless server available for retry.
-      lastErrorAt = 0;
-      lastErrorName.clear();
-      requestUpdate();
-    } else {
-      // Back leaves the idle/startup/error screen; Done leaves after success.
+  const bool completionVisible =
+      lastCompleteAt > 0 && (lastErrorAt == 0 || lastCompleteAt > lastErrorAt);
+
+  // Ignore Back and Confirm throughout a real transfer.
+  if (!transferActive) {
+    if (completionVisible) {
+      // Received remains visible until the second button, Done, is pressed.
+      if (confirmPressed) {
+        exitRequested = true;
+      }
+    } else if (backPressed) {
+      // Back dismisses the waiting or failed screen.
       exitRequested = true;
     }
   }
@@ -231,6 +230,7 @@ void CalibreConnectActivity::render(RenderLock&&) {
   GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight}, tr(STR_CALIBRE_WIRELESS));
 
   std::string firstButtonHint;
+  std::string secondButtonHint;
   if (state == CalibreConnectState::SERVER_STARTING) {
     const int y = (pageHeight - lineHeight) / 2;
     renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CALIBRE_STARTING));
@@ -243,67 +243,97 @@ void CalibreConnectActivity::render(RenderLock&&) {
     const auto uploadStatus = webServer ? webServer->getWsUploadStatus() : CrossPointWebServer::WsUploadStatus{};
     const bool receiving = uploadStatus.inProgress ||
                            (lastProgressTotal > 0 && lastProgressReceived <= lastProgressTotal);
-    const bool errorIsFresh = lastErrorAt > 0 && (millis() - lastErrorAt) < 6000;
-    const bool completionIsFresh = lastCompleteAt > 0 && (millis() - lastCompleteAt) < 6000;
-    const bool transferErrorVisible = !receiving && errorIsFresh &&
-                                      (!completionIsFresh || lastErrorAt >= lastCompleteAt);
-    const bool transferCompleteVisible = !receiving && completionIsFresh &&
-                                         (!errorIsFresh || lastCompleteAt > lastErrorAt);
+    const bool hasError = lastErrorAt > 0;
+    const bool hasCompletion = lastCompleteAt > 0;
+    const std::string displayFilename = uploadStatus.filename;
+    const size_t displayReceived = uploadStatus.received;
+    const size_t displayTotal = uploadStatus.total;
+    const bool transferErrorVisible = !receiving && hasError &&
+                                      (!hasCompletion || lastErrorAt >= lastCompleteAt);
+    const bool transferCompleteVisible = !receiving && hasCompletion &&
+                                         (!hasError || lastCompleteAt > lastErrorAt);
 
     const int rowHeight = metrics.listRowHeight;
     const int contentTop = metrics.topPadding + metrics.headerHeight - 3 +
                            (metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0);
-    int y = contentTop + (rowHeight - lineHeight) / 2;
     const int contentWidth = pageWidth - metrics.contentSidePadding * 2;
+    const int textInset = (rowHeight - lineHeight) / 2 + 1;
 
-    renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CALIBRE_SETUP), true, EpdFontFamily::BOLD);
+    // Ten equal-height rows. Text is 1 px lower within each row.
+    int y = contentTop + textInset;
+    renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CALIBRE_SETUP),
+                              true, EpdFontFamily::BOLD);
     y += rowHeight;
-
     renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CALIBRE_INSTRUCTION_1));
     y += rowHeight;
     renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CALIBRE_INSTRUCTION_2));
     y += rowHeight;
     renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CALIBRE_INSTRUCTION_3));
     y += rowHeight;
-    renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CALIBRE_INSTRUCTION_4), true, EpdFontFamily::ITALIC);
-    y += rowHeight;
+    renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CALIBRE_INSTRUCTION_4),
+                              true, EpdFontFamily::ITALIC);
 
-    renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CALIBRE_STATUS), true, EpdFontFamily::BOLD);
-    y += rowHeight;
+    // Rows 6-10: Status, transfer message, filename, progress bar, percentage.
+    const int transferTop = contentTop + rowHeight * 5;
+    const int statusY = transferTop + textInset;
+    const int messageY = transferTop + rowHeight + textInset;
+    const int filenameY = transferTop + rowHeight * 2 + textInset;
+    const int barY = transferTop + rowHeight * 3 + (rowHeight - 12) / 2 + 1;
+    const int percentageY = transferTop + rowHeight * 4 + textInset;
+
+    renderer.drawCenteredText(UI_10_FONT_ID, statusY, tr(STR_CALIBRE_STATUS),
+                              true, EpdFontFamily::BOLD);
+
+    std::string message;
+    std::string filename;
 
     if (receiving) {
-      std::string label = tr(STR_CALIBRE_RECEIVING);
-      if (!uploadStatus.filename.empty()) label += uploadStatus.filename;
-      label = renderer.truncatedText(UI_10_FONT_ID, label.c_str(), contentWidth, EpdFontFamily::REGULAR);
-      renderer.drawCenteredText(UI_10_FONT_ID, y, label.c_str());
-      if (uploadStatus.total > 0) {
-        GUI.drawProgressBar(renderer,
-                            Rect{metrics.contentSidePadding, y + lineHeight + metrics.verticalSpacing,
-                                 contentWidth, metrics.progressBarHeight},
-                            uploadStatus.received, uploadStatus.total);
-      }
-      firstButtonHint.clear();
+      message = "Receiving...";
+      filename = displayFilename;
     } else if (transferErrorVisible) {
-      std::string label = tr(STR_CALIBRE_TRANSFER_FAILED);
-      if (!lastErrorName.empty()) label += ": " + lastErrorName;
-      label = renderer.truncatedText(UI_10_FONT_ID, label.c_str(), contentWidth, EpdFontFamily::REGULAR);
-      renderer.drawCenteredText(UI_10_FONT_ID, y, label.c_str());
-      firstButtonHint = tr(STR_DONE);
-    } else if (transferCompleteVisible) {
-      std::string label = std::string(tr(STR_CALIBRE_RECEIVED)) + lastCompleteName;
-      label = renderer.truncatedText(UI_10_FONT_ID, label.c_str(), contentWidth, EpdFontFamily::REGULAR);
-      renderer.drawCenteredText(UI_10_FONT_ID, y, label.c_str());
-      firstButtonHint = tr(STR_DONE);
-    } else {
-      renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CALIBRE_WAITING));
+      message = "Transfer Failed";
+      filename = lastErrorName;
       firstButtonHint = tr(STR_BACK);
+    } else if (transferCompleteVisible) {
+      message = "Received!";
+      filename = lastCompleteName;
+      firstButtonHint.clear();
+      secondButtonHint = tr(STR_DONE);
+    } else {
+      message = tr(STR_CALIBRE_WAITING);
+      firstButtonHint = tr(STR_BACK);
+    }
+
+    message = renderer.truncatedText(UI_10_FONT_ID, message.c_str(), contentWidth,
+                                     EpdFontFamily::REGULAR);
+    renderer.drawCenteredText(UI_10_FONT_ID, messageY, message.c_str());
+
+    if (!filename.empty()) {
+      filename = renderer.truncatedText(UI_10_FONT_ID, filename.c_str(), contentWidth,
+                                        EpdFontFamily::REGULAR);
+      renderer.drawCenteredText(UI_10_FONT_ID, filenameY, filename.c_str());
+    }
+
+    if (receiving && displayTotal > 0) {
+      // drawProgressBar renders its percentage in the tenth row.
+      GUI.drawProgressBar(
+          renderer,
+          Rect{metrics.contentSidePadding, barY,
+               pageWidth - metrics.contentSidePadding * 2, 12},
+          displayReceived, displayTotal, UI_10_FONT_ID, percentageY);
+    }
+
+
+    if (receiving) {
+      firstButtonHint.clear();
     }
   }
 
   // During a transfer, draw no hint footer at all. Back is consumed and ignored
   // in loop(), and no other buttons have actions on this screen.
-  if (!firstButtonHint.empty()) {
-    const auto labels = mappedInput.mapLabels(firstButtonHint.c_str(), "", "", "");
+  if (!firstButtonHint.empty() || !secondButtonHint.empty()) {
+    const auto labels = mappedInput.mapLabels(
+        firstButtonHint.c_str(), secondButtonHint.c_str(), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   }
   renderer.displayBuffer();
