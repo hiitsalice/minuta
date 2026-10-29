@@ -1,34 +1,36 @@
 #include "DictionaryDefinitionActivity.h"
 
-#include <FontCacheManager.h>
+#include <Epub/Page.h>
 #include <GfxRenderer.h>
 #include <I18n.h>
 
 #include <algorithm>
 #include <cstdint>
-#include <cstdio>
 #include <cstring>
+#include <iterator>
+#include <memory>
 
+#include "MappedInputManager.h"
 #include "components/UITheme.h"
+#include "components/UiAppHelpers.h"
 #include "fontIds.h"
 #include "util/DictHtmlPages.h"
 #include "util/HtmlToPlainText.h"
 
+namespace fui = freeink::ui;
+
 namespace {
 
-// Longest measurable/drawable span. Wrapped lines stay under the screen width
-// (far below this); only pathological unbreakable tokens are split at this cap.
-constexpr size_t MAX_LINE_BYTES = 191;
+// Rows are drawn in the list's label area, which is a little narrower than the screen; laying the text out
+// 2 x 16px narrower than the screen keeps every line inside it.
+constexpr int kSideMargin = 16;
 
-// Body text left/right inset, matching the reader's default feel.
-constexpr int SIDE_PADDING = 20;
+// The laid-out Pages keep the whole definition resident while they are read back, so very large
+// definitions take the plain-text path, which holds no page copies.
+constexpr size_t kMaxStyledHtmlBytes = 16 * 1024;
 
-// Styled-path ceiling: the laid-out Pages keep the whole definition resident
-// (TextBlock arenas ≈ text + ~7 bytes/word plus per-line objects), roughly
-// doubling the string's footprint while this activity is stacked over the
-// reader and word-select. Bigger definitions take the span-based plain-text
-// path, which holds no per-page copies.
-constexpr size_t MAX_STYLED_HTML_BYTES = 16 * 1024;
+// One tall layout page: the pages are only read back for their lines, so their height does not matter.
+constexpr uint16_t kLayoutHeight = 4000;
 
 bool isDictionaryHeading(const char* text) {
   static constexpr const char* HEADINGS[] = {
@@ -40,278 +42,226 @@ bool isDictionaryHeading(const char* text) {
       "Usage Notes", "Alternative Forms", "Derived Terms",
       "Related Terms",
   };
-  return std::any_of(
-      std::begin(HEADINGS), std::end(HEADINGS),
-      [text](const char* heading) { return strcmp(text, heading) == 0; });
+  return std::any_of(std::begin(HEADINGS), std::end(HEADINGS),
+                     [text](const char* heading) { return strcmp(text, heading) == 0; });
 }
+
+bool isBlankByte(const char c) { return c == ' ' || c == '\t' || c == '\r'; }
 
 }  // namespace
 
+DictionaryDefinitionActivity::DictionaryDefinitionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
+                                                           std::string headword, std::string definition,
+                                                           const bool htmlDefinition)
+    : UiListActivity("DictionaryDefinition", renderer, mappedInput),
+      headword(std::move(headword)),
+      definition(std::move(definition)),
+      htmlDefinition(htmlDefinition) {}
+
 void DictionaryDefinitionActivity::onEnter() {
-  Activity::onEnter();
-
-  size_t pronunciationEnd = definition.find_first_of("\r\n");
-  if (pronunciationEnd == std::string::npos) {
-    pronunciationEnd = definition.size();
-  }
-  while (pronunciationEnd > 0 &&
-         definition[pronunciationEnd - 1] == '\r') {
-    pronunciationEnd--;
-  }
-  hasPronunciation =
-      pronunciationEnd >= 2 &&
-      definition.front() == '/' &&
-      definition[pronunciationEnd - 1] == '/';
-
-  // Normalize StarDict multi-type separators so the wrap loop and the
-  // C-string font APIs below both see the whole definition.
+  // Normalize StarDict multi-type separators so every parser below sees the whole definition.
   std::replace(definition.begin(), definition.end(), '\0', '\n');
-  if (!(htmlDefinition && definition.size() <= MAX_STYLED_HTML_BYTES && layoutHtmlPages())) {
-    definition = htmlToPlainText(definition);
-    wrapText();
-  }
+  buildRows();
+  UiListActivity::onEnter();
   requestUpdate();
 }
 
-DictionaryDefinitionActivity::BodyArea DictionaryDefinitionActivity::bodyArea() const {
-  const auto& metrics = UITheme::getInstance().getMetrics();
-  const auto orientation = renderer.getOrientation();
-  const bool isLandscape = orientation == GfxRenderer::Orientation::LandscapeClockwise ||
-                           orientation == GfxRenderer::Orientation::LandscapeCounterClockwise;
-  const bool isInverted = orientation == GfxRenderer::Orientation::PortraitInverted;
-  const int hintGutterWidth = isLandscape ? metrics.sideButtonHintsWidth : 0;
-  const int headwordAreaHeight =
-      10 + renderer.getLineHeight(DICTIONARY_HEADWORD_FONT_ID) +
-      (hasPronunciation ? 0 : renderer.getLineHeight(DICTIONARY_FONT_ID));
-  const int topArea = (isInverted ? metrics.buttonHintsHeight : 0) +
-                      metrics.topPadding + headwordAreaHeight;
-  const int bottomArea = metrics.buttonHintsHeight + metrics.verticalSpacing;
-  return {renderer.getScreenWidth() - hintGutterWidth - 2 * SIDE_PADDING,
-          renderer.getScreenHeight() - topArea - bottomArea};
+void DictionaryDefinitionActivity::pushRow(const std::string& text, bool bold, bool italic) {
+  size_t first = 0;
+  size_t last = text.size();
+  while (first < last && isBlankByte(text[first])) first++;
+  while (last > first && isBlankByte(text[last - 1])) last--;
+  if (first == last) return;  // blank lines are dropped: rows stick to each other
+  rows_.push_back({text.substr(first, last - first), bold, italic});
 }
 
-// Styled path: lay the HTML definition out through the EPUB chapter parser
-// into reader-identical Pages. Frees `definition` on success (the page arenas
-// own the text); any failure leaves state untouched for the plain-text path.
-bool DictionaryDefinitionActivity::layoutHtmlPages() {
-  const BodyArea body = bodyArea();
-  if (body.width <= 0 || body.height <= 0) return false;
-  if (!buildDictionaryHtmlPages(renderer, DICTIONARY_FONT_ID, definition,
-                                static_cast<uint16_t>(body.width),
-                                static_cast<uint16_t>(body.height), pages)) {
-    return false;
+void DictionaryDefinitionActivity::buildRows() {
+  rows_.clear();
+  items_.clear();
+
+  const int fontId = UI_10_FONT_ID;
+  const int width = std::max(100, renderer.getScreenWidth() - 2 * kSideMargin);
+
+  bool styled = false;
+  if (htmlDefinition && definition.size() <= kMaxStyledHtmlBytes) {
+    std::vector<std::unique_ptr<Page>> pages;
+    if (buildDictionaryHtmlPages(renderer, fontId, definition, static_cast<uint16_t>(width), kLayoutHeight, pages)) {
+      rowsFromPages(pages, fontId);
+      styled = !rows_.empty();
+    }
   }
-  definition.clear();
-  definition.shrink_to_fit();
-  totalPages = static_cast<int>(pages.size());
-  currentPage = 0;
-  return true;
+  if (!styled) {
+    rows_.clear();
+    wrapPlain(htmlToPlainText(definition), fontId, width);
+  }
+
+  items_.reserve(rows_.size());
+  for (size_t i = 0; i < rows_.size(); ++i) {
+    fui::ListItem item;
+    item.label = rows_[i].text.c_str();
+    item.bold = rows_[i].bold;
+    item.italic = rows_[i].italic;
+    item.actionValue = static_cast<int16_t>(i);
+    items_.push_back(item);
+  }
 }
 
-int DictionaryDefinitionActivity::measureSpan(const int fontId, const char* text, size_t len) const {
-  char buf[MAX_LINE_BYTES + 1];
-  len = std::min(len, MAX_LINE_BYTES);
-  memcpy(buf, text, len);
-  buf[len] = '\0';
-  return renderer.getTextAdvanceX(fontId, buf, EpdFontFamily::REGULAR);
+// Reads the laid-out lines back as rows. A word that follows its neighbour without a gap (punctuation,
+// styled fragments) is joined without a space; every row takes the weight of its words.
+void DictionaryDefinitionActivity::rowsFromPages(const std::vector<std::unique_ptr<Page>>& pages, const int fontId) {
+  const int space = renderer.getSpaceWidth(fontId, EpdFontFamily::REGULAR);
+  for (const auto& page : pages) {
+    for (const auto& element : page->elements) {
+      if (element->getTag() != TAG_PageLine) continue;
+      const auto& block = static_cast<const PageLine*>(element.get())->getBlock();
+      if (!block || block->wordCount() == 0) continue;
+
+      std::string text;
+      bool allBold = true;
+      bool allItalic = true;
+      for (uint16_t w = 0; w < block->wordCount(); ++w) {
+        const auto style = block->wordStyle(w);
+        allBold = allBold && (style & EpdFontFamily::BOLD) != 0;
+        allItalic = allItalic && (style & EpdFontFamily::ITALIC) != 0;
+        if (w > 0) {
+          const int previousEnd =
+              block->wordXpos(w - 1) +
+              renderer.getTextAdvanceX(fontId, block->wordText(w - 1), block->wordStyle(w - 1));
+          if (block->wordXpos(w) - previousEnd >= space / 2) text += ' ';
+        }
+        text += block->wordText(w);
+      }
+      // Section headings carry bold+italic as an internal marker: they are shown as plain bold.
+      if (allBold && allItalic) allItalic = false;
+      pushRow(text, allBold, allItalic);
+    }
+  }
 }
 
-// Greedy word-wrap of `definition` into byte spans. '\n' breaks lines (blank
-// lines survive as paragraph spacing; NULs from multi-type StarDict entries
-// were normalized to newlines in onEnter); '\r' is dropped by treating it as
-// a space at a token edge.
-void DictionaryDefinitionActivity::wrapText() {
-  lines.clear();
-  lines.reserve(definition.size() / 32 + 8);
+// Plain-text path: greedy word wrap. Headings are bold, a leading /pronunciation/ is italic.
+void DictionaryDefinitionActivity::wrapPlain(const std::string& text, const int fontId, const int maxWidth) {
+  const int space = renderer.getSpaceWidth(fontId, EpdFontFamily::REGULAR);
+  const auto measure = [&](const std::string& s) { return renderer.getTextAdvanceX(fontId, s.c_str(), EpdFontFamily::REGULAR); };
 
-  const int fontId = DICTIONARY_FONT_ID;
-  const BodyArea body = bodyArea();
-  const int maxWidth = body.width;
-  const int spaceWidth = renderer.getSpaceWidth(fontId, EpdFontFamily::REGULAR);
-  const int lineHeight = renderer.getLineHeight(fontId);
-  linesPerPage = std::max(1, body.height / lineHeight);
-
-  const char* text = definition.c_str();
-  const uint32_t n = static_cast<uint32_t>(definition.size());
-  uint32_t lineStart = 0;
-  uint32_t lineEnd = 0;  // one past the last token byte on the current line
+  std::string line;
   int lineWidth = 0;
-
-  const auto flushLine = [&](uint32_t nextStart) {
-    lines.push_back({lineStart, static_cast<uint16_t>(lineEnd - lineStart)});
-    lineStart = nextStart;
-    lineEnd = nextStart;
+  const auto flush = [&] {
+    if (!line.empty()) {
+      const bool pronunciation = rows_.empty() && line.size() >= 2 && line.front() == '/' && line.back() == '/';
+      pushRow(line, isDictionaryHeading(line.c_str()), pronunciation);
+    }
+    line.clear();
     lineWidth = 0;
   };
 
-  uint32_t i = 0;
+  size_t i = 0;
+  const size_t n = text.size();
   while (i < n) {
     const char c = text[i];
     if (c == '\n' || c == '\0') {
-      flushLine(i + 1);
+      flush();
       i++;
       continue;
     }
-    if (c == ' ' || c == '\t' || c == '\r') {
+    if (isBlankByte(c)) {
       i++;
       continue;
     }
 
-    // Token: run of non-whitespace bytes, capped at the measure buffer.
-    const uint32_t tokenStart = i;
-    while (i < n && text[i] != ' ' && text[i] != '\t' && text[i] != '\r' && text[i] != '\n' && text[i] != '\0' &&
-           i - tokenStart < MAX_LINE_BYTES) {
-      i++;
-    }
-    // If the byte cap cut the token mid-UTF-8-sequence, back off to the last
-    // complete codepoint so measure/draw never see a partial sequence. A
-    // natural stop lands on whitespace or the terminating NUL, never on a
-    // continuation byte, so this is a no-op there.
-    while (i - tokenStart > 1 && (text[i] & 0xC0) == 0x80) i--;
-    const uint32_t tokenLen = i - tokenStart;
-    const int tokenWidth = measureSpan(fontId, text + tokenStart, tokenLen);
+    const size_t tokenStart = i;
+    while (i < n && !isBlankByte(text[i]) && text[i] != '\n' && text[i] != '\0') i++;
+    std::string token = text.substr(tokenStart, i - tokenStart);
+    int tokenWidth = measure(token);
 
-    if (lineEnd == lineStart) {
-      lineStart = tokenStart;
-      lineEnd = tokenStart + tokenLen;
-      lineWidth = tokenWidth;
-    } else if (lineWidth + spaceWidth + tokenWidth <= maxWidth &&
-               tokenStart + tokenLen - lineStart <= UINT16_MAX) {  // span len must fit Line::len
-      lineEnd = tokenStart + tokenLen;
-      lineWidth += spaceWidth + tokenWidth;
-    } else {
-      flushLine(tokenStart);
-      lineEnd = tokenStart + tokenLen;
-      lineWidth = tokenWidth;
-    }
-
-    // An unbreakable token wider than the screen is now alone on the line
-    // (any previous content was flushed above): split it at the widest
-    // fitting UTF-8 boundary and carry the remainder forward.
-    while (lineWidth > maxWidth && lineEnd - lineStart > 1) {
-      const uint32_t len = lineEnd - lineStart;
-      uint32_t lastFit = 0;
-      for (uint32_t f = 1; f <= len; f++) {
-        if (f == len || (text[lineStart + f] & 0xC0) != 0x80) {  // codepoint boundary
-          if (measureSpan(fontId, text + lineStart, f) > maxWidth) break;
-          lastFit = f;
+    // A token wider than a line is split at the widest fitting UTF-8 boundary.
+    while (tokenWidth > maxWidth && token.size() > 1) {
+      size_t cut = 0;
+      for (size_t f = 1; f <= token.size(); ++f) {
+        if (f == token.size() || (static_cast<unsigned char>(token[f]) & 0xC0) != 0x80) {
+          if (measure(token.substr(0, f)) > maxWidth) break;
+          cut = f;
         }
       }
-      if (lastFit == 0) {
-        // Even a single over-wide glyph must make progress; consume its whole
-        // UTF-8 sequence rather than splitting it into invalid fragments.
-        lastFit = 1;
-        while (lastFit < len && (text[lineStart + lastFit] & 0xC0) == 0x80) lastFit++;
+      if (cut == 0) {
+        cut = 1;
+        while (cut < token.size() && (static_cast<unsigned char>(token[cut]) & 0xC0) == 0x80) cut++;
       }
-      const uint32_t rest = lineStart + lastFit;
-      lineEnd = rest;
-      flushLine(rest);
-      lineEnd = rest + (len - lastFit);
-      lineWidth = measureSpan(fontId, text + lineStart, lineEnd - lineStart);
+      flush();
+      line = token.substr(0, cut);
+      flush();
+      token.erase(0, cut);
+      tokenWidth = measure(token);
+    }
+    if (token.empty()) continue;
+
+    if (line.empty()) {
+      line = token;
+      lineWidth = tokenWidth;
+    } else if (lineWidth + space + tokenWidth <= maxWidth) {
+      line += ' ';
+      line += token;
+      lineWidth += space + tokenWidth;
+    } else {
+      flush();
+      line = token;
+      lineWidth = tokenWidth;
     }
   }
-  if (lineEnd > lineStart) flushLine(n);
-
-  // Trim trailing blank lines so the last page is not empty padding.
-  while (!lines.empty() && lines.back().len == 0) lines.pop_back();
-
-  totalPages = std::max(1, (static_cast<int>(lines.size()) + linesPerPage - 1) / linesPerPage);
-  currentPage = 0;
+  flush();
 }
 
-void DictionaryDefinitionActivity::loop() {
-  if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-    finish();
-    return;
-  }
-
-  buttonNavigator.onNext([this] {
-    if (currentPage + 1 < totalPages) {
-      currentPage++;
-      requestUpdate();
-    }
-  });
-
-  buttonNavigator.onPrevious([this] {
-    if (currentPage > 0) {
-      currentPage--;
-      requestUpdate();
-    }
-  });
-}
-
-// Draws the current page: a styled Page when the HTML layout succeeded,
-// otherwise the wrapped line spans (copied into a stack buffer for NUL
-// termination). Called twice per render: once in font-cache scan mode, once
-// for the real paint.
-void DictionaryDefinitionActivity::drawBody(const int fontId, const int x, const int startY) const {
-  if (!pages.empty()) {
-    pages[currentPage]->render(renderer, fontId, x, startY);
-    return;
-  }
-  const int lineHeight = renderer.getLineHeight(fontId);
-  char buf[MAX_LINE_BYTES + 1];
-  const int firstLine = currentPage * linesPerPage;
-  const int lastLine = std::min(firstLine + linesPerPage, static_cast<int>(lines.size()));
-  for (int i = firstLine; i < lastLine; i++) {
-    if (lines[i].len == 0) continue;
-    const size_t len = std::min(static_cast<size_t>(lines[i].len), MAX_LINE_BYTES);
-    memcpy(buf, definition.c_str() + lines[i].start, len);
-    buf[len] = '\0';
-    const bool pronunciation =
-        i == 0 && len >= 2 && buf[0] == '/' && buf[len - 1] == '/';
-    const auto family =
-        pronunciation
-            ? EpdFontFamily::ITALIC
-            : (isDictionaryHeading(buf)
-                   ? static_cast<EpdFontFamily::Style>(
-                         EpdFontFamily::BOLD | EpdFontFamily::ITALIC)
-                   : EpdFontFamily::REGULAR);
-    renderer.drawText(fontId, x, startY + (i - firstLine) * lineHeight,
-                      buf, true, family);
-  }
-}
-
-void DictionaryDefinitionActivity::render(RenderLock&&) {
-  renderer.clearScreen();
+void DictionaryDefinitionActivity::buildScreen(UiScreen& screen) {
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
+  refreshSharedUiThemeTokens(uiTarget);
 
   const auto& metrics = UITheme::getInstance().getMetrics();
-  const auto orientation = renderer.getOrientation();
-  const bool isLandscapeCw = orientation == GfxRenderer::Orientation::LandscapeClockwise;
-  const bool isLandscapeCcw = orientation == GfxRenderer::Orientation::LandscapeCounterClockwise;
-  const bool isInverted = orientation == GfxRenderer::Orientation::PortraitInverted;
-  const int hintGutterWidth = (isLandscapeCw || isLandscapeCcw) ? metrics.sideButtonHintsWidth : 0;
-  const int contentX = isLandscapeCw ? hintGutterWidth : 0;
-  const int contentWidth = renderer.getScreenWidth() - hintGutterWidth;
-  const int contentY = isInverted ? metrics.buttonHintsHeight : 0;
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 3), 0,
+                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
-  // Header: matched headword left, page counter right.
-  const int headerY = contentY + metrics.topPadding + 10;
-  renderer.drawText(DICTIONARY_HEADWORD_FONT_ID,
-                    contentX + SIDE_PADDING, headerY,
-                    headword.c_str(), true, EpdFontFamily::BOLD);
-  if (totalPages > 1) {
-    char counter[16];
-    snprintf(counter, sizeof(counter), "%d/%d", currentPage + 1, totalPages);
-    const int counterWidth = renderer.getTextWidth(UI_10_FONT_ID, counter);
-    renderer.drawText(UI_10_FONT_ID, contentX + contentWidth - SIDE_PADDING - counterWidth, headerY + 6, counter);
+  fui::ListProps props;
+  props.items = items_.data();
+  props.count = static_cast<uint16_t>(items_.size());
+  props.action = ACTION_ROW;
+  props.valueInset = 3;
+  props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
+  props.rowGap = 0;
+  props.labelText = screen.theme().smallText;
+  props.labelText.maxLines = 1;
+  props.labelText.lineGap = 6;
+  syncListViewport(screen, props);
+  props.selectedIndex = -1;  // view-only: no highlight
+  screen.list(props);
+}
+
+void DictionaryDefinitionActivity::activateIndex(const int) { app.clearTapFlash(); }
+
+bool DictionaryDefinitionActivity::canScrollUp() { return activeNav().top > 0; }
+
+bool DictionaryDefinitionActivity::canScrollDown() {
+  return activeNav().top + static_cast<int>(activeNav().pageRows()) < listCount();
+}
+
+// One screenful, keeping the last row of the old view as the first row of the new one.
+void DictionaryDefinitionActivity::scrollPages(const int direction) {
+  auto& n = activeNav();
+  const int step = std::max(1, static_cast<int>(n.pageRows()) - 1);
+  bool moved = false;
+  {
+    RenderLock lock(*this);
+    moved = n.scrollBy(direction * step, listCount());
+    if (moved) n.selected = std::clamp(n.top, 0, std::max(0, listCount() - 1));
   }
+  if (moved) requestUpdate();
+}
 
-  // Body: two-pass draw inside a prewarm scope (same pattern as the reader's
-  // renderContents) so SD-card font glyphs load from SD in one batch instead
-  // of one on-demand overflow read per character on every page turn.
-  const int fontId = DICTIONARY_FONT_ID;
-  const int bodyStartY =
-      headerY + renderer.getLineHeight(DICTIONARY_HEADWORD_FONT_ID) +
-      (hasPronunciation ? 0 : renderer.getLineHeight(DICTIONARY_FONT_ID));
-  auto* fcm = renderer.getFontCacheManager();
-  auto scope = fcm->createPrewarmScope();
-  drawBody(fontId, contentX + SIDE_PADDING, bodyStartY);  // scan pass: records codepoints only
-  scope.endScanAndPrewarm();
-  drawBody(fontId, contentX + SIDE_PADDING, bodyStartY);
+void DictionaryDefinitionActivity::navigateButtons() {
+  navigator_.onNext([this] { scrollPages(1); });
+  navigator_.onPrevious([this] { scrollPages(-1); });
+}
 
-  const auto labels =
-      mappedInput.mapLabels(tr(STR_BACK), "", (currentPage > 0 ? "<" : ""), (currentPage + 1 < totalPages ? ">" : ""));
+void DictionaryDefinitionActivity::drawFooter() {
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", canScrollUp() ? "Prev" : "", canScrollDown() ? "Next" : "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
-  renderer.displayBuffer();
 }

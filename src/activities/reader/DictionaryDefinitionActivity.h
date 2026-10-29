@@ -1,64 +1,51 @@
 #pragma once
 
-#include <Epub/Page.h>
-
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
-#include "activities/Activity.h"
+#include "activities/UiListActivity.h"
 #include "util/ButtonNavigator.h"
 
-// Paged viewer for one dictionary definition. HTML definitions are laid out
-// through the EPUB chapter parser into styled Pages; anything else (plain
-// text, or HTML too damaged to parse) is word-wrapped once on entry and each
-// page renders spans of the original string, so no per-line copies are held.
-class DictionaryDefinitionActivity final : public Activity {
+class Page;
+
+// Dictionary definition as a read-only list: every line of the definition is one row, shown in the UI font.
+// HTML definitions are laid out through the EPUB chapter parser and read back line by line; anything else
+// (plain text, or HTML too damaged to parse) is word-wrapped directly.
+class DictionaryDefinitionActivity final : public UiListActivity {
  public:
   explicit DictionaryDefinitionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, std::string headword,
-                                        std::string definition, bool htmlDefinition = false)
-      : Activity("DictionaryDefinition", renderer, mappedInput),
-        headword(std::move(headword)),
-        definition(std::move(definition)),
-        htmlDefinition(htmlDefinition) {}
+                                        std::string definition, bool htmlDefinition = false);
 
   void onEnter() override;
-  void loop() override;
-  void render(RenderLock&&) override;
 
  private:
-  // One wrapped display line: a byte span of `definition`. Wrapping keeps
-  // lines under the screen width, so uint16_t length is ample.
-  struct Line {
-    uint32_t start;
-    uint16_t len;
+  struct Row {
+    std::string text;
+    bool bold;
+    bool italic;
   };
 
-  // Usable body-text area between the header and the button hints.
-  struct BodyArea {
-    int width;
-    int height;
-  };
+  int listCount() const override { return static_cast<int>(rows_.size()); }
+  const char* headerTitle() const override { return headword.c_str(); }
+  void buildScreen(UiScreen& screen) override;
+  void activateIndex(int index) override;
+  void navigateButtons() override;
+  void drawFooter() override;
 
-  BodyArea bodyArea() const;
-  bool layoutHtmlPages();
-  void wrapText();
-  int measureSpan(int fontId, const char* text, size_t len) const;
-  void drawBody(int fontId, int x, int startY) const;
+  void buildRows();
+  void rowsFromPages(const std::vector<std::unique_ptr<Page>>& pages, int fontId);
+  void wrapPlain(const std::string& text, int fontId, int maxWidth);
+  void pushRow(const std::string& text, bool bold, bool italic);
+  void scrollPages(int direction);
+  bool canScrollUp();
+  bool canScrollDown();
 
   const std::string headword;
-  // Not const: onEnter() normalizes embedded NULs (StarDict multi-type
-  // separators) to newlines so C-string APIs see the whole text.
+  // Not const: onEnter() normalizes embedded NULs (StarDict multi-type separators) to newlines.
   std::string definition;
   const bool htmlDefinition;
-  bool hasPronunciation = false;
-  // Styled path: reader-identical Pages laid out from the HTML definition.
-  // Empty means the plain-text span path below is active.
-  std::vector<std::unique_ptr<Page>> pages;
-  std::vector<Line> lines;
-  int currentPage = 0;
-  int totalPages = 1;
-  int linesPerPage = 1;
-  ButtonNavigator buttonNavigator;
+  std::vector<Row> rows_;
+  std::vector<freeink::ui::ListItem> items_;
+  ButtonNavigator navigator_;
 };
