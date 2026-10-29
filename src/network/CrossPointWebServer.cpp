@@ -51,6 +51,8 @@ size_t wsLastProgressSent = 0;
 String wsLastCompleteName;
 size_t wsLastCompleteSize = 0;
 unsigned long wsLastCompleteAt = 0;
+String wsLastErrorName;
+unsigned long wsLastErrorAt = 0;
 
 String normalizeWebPath(const String& inputPath) {
   if (inputPath.isEmpty() || inputPath == "/") {
@@ -96,6 +98,9 @@ void CrossPointWebServer::begin() {
     LOG_DBG("WEB", "Web server already running");
     return;
   }
+
+  wsLastErrorName = "";
+  wsLastErrorAt = 0;
 
   // Check if we have a valid network connection (either STA connected or AP mode)
   const wifi_mode_t wifiMode = WiFi.getMode();
@@ -222,6 +227,8 @@ void CrossPointWebServer::begin() {
 }
 
 void CrossPointWebServer::abortWsUpload(const char* tag) {
+  wsLastErrorName = wsUploadFileName;
+  wsLastErrorAt = millis();
   // Explicit close() required: file-scope global persists beyond function scope
   wsUploadFile.close();
   String filePath = wsUploadPath;
@@ -344,6 +351,8 @@ CrossPointWebServer::WsUploadStatus CrossPointWebServer::getWsUploadStatus() con
   status.lastCompleteName = wsLastCompleteName.c_str();
   status.lastCompleteSize = wsLastCompleteSize;
   status.lastCompleteAt = wsLastCompleteAt;
+  status.lastErrorName = wsLastErrorName.c_str();
+  status.lastErrorAt = wsLastErrorAt;
   return status;
 }
 
@@ -1645,9 +1654,13 @@ void CrossPointWebServer::onWebSocketEvent(uint8_t num, WStype_t type, uint8_t* 
           }
           if (!sizeValid) {
             LOG_DBG("WS", "START rejected: invalid size token '%s'", sizeToken.c_str());
+            wsLastErrorName = wsUploadFileName;
+            wsLastErrorAt = millis();
             wsServer->sendTXT(num, "ERROR:Invalid START format");
             return;
           }
+          wsLastErrorName = "";
+          wsLastErrorAt = 0;
           wsUploadSize = sizeToken.toInt();
           wsUploadPath = msg.substring(secondColon + 1);
           wsUploadReceived = 0;
@@ -1667,6 +1680,8 @@ void CrossPointWebServer::onWebSocketEvent(uint8_t num, WStype_t type, uint8_t* 
           resetTaskWatchdogIfSubscribed();
           if (Storage.exists(filePath.c_str())) {
             LOG_DBG("WS", "Upload collision: %s", filePath.c_str());
+            wsLastErrorName = wsUploadFileName;
+            wsLastErrorAt = millis();
             wsServer->sendTXT(num, "ERROR:File already exists: " + wsUploadFileName);
             return;
           }
@@ -1677,6 +1692,8 @@ void CrossPointWebServer::onWebSocketEvent(uint8_t num, WStype_t type, uint8_t* 
           // Open file for writing
           resetTaskWatchdogIfSubscribed();
           if (!Storage.openFileForWrite("WS", filePath, wsUploadFile)) {
+            wsLastErrorName = wsUploadFileName;
+            wsLastErrorAt = millis();
             wsServer->sendTXT(num, "ERROR:Failed to create file");
             wsUploadInProgress = false;
             wsUploadClientNum = 255;
@@ -1702,6 +1719,8 @@ void CrossPointWebServer::onWebSocketEvent(uint8_t num, WStype_t type, uint8_t* 
           wsUploadInProgress = true;
           wsServer->sendTXT(num, "READY");
         } else {
+          wsLastErrorName = "";
+          wsLastErrorAt = millis();
           wsServer->sendTXT(num, "ERROR:Invalid START format");
         }
       }

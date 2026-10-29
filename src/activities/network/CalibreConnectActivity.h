@@ -26,6 +26,9 @@ class CalibreConnectActivity final : public Activity {
   std::string lastCompleteName;
   unsigned long lastCompleteAt = 0;
   unsigned long lastProcessedCompleteAt = 0;  // Track which server value we've already processed
+  std::string lastErrorName;
+  unsigned long lastErrorAt = 0;
+  unsigned long lastProcessedErrorAt = 0;
   bool exitRequested = false;
 
   void renderServerRunning() const;

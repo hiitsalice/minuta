@@ -27,6 +27,8 @@ class CrossPointWebServer {
     std::string lastCompleteName;
     size_t lastCompleteSize = 0;
     unsigned long lastCompleteAt = 0;
+    std::string lastErrorName;
+    unsigned long lastErrorAt = 0;
   };
 
   // Used by POST upload handler
