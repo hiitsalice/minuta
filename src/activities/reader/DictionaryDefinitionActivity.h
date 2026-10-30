@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -9,9 +10,9 @@
 
 class Page;
 
-// Dictionary definition as a read-only list: every line of the definition is one row, shown in the UI font.
-// HTML definitions are laid out through the EPUB chapter parser and read back line by line; anything else
-// (plain text, or HTML too damaged to parse) is word-wrapped directly.
+// Dictionary definition as a read-only list: every wrapped line of the definition is one row in the UI font.
+// HTML definitions are laid out through the EPUB chapter parser (one line per paragraph) and re-wrapped
+// here at the real row width; anything else (plain text, or HTML too damaged to parse) is wrapped directly.
 class DictionaryDefinitionActivity final : public UiListActivity {
  public:
   explicit DictionaryDefinitionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, std::string headword,
@@ -22,12 +23,12 @@ class DictionaryDefinitionActivity final : public UiListActivity {
  private:
   struct Row {
     std::string text;
-    bool bold;
-    bool italic;
+    bool heading;  // bold part-of-speech line: not indented, not justified
+    bool justify;
   };
 
   int listCount() const override { return static_cast<int>(rows_.size()); }
-  const char* headerTitle() const override { return headword.c_str(); }
+  const char* headerTitle() const override { return title_.c_str(); }
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
   void navigateButtons() override;
@@ -35,13 +36,17 @@ class DictionaryDefinitionActivity final : public UiListActivity {
 
   void buildRows();
   void rowsFromPages(const std::vector<std::unique_ptr<Page>>& pages, int fontId);
-  void wrapPlain(const std::string& text, int fontId, int maxWidth);
-  void pushRow(const std::string& text, bool bold, bool italic);
+  void rowsFromPlainText(const std::string& text);
+  void addParagraph(const std::string& text, bool heading);
+  void wrapInto(const std::string& text, int width, bool heading);
+  int measure(const std::string& text, bool bold) const;
+  int labelWidthPx() const;
   void scrollPages(int direction);
   bool canScrollUp();
   bool canScrollDown();
 
   const std::string headword;
+  std::string title_;  // the word with each word's first letter capitalised
   // Not const: onEnter() normalizes embedded NULs (StarDict multi-type separators) to newlines.
   std::string definition;
   const bool htmlDefinition;
