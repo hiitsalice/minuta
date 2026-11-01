@@ -29,11 +29,6 @@
 
 
 
-#include <builtinFonts/andika_12_regular.h>
-#include <builtinFonts/andika_12_bold.h>
-#include <builtinFonts/andika_12_italic.h>
-#include <builtinFonts/andika_14_bold.h>
-#include <builtinFonts/andika_16_bold.h>
 
 #include <builtinFonts/steinem_8_regular.h>
 #include <builtinFonts/steinem_8_italic.h>
@@ -45,24 +40,12 @@
 #include <builtinFonts/steinem_10_bold.h>
 #include <builtinFonts/steinem_10_bolditalic.h>
 
-#include <builtinFonts/steinem_11_regular.h>
-#include <builtinFonts/steinem_11_italic.h>
-#include <builtinFonts/steinem_11_bold.h>
-#include <builtinFonts/steinem_11_bolditalic.h>
 
 #include <builtinFonts/steinem_12_regular.h>
 #include <builtinFonts/steinem_12_italic.h>
 #include <builtinFonts/steinem_12_bold.h>
 #include <builtinFonts/steinem_12_bolditalic.h>
 
-#include <builtinFonts/steinem_14_regular.h>
-#include <builtinFonts/steinem_14_italic.h>
-#include <builtinFonts/steinem_14_bold.h>
-#include <builtinFonts/steinem_14_bolditalic.h>
 
-#include <builtinFonts/steinem_18_regular.h>
-#include <builtinFonts/steinem_18_italic.h>
-#include <builtinFonts/steinem_18_bold.h>
-#include <builtinFonts/steinem_18_bolditalic.h>
 
 

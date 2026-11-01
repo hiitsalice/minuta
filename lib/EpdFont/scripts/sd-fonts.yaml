@@ -177,10 +177,10 @@ families:
     intervals: latin-ext,greek,cyrillic,georgian,armenian,ethiopic,ipa-chars
     sizes: [12, 14, 16, 18]
     styles:
-      regular:    {path: "builtinFonts/source/NotoSans/NotoSans-Regular.ttf"}
-      bold:       {path: "builtinFonts/source/NotoSans/NotoSans-Bold.ttf"}
-      italic:     {path: "builtinFonts/source/NotoSans/NotoSans-Italic.ttf"}
-      bolditalic: {path: "builtinFonts/source/NotoSans/NotoSans-BoldItalic.ttf"}
+      regular:    {url: "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans%5Bwdth%2Cwght%5D.ttf", variable: {wdth: 100, wght: 400}}
+      bold:       {url: "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans%5Bwdth%2Cwght%5D.ttf", variable: {wdth: 100, wght: 700}}
+      italic:     {url: "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans-Italic%5Bwdth%2Cwght%5D.ttf", variable: {wdth: 100, wght: 400}}
+      bolditalic: {url: "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans-Italic%5Bwdth%2Cwght%5D.ttf", variable: {wdth: 100, wght: 700}}
 
   - name: Inter
     description: "Modern sans-serif (Latin, Greek, Cyrillic)"
@@ -256,12 +256,12 @@ families:
     description: "Dyslexia-friendly font (Latin)"
     scripts: [latin]
     intervals: latin-ext,ipa-chars
-    sizes: [8, 10, 12, 14]
+    sizes: [12, 14, 16, 18]
     styles:
-      regular:    {path: "builtinFonts/source/OpenDyslexic/OpenDyslexic-Regular.otf"}
-      bold:       {path: "builtinFonts/source/OpenDyslexic/OpenDyslexic-Bold.otf"}
-      italic:     {path: "builtinFonts/source/OpenDyslexic/OpenDyslexic-Italic.otf"}
-      bolditalic: {path: "builtinFonts/source/OpenDyslexic/OpenDyslexic-BoldItalic.otf"}
+      regular:    {url: "https://raw.githubusercontent.com/th30d0re/opendyslexic-fonts/master/OpenDyslexic/OpenDyslexic-Regular.otf"}
+      bold:       {url: "https://raw.githubusercontent.com/th30d0re/opendyslexic-fonts/master/OpenDyslexic/OpenDyslexic-Bold.otf"}
+      italic:     {url: "https://raw.githubusercontent.com/th30d0re/opendyslexic-fonts/master/OpenDyslexic/OpenDyslexic-Italic.otf"}
+      bolditalic: {url: "https://raw.githubusercontent.com/th30d0re/opendyslexic-fonts/master/OpenDyslexic/OpenDyslexic-BoldItalic.otf"}
 
   # ── Accessibility ──────────────────────────────────────────────────────
 

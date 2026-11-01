@@ -18,7 +18,7 @@ for size in ${YOUNGSERIF_FONT_SIZES[@]}; do
 done
 
 
-UI_FONT_SIZES=(8 10 12 21 32)
+UI_FONT_SIZES=(8 10 12)
 UI_FONT_STYLES=("Regular" "Italic" "Bold" "BoldItalic")
 
 for size in ${UI_FONT_SIZES[@]}; do

@@ -19,7 +19,7 @@ void BootActivity::onEnter() {
   constexpr int logoTextGap = -30;
   constexpr int textLineGap = 8;
 
-  const int titleHeight = renderer.getTextHeight(UI_18_FONT_ID);
+  const int titleHeight = renderer.getTextHeight(UI_12_FONT_ID);
   const int statusHeight = renderer.getTextHeight(UI_10_FONT_ID);
 
   const int groupHeight =
@@ -38,7 +38,7 @@ void BootActivity::onEnter() {
       logoSize);
 
   renderer.drawCenteredText(
-      UI_18_FONT_ID,
+      UI_12_FONT_ID,
       titleY,
       "Minuta",
       true,

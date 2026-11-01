@@ -47,7 +47,7 @@ DEFAULT_CONFIG = SCRIPT_DIR / "sd-fonts.yaml"
 DEFAULT_OUTPUT = SCRIPT_DIR / "output"
 DOWNLOAD_DIR = SCRIPT_DIR / "downloaded_fonts"
 INSTANCE_DIR = SCRIPT_DIR / "instanced_fonts"
-DEFAULT_FALLBACK_FONT = EPDFONTS_DIR / "builtinFonts/source/NotoSans/NotoSans-Regular.ttf"
+DEFAULT_FALLBACK_FONT = EPDFONTS_DIR / "builtinFonts/source/Steinem/Steinem-Regular.ttf"
 
 
 _orig_getaddrinfo = socket.getaddrinfo

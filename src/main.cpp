@@ -132,16 +132,6 @@ EpdFontFamily youngserif20FontFamily(&youngserif20RegularFont, &youngserif20Bold
 
 #endif  // OMIT_FONTS
 
-// Dedicated dictionary families with full IPA coverage.
-EpdFont andika12RegularFont(&andika_12_regular);
-EpdFont andika12BoldFont(&andika_12_bold);
-EpdFont andika12ItalicFont(&andika_12_italic);
-EpdFont andika14BoldFont(&andika_14_bold);
-EpdFontFamily andika12FontFamily(&andika12RegularFont, &andika12BoldFont, &andika12ItalicFont, &andika14BoldFont);
-
-EpdFont andika16BoldFont(&andika_16_bold);
-EpdFontFamily andika16HeadwordFontFamily(&andika16BoldFont, &andika16BoldFont, &andika16BoldFont, &andika16BoldFont);
-
 EpdFont steinem8RegularFont(&steinem_8_regular);
 EpdFont steinem8BoldFont(&steinem_8_bold);
 EpdFont steinem8ItalicFont(&steinem_8_italic);
@@ -155,13 +145,6 @@ EpdFont steinem10BoldItalicFont(&steinem_10_bolditalic);
 EpdFontFamily steinem10FontFamily(&steinem10RegularFont, &steinem10BoldFont, &steinem10ItalicFont,
                                   &steinem10BoldItalicFont);
 
-EpdFont steinem11RegularFont(&steinem_11_regular);
-EpdFont steinem11BoldFont(&steinem_11_bold);
-EpdFont steinem11ItalicFont(&steinem_11_italic);
-EpdFont steinem11BoldItalicFont(&steinem_11_bolditalic);
-EpdFontFamily steinem11FontFamily(&steinem11RegularFont, &steinem11BoldFont, &steinem11ItalicFont,
-                                  &steinem11BoldItalicFont);
-
 EpdFont steinem12RegularFont(&steinem_12_regular);
 EpdFont steinem12BoldFont(&steinem_12_bold);
 EpdFont steinem12ItalicFont(&steinem_12_italic);
@@ -169,19 +152,6 @@ EpdFont steinem12BoldItalicFont(&steinem_12_bolditalic);
 EpdFontFamily steinem12FontFamily(&steinem12RegularFont, &steinem12BoldFont, &steinem12ItalicFont,
                                   &steinem12BoldItalicFont);
 
-EpdFont steinem14RegularFont(&steinem_14_regular);
-EpdFont steinem14BoldFont(&steinem_14_bold);
-EpdFont steinem14ItalicFont(&steinem_14_italic);
-EpdFont steinem14BoldItalicFont(&steinem_14_bolditalic);
-EpdFontFamily steinem14FontFamily(&steinem14RegularFont, &steinem14BoldFont, &steinem14ItalicFont,
-                                  &steinem14BoldItalicFont);
-
-EpdFont steinem18RegularFont(&steinem_18_regular);
-EpdFont steinem18BoldFont(&steinem_18_bold);
-EpdFont steinem18ItalicFont(&steinem_18_italic);
-EpdFont steinem18BoldItalicFont(&steinem_18_bolditalic);
-EpdFontFamily steinem18FontFamily(&steinem18RegularFont, &steinem18BoldFont, &steinem18ItalicFont,
-                                  &steinem18BoldItalicFont);
 
 // Definitions for SilentRestart.h. RTC_NOINIT survives ESP.restart() but not power loss.
 RTC_NOINIT_ATTR uint32_t silentRebootMagic;
@@ -325,14 +295,9 @@ void setupDisplayAndFonts(bool seamless = false) {
   renderer.insertFont(YOUNGSERIF_20_FONT_ID, youngserif20FontFamily);
 
 #endif  // OMIT_FONTS
-  renderer.insertFont(DICTIONARY_FONT_ID, andika12FontFamily);
-  renderer.insertFont(DICTIONARY_HEADWORD_FONT_ID, andika16HeadwordFontFamily);
   renderer.insertFont(SMALL_FONT_ID, steinem8FontFamily);
   renderer.insertFont(UI_10_FONT_ID, steinem10FontFamily);
-  renderer.insertFont(UI_11_FONT_ID, steinem11FontFamily);
   renderer.insertFont(UI_12_FONT_ID, steinem12FontFamily);
-  renderer.insertFont(UI_14_FONT_ID, steinem14FontFamily);
-  renderer.insertFont(UI_18_FONT_ID, steinem18FontFamily);
 
   // Discover and load SD card fonts
   sdFontSystem.begin(renderer);
