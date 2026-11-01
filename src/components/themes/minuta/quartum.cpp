@@ -187,10 +187,10 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
 
   // Draw up to two centred title lines for each occupied slot.
   // One-line titles stay close to the cover; two-line titles expand away from it.
-  constexpr int titleLineGap = 6;
+  constexpr int titleLineGap = 12;
   constexpr int titleCoverGap = 9;
   constexpr int titleMaxWidth = 174;
-  const int titleLineHeight = renderer.getTextHeight(UI_11_FONT_ID);
+  const int titleLineHeight = renderer.getTextHeight(UI_10_FONT_ID);
 
   for (int i = 0; i < bookCount; i++) {
     const bool isTopRow = (i < 2);
@@ -205,7 +205,7 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
     }
 
     const auto lines =
-        wrapTitleAtWords(renderer, UI_11_FONT_ID, recentBooks[i].title, titleMaxWidth);
+        wrapTitleAtWords(renderer, UI_10_FONT_ID, recentBooks[i].title, titleMaxWidth);
 
     if (lines.empty()) {
       continue;
@@ -225,11 +225,11 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
 
     for (const auto& line : lines) {
       const int titleWidth =
-          renderer.getTextWidth(UI_11_FONT_ID, line.c_str(), EpdFontFamily::REGULAR);
+          renderer.getTextWidth(UI_10_FONT_ID, line.c_str(), EpdFontFamily::REGULAR);
       const int titleX = tileX + (coverWidth - titleWidth) / 2;
 
       renderer.drawText(
-          UI_11_FONT_ID,
+          UI_10_FONT_ID,
           titleX,
           titleY,
           line.c_str(),
@@ -246,7 +246,7 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
     if (!recentBooks[i].author.empty()) {
       const auto author =
           renderer.truncatedText(
-              UI_11_FONT_ID,
+              UI_10_FONT_ID,
               recentBooks[i].author.c_str(),
               coverHeightPx,
               EpdFontFamily::ITALIC);
@@ -262,12 +262,12 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
 
         const int authorTextWidth =
             renderer.getTextWidth(
-                UI_11_FONT_ID,
+                UI_10_FONT_ID,
                 author.c_str(),
                 EpdFontFamily::ITALIC);
 
         const int authorBandWidth =
-            renderer.getTextHeight(UI_11_FONT_ID);
+            renderer.getTextHeight(UI_10_FONT_ID);
 
         // Keep the bottom of the author aligned with the bottom of the cover.
         const int authorTopY =
@@ -288,7 +288,7 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
             GfxRenderer::Orientation::LandscapeCounterClockwise);
 
         renderer.drawText(
-            UI_11_FONT_ID,
+            UI_10_FONT_ID,
             rotatedX,
             rotatedY,
             author.c_str(),
@@ -306,7 +306,7 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
 
         const int portraitHeight = renderer.getScreenHeight();
         const int authorBandWidth =
-            renderer.getTextHeight(UI_11_FONT_ID);
+            renderer.getTextHeight(UI_10_FONT_ID);
 
         // Keep the visible author band the same 9 px away from the cover.
         const int authorLeftX =
@@ -317,7 +317,7 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
         const int authorAnchorY =
             isTopRow
                 ? coverY + renderer.getTextWidth(
-                               UI_11_FONT_ID,
+                               UI_10_FONT_ID,
                                author.c_str(),
                                EpdFontFamily::ITALIC)
                 : authorBottomY;
@@ -331,7 +331,7 @@ if (bookCount > 0 && selectorIndex >= 0 && selectorIndex < bookCount) {
             GfxRenderer::Orientation::LandscapeClockwise);
 
         renderer.drawText(
-            UI_11_FONT_ID,
+            UI_10_FONT_ID,
             rotatedX,
             rotatedY,
             author.c_str(),
