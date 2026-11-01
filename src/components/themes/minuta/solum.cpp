@@ -4,6 +4,7 @@
 #include <HalStorage.h>
 
 #include <algorithm>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -13,32 +14,54 @@
 #include "fontIds.h"
 
 namespace {
-constexpr int hPadding = 60;
+constexpr int coverWidth = 360;
 constexpr int textAreaWidth = 400;
-constexpr int titleBaselineGap = 46;
-constexpr int authorGap = -4;
+constexpr int titleLineGapp = 4;
+constexpr int authorGap = 8;
 
-std::string truncateTitleAtWord(const GfxRenderer& renderer, const int fontId, const std::string& title,
-                                const int maxWidth) {
-  if (renderer.getTextWidth(fontId, title.c_str(), EpdFontFamily::REGULAR) <= maxWidth) {
-    return title;
-  }
+std::vector<std::string> wrapTitle(const GfxRenderer& renderer, const std::string& title,
+                                   const int maxWidth) {
+  constexpr int fontId = UI_12_FONT_ID;
+  constexpr auto style = EpdFontFamily::BOLD;
 
-  constexpr const char* ellipsis = "...";
-  std::string shortened = title;
+  std::istringstream stream(title);
+  std::vector<std::string> lines;
+  std::string word;
 
-  while (true) {
-    const auto space = shortened.find_last_of(' ');
-    if (space == std::string::npos) {
-      return renderer.truncatedText(fontId, title.c_str(), maxWidth, EpdFontFamily::REGULAR);
+  while (stream >> word) {
+    if (lines.empty()) {
+      lines.push_back(word);
+      if (renderer.getTextWidth(fontId, lines.back().c_str(), style) > maxWidth) {
+        lines.back() = renderer.truncatedText(fontId, lines.back().c_str(), maxWidth, style);
+      }
+      continue;
     }
 
-    shortened.erase(space);
-
-    if (renderer.getTextWidth(fontId, (shortened + ellipsis).c_str(), EpdFontFamily::REGULAR) <= maxWidth) {
-      return shortened + ellipsis;
+    const std::string candidate = lines.back() + " " + word;
+    if (renderer.getTextWidth(fontId, candidate.c_str(), style) <= maxWidth) {
+      lines.back() = candidate;
+      continue;
     }
+
+    if (lines.size() == 1) {
+      lines.push_back(word);
+      if (renderer.getTextWidth(fontId, lines.back().c_str(), style) > maxWidth) {
+        lines.back() = renderer.truncatedText(fontId, lines.back().c_str(), maxWidth, style);
+        break;
+      }
+      continue;
+    }
+
+    // The second line is full. Truncate it with an ellipsis and stop.
+    lines.back() = renderer.truncatedText(fontId, candidate.c_str(), maxWidth, style);
+    break;
   }
+
+  if (lines.empty()) {
+    lines.emplace_back();
+  }
+
+  return lines;
 }
 }  // namespace
 
@@ -47,14 +70,12 @@ void SolumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std
                                      bool& bufferRestored, std::function<bool()> storeCoverBuffer) const {
   const bool hasBook = !recentBooks.empty();
 
-  const int tileX = rect.x + hPadding;
+  const int tileWidth = coverWidth;
+  const int tileX = rect.x + (rect.width - tileWidth) / 2;
   const int tileY = rect.y;
-  const int tileWidth = rect.width - 2 * hPadding;
   const int coverHeight = SolumMetrics::values.homeCoverHeight;
 
   if (!hasBook) {
-    // No recent books yet: just an empty border where the cover would be,
-    // no fill, no icon, no title text.
     renderer.drawRect(tileX, tileY, tileWidth, coverHeight, true);
     return;
   }
@@ -89,61 +110,56 @@ void SolumTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std
     coverRendered = coverBufferStored;
   }
 
-  // 16pt title centred beneath the cover.
-  const int titleBaselineY = tileY + coverHeight + titleBaselineGap;
-  const int titleY =
-      titleBaselineY - renderer.getFontAscenderSize(UI_18_FONT_ID);
-
-  const auto truncatedTitle =
-      truncateTitleAtWord(renderer, UI_18_FONT_ID, book.title, textAreaWidth);
-
-  const int titleTextWidth =
-      renderer.getTextWidth(
-          UI_18_FONT_ID,
-          truncatedTitle.c_str(),
-          EpdFontFamily::REGULAR);
-
+  // Choose the text arrangement according to the title's line count.
   const int textAreaX = rect.x + (rect.width - textAreaWidth) / 2;
-  const int titleX = textAreaX + (textAreaWidth - titleTextWidth) / 2;
+  auto titleLines = wrapTitle(renderer, book.title, textAreaWidth);
 
-  renderer.drawText(
-      UI_18_FONT_ID,
-      titleX,
-      titleY,
-      truncatedTitle.c_str(),
-      true,
-      EpdFontFamily::REGULAR
-  );
+  const bool isTwoLineTitle = titleLines.size() >= 2;
+  const int titleMaxWidth = isTwoLineTitle ? 300 : textAreaWidth;
 
-  // 10pt author centred underneath.
-  if (!book.author.empty()) {
+  if (isTwoLineTitle) {
+    titleLines = wrapTitle(renderer, book.title, titleMaxWidth);
+  }
+
+  const int titleLineHeight = renderer.getLineHeight(UI_12_FONT_ID);
+  const int authorLineHeight = renderer.getLineHeight(UI_12_FONT_ID);
+  const bool hasAuthor = !book.author.empty();
+
+  constexpr int coverTextGap = 18;
+  constexpr int authorCoverGap = 9;
+  constexpr int authorTitleGap = 6;
+  const int titleLineGap = isTwoLineTitle ? 9 : 0;
+
+  // One line: cover -> title -> author.
+  // Two lines: author -> cover -> title line 1 -> title line 2.
+  const int titleTop = tileY + coverHeight + coverTextGap;
+
+  const int authorY = isTwoLineTitle
+      ? tileY - authorCoverGap - authorLineHeight
+      : titleTop + titleLineHeight + authorTitleGap;
+
+  if (hasAuthor) {
     const auto truncatedAuthor =
-        truncateTitleAtWord(renderer, UI_12_FONT_ID, book.author, textAreaWidth);
-
+        renderer.truncatedText(UI_12_FONT_ID, book.author.c_str(),
+                               textAreaWidth, EpdFontFamily::ITALIC);
     const int authorWidth =
-        renderer.getTextWidth(
-            UI_12_FONT_ID,
-            truncatedAuthor.c_str(),
-            EpdFontFamily::REGULAR);
-
+        renderer.getTextWidth(UI_12_FONT_ID, truncatedAuthor.c_str(),
+                              EpdFontFamily::ITALIC);
     const int authorX = textAreaX + (textAreaWidth - authorWidth) / 2;
 
-    const int authorBaselineY =
-        titleBaselineY +
-        renderer.getLineHeight(UI_18_FONT_ID) +
-        authorGap;
+    renderer.drawText(UI_12_FONT_ID, authorX, authorY,
+                      truncatedAuthor.c_str(), true, EpdFontFamily::ITALIC);
+  }
 
-    const int authorY =
-        authorBaselineY -
-        renderer.getFontAscenderSize(UI_12_FONT_ID);
+  for (size_t i = 0; i < titleLines.size(); ++i) {
+    const int titleWidth =
+        renderer.getTextWidth(UI_12_FONT_ID, titleLines[i].c_str(),
+                              EpdFontFamily::BOLD);
+    const int titleX = textAreaX + (textAreaWidth - titleWidth) / 2;
+    const int titleY =
+        titleTop + static_cast<int>(i) * (titleLineHeight + titleLineGap);
 
-    renderer.drawText(
-        UI_12_FONT_ID,
-        authorX,
-        authorY,
-        truncatedAuthor.c_str(),
-        true,
-        EpdFontFamily::REGULAR
-    );
+    renderer.drawText(UI_12_FONT_ID, titleX, titleY,
+                      titleLines[i].c_str(), true, EpdFontFamily::BOLD);
   }
 }
