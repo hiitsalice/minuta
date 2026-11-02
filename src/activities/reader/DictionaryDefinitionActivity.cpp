@@ -1,15 +1,17 @@
 #include "DictionaryDefinitionActivity.h"
 
-#include <BoardConfig.h>
 #include <Epub/Page.h>
 #include <GfxRenderer.h>
 #include <I18n.h>
+#include <Logging.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <cstring>
 #include <iterator>
 #include <memory>
+#include <string>
 
 #include "MappedInputManager.h"
 #include "components/UITheme.h"
@@ -22,10 +24,12 @@ namespace fui = freeink::ui;
 
 namespace {
 
-// Body rows are moved this far right, with a thin line in front (like the Hidden Shortcuts rows).
-constexpr int kIndent = 24;
+// The first line of each definition starts this far in, with a thin line in front (like Hidden Shortcuts).
+constexpr int kIndent = 36;
+// Cambridge sub-labels (Verbs, Adjectives, ...) sit one step in between: heading, then label, then content.
+constexpr int kSubIndent = 18;
 // Text is wrapped this much narrower than the row's text area, so no line is ever cut off.
-// Justification then stretches each line to the exact width. Raise it if any row still ends in "...".
+// Raise it if any row still ends in "...".
 constexpr int kWrapSafety = 4;
 // The last line of each paragraph is left-aligned. Set to true to stretch it as well.
 constexpr bool kJustifyLastLine = false;
@@ -62,6 +66,13 @@ std::string trimmed(const std::string& s) {
   return s.substr(first, last - first);
 }
 
+std::string lowerAscii(std::string s) {
+  for (char& c : s) {
+    if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+  }
+  return s;
+}
+
 std::string capitalizeWords(const std::string& s) {
   std::string out = s;
   bool wordStart = true;
@@ -74,6 +85,374 @@ std::string capitalizeWords(const std::string& s) {
     wordStart = false;
   }
   return out;
+}
+
+std::string upperFirst(std::string s) {
+  if (!s.empty() && s[0] >= 'a' && s[0] <= 'z') s[0] = static_cast<char>(s[0] - 'a' + 'A');
+  return s;
+}
+
+// Decodes the UTF-8 character at s[i]; returns its length in bytes.
+size_t decodeAt(const std::string& s, const size_t i, uint32_t* cp) {
+  const unsigned char c0 = static_cast<unsigned char>(s[i]);
+  size_t len = 1;
+  uint32_t v = c0;
+  if ((c0 & 0xE0) == 0xC0) {
+    len = 2;
+    v = c0 & 0x1Fu;
+  } else if ((c0 & 0xF0) == 0xE0) {
+    len = 3;
+    v = c0 & 0x0Fu;
+  } else if ((c0 & 0xF8) == 0xF0) {
+    len = 4;
+    v = c0 & 0x07u;
+  }
+  if (i + len > s.size()) {
+    *cp = c0;
+    return 1;
+  }
+  for (size_t k = 1; k < len; ++k) v = (v << 6) | (static_cast<unsigned char>(s[i + k]) & 0x3Fu);
+  *cp = v;
+  return len;
+}
+
+void appendUtf8(std::string& out, const uint32_t cp) {
+  if (cp < 0x80) {
+    out += static_cast<char>(cp);
+  } else if (cp < 0x800) {
+    out += static_cast<char>(0xC0 | (cp >> 6));
+    out += static_cast<char>(0x80 | (cp & 0x3F));
+  } else if (cp < 0x10000) {
+    out += static_cast<char>(0xE0 | (cp >> 12));
+    out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+    out += static_cast<char>(0x80 | (cp & 0x3F));
+  } else {
+    out += static_cast<char>(0xF0 | (cp >> 18));
+    out += static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+    out += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+    out += static_cast<char>(0x80 | (cp & 0x3F));
+  }
+}
+
+// "&amp;" / "&#39;" at s[i]. Returns the length of the entity, or 0 when it is not one.
+size_t decodeEntityAt(const std::string& s, const size_t i, std::string* out) {
+  const size_t semi = s.find(';', i + 1);
+  if (semi == std::string::npos || semi - i > 10) return 0;
+  const std::string name = s.substr(i + 1, semi - i - 1);
+  if (name == "amp") {
+    *out = "&";
+  } else if (name == "lt") {
+    *out = "<";
+  } else if (name == "gt") {
+    *out = ">";
+  } else if (name == "quot") {
+    *out = "\"";
+  } else if (name == "apos") {
+    *out = "'";
+  } else if (name == "nbsp") {
+    *out = "\xC2\xA0";
+  } else if (name.size() > 1 && name[0] == '#') {
+    uint32_t cp = 0;
+    size_t k = 1;
+    uint32_t base = 10;
+    if (name[k] == 'x' || name[k] == 'X') {
+      base = 16;
+      ++k;
+    }
+    if (k >= name.size()) return 0;
+    for (; k < name.size(); ++k) {
+      const char ch = name[k];
+      uint32_t d = 0;
+      if (ch >= '0' && ch <= '9') {
+        d = static_cast<uint32_t>(ch - '0');
+      } else if (base == 16 && ch >= 'a' && ch <= 'f') {
+        d = static_cast<uint32_t>(ch - 'a' + 10);
+      } else if (base == 16 && ch >= 'A' && ch <= 'F') {
+        d = static_cast<uint32_t>(ch - 'A' + 10);
+      } else {
+        return 0;
+      }
+      cp = cp * base + d;
+    }
+    if (cp == 0 || cp > 0x10FFFF) return 0;
+    out->clear();
+    appendUtf8(*out, cp);
+  } else {
+    return 0;
+  }
+  return semi - i + 1;
+}
+
+// The real parts of speech: a line that is just one of these is a heading.
+bool isTruePos(const std::string& s) {
+  static constexpr const char* POS[] = {"noun",        "verb",        "adjective", "adverb",
+                                        "pronoun",     "preposition", "conjunction", "interjection",
+                                        "determiner",  "article",     "numeral",   "particle"};
+  const std::string low = lowerAscii(s);
+  return std::any_of(std::begin(POS), std::end(POS), [&low](const char* p) { return low == p; });
+}
+
+// Cambridge sub-section names: "Verbs", "Adjectives", ... (lower case in)
+bool isSubLabel(const std::string& low) {
+  static constexpr const char* LABELS[] = {"verbs",    "adjectives", "adverbs",      "nouns",  "prepositions",
+                                           "phrases",  "types",      "idioms",       "pronouns", "conjunctions",
+                                           "phrasal verbs", "determiners"};
+  return std::any_of(std::begin(LABELS), std::end(LABELS), [&low](const char* l) { return low == l; });
+}
+
+// "verb transitive", "noun countable": a line made only of part-of-speech words (lower case in).
+bool isPosPhrase(const std::string& low) {
+  static constexpr const char* WORDS[] = {"noun",     "verb",      "adjective", "adverb",    "pronoun",
+                                          "preposition", "conjunction", "interjection", "determiner", "exclamation",
+                                          "transitive", "intransitive", "countable", "uncountable", "plural",
+                                          "singular", "phrasal",   "modal",     "auxiliary", "abbreviation",
+                                          "prefix",   "suffix",    "idiom",     "symbol"};
+  static constexpr const char* POS[] = {"noun", "verb", "adjective", "adverb", "pronoun", "preposition",
+                                        "conjunction", "interjection", "determiner", "exclamation"};
+  int words = 0;
+  bool hasPos = false;
+  size_t i = 0;
+  while (i < low.size()) {
+    while (i < low.size() && low[i] == ' ') ++i;
+    if (i >= low.size()) break;
+    const size_t start = i;
+    while (i < low.size() && low[i] != ' ') ++i;
+    const std::string w = low.substr(start, i - start);
+    if (!std::any_of(std::begin(WORDS), std::end(WORDS), [&w](const char* k) { return w == k; })) return false;
+    if (std::any_of(std::begin(POS), std::end(POS), [&w](const char* k) { return w == k; })) hasPos = true;
+    if (++words > 4) return false;
+  }
+  return words > 0 && hasPos;
+}
+
+// Section names that open a block of related words ("See also: ...", "Type of: ...").
+bool isSectionLabel(const std::string& lowHead) {
+  static constexpr const char* LABELS[] = {
+      "see also", "see", "type of", "types", "encyclopedia", "derived forms", "derived form", "derived",
+      "part of", "parts", "has parts", "sounds like", "antonym", "antonyms", "synonym", "synonyms", "similar",
+      "hypernym", "hyponym", "member of", "members", "has members", "substance of", "substances",
+      "has substances", "has types", "category", "categories", "usage", "domain", "verb group", "entails",
+      "cause", "causes", "pertains to", "related", "related words", "phrases", "phrase", "attributes",
+      "wikipedia", "example", "examples", "collocations", "word family", "idioms", "phrasal verbs", "compare",
+      "opposite", "origin", "etymology", "derivatives", "also"};
+  return std::any_of(std::begin(LABELS), std::end(LABELS), [&lowHead](const char* l) { return lowHead == l; });
+}
+
+// True when the text holds a real letter or digit. Punctuation, bullets, squares and dashes do not count.
+bool hasLetterOrDigit(const std::string& s) {
+  for (size_t i = 0; i < s.size();) {
+    uint32_t cp = 0;
+    const size_t len = decodeAt(s, i, &cp);
+    if (cp < 0x80) {
+      if (std::isalnum(static_cast<int>(cp))) return true;
+    } else if (cp == 0xAA || cp == 0xB5 || cp == 0xBA) {
+      return true;
+    } else if (cp >= 0xC0 && cp != 0xD7 && cp != 0xF7 && !(cp >= 0x2000 && cp <= 0x2BFF) &&
+               !(cp >= 0x3000 && cp <= 0x303F) && !(cp >= 0xFE00 && cp <= 0xFE0F)) {
+      return true;
+    }
+    i += len;
+  }
+  return false;
+}
+
+// "FLAVOUR": a short word written in capitals (Cambridge guidewords).
+bool isAllCapsWord(const std::string& s) {
+  if (s.size() < 3 || s.size() > 32) return false;
+  int letters = 0;
+  for (const char ch : s) {
+    if (ch >= 'a' && ch <= 'z') return false;
+    if (ch >= '0' && ch <= '9') return false;
+    if (ch >= 'A' && ch <= 'Z') ++letters;
+  }
+  return letters >= 3;
+}
+
+bool isQuotedExample(const std::string& s) {
+  if (s.size() < 4) return false;
+  const bool opens = s[0] == '"' || s.compare(0, 3, "\xE2\x80\x9C") == 0;
+  const bool closes = s.back() == '"' || s.compare(s.size() - 3, 3, "\xE2\x80\x9D") == 0;
+  return opens && closes;
+}
+
+// Odd spaces become plain spaces and invisible characters are dropped, so a line made only of them is empty
+// and a line starting with one has no gap before its text.
+std::string normalizeSpaces(const std::string& s) {
+  std::string out;
+  out.reserve(s.size());
+  for (size_t i = 0; i < s.size();) {
+    uint32_t cp = 0;
+    const size_t len = decodeAt(s, i, &cp);
+    if (cp == 0xA0 || (cp >= 0x2000 && cp <= 0x200A) || cp == 0x202F || cp == 0x205F || cp == 0x3000) {
+      out += ' ';
+    } else if (cp == 0xAD || (cp >= 0x200B && cp <= 0x200F) || (cp >= 0x2028 && cp <= 0x202E) ||
+               (cp >= 0x2060 && cp <= 0x206F) || cp == 0xFEFF || (cp >= 0xFE00 && cp <= 0xFE0F)) {
+      // invisible: dropped
+    } else {
+      out.append(s, i, len);
+    }
+    i += len;
+  }
+  return out;
+}
+
+// "< A >" / "<E >" -> "<A>" / "<E>", and "[ C ]" -> "[C]".
+std::string tidyCodes(std::string s) {
+  for (size_t p = s.find('<'); p != std::string::npos; p = s.find('<', p + 1)) {
+    size_t q = p + 1;
+    while (q < s.size() && s[q] == ' ') ++q;
+    const size_t codeStart = q;
+    while (q < s.size() && q - codeStart < 4 && ((s[q] >= 'A' && s[q] <= 'Z') || (s[q] >= '0' && s[q] <= '9'))) ++q;
+    if (q == codeStart) continue;
+    size_t r = q;
+    while (r < s.size() && s[r] == ' ') ++r;
+    if (r < s.size() && s[r] == '>') s.replace(p, r - p + 1, "<" + s.substr(codeStart, q - codeStart) + ">");
+  }
+  for (size_t p = s.find('['); p != std::string::npos; p = s.find('[', p + 1)) {
+    const size_t close = s.find(']', p + 1);
+    if (close == std::string::npos || close - p > 60) continue;
+    const std::string inner = trimmed(s.substr(p + 1, close - p - 1));
+    if (inner.find('[') != std::string::npos) continue;
+    s.replace(p + 1, close - p - 1, inner);
+  }
+  return s;
+}
+
+// True when the text holds phonetic (IPA) symbols or stress marks.
+bool containsIpa(const std::string& s) {
+  for (size_t i = 0; i < s.size();) {
+    uint32_t cp = 0;
+    const size_t len = decodeAt(s, i, &cp);
+    if ((cp >= 0x250 && cp <= 0x2AF) || cp == 0x2C8 || cp == 0x2CC || cp == 0x2D0 || cp == 0x2D1 ||
+        (cp >= 0x1D00 && cp <= 0x1D7F)) {
+      return true;
+    }
+    i += len;
+  }
+  return false;
+}
+
+// A pronunciation line: /.../, phonetic symbols, or Cambridge's "UK [...] US [...]".
+bool isPronunciationLine(const std::string& t) {
+  if (t.size() >= 2 && t.front() == '/' && t.back() == '/') return true;
+  if (t.size() > 160) return false;
+  if (containsIpa(t)) return true;
+  static constexpr const char* MARKS[] = {"UK [", "US [", "UK /", "US /", "UK[", "US["};
+  return std::any_of(std::begin(MARKS), std::end(MARKS), [&t](const char* m) { return t.find(m) != std::string::npos; });
+}
+
+bool isExampleBullet(const uint32_t cp) {
+  return cp == 0xB7 || cp == 0x2022 || cp == 0x2023 || cp == 0x2027 || cp == 0x2043 || cp == 0x2219 ||
+         cp == 0x25CF || cp == 0x25CB || cp == 0x25E6 || cp == 0x25AA;
+}
+bool isMarkerShape(const uint32_t cp) { return cp >= 0x25A0 && cp <= 0x25FF; }
+bool isDashCodepoint(const uint32_t cp) {
+  return cp == '-' || cp == 0x2010 || cp == 0x2011 || cp == 0x2013 || cp == 0x2014 || cp == 0x2212;
+}
+
+// Removes one leading bullet, marker, dash or number.
+// *kind: 0 nothing, 1 round bullet (an example in Cambridge), 2 marker or dash, 3 number.
+std::string stripOneMarker(const std::string& t, int* kind) {
+  *kind = 0;
+  if (t.empty()) return t;
+  uint32_t cp = 0;
+  const size_t len = decodeAt(t, 0, &cp);
+  if (isExampleBullet(cp)) {
+    *kind = 1;
+    return trimmed(t.substr(len));
+  }
+  if (isMarkerShape(cp)) {  // Oxford's grey square before a sub-sense
+    *kind = 2;
+    return trimmed(t.substr(len));
+  }
+  if (isDashCodepoint(cp) && t.size() > len && t[len] == ' ') {
+    *kind = 2;
+    return trimmed(t.substr(len));
+  }
+  size_t i = 0;
+  while (i < t.size() && i < 3 && t[i] >= '0' && t[i] <= '9') i++;
+  if (i > 0 && i < t.size() && (t[i] == '.' || t[i] == ')') && (i + 1 == t.size() || t[i + 1] == ' ')) {
+    *kind = 3;
+    return trimmed(t.substr(i + 1));
+  }
+  return t;
+}
+
+// Several markers can stack ("1) - text"): all of them are removed. *kind is 1 when any was a round bullet.
+std::string stripLeadingMarker(const std::string& in, int* kind) {
+  *kind = 0;
+  std::string t = in;
+  for (int pass = 0; pass < 4 && !t.empty(); ++pass) {
+    int k = 0;
+    const std::string next = stripOneMarker(t, &k);
+    if (k == 0) break;
+    if (k == 1) {
+      *kind = 1;
+    } else if (*kind == 0) {
+      *kind = k;
+    }
+    t = next;
+  }
+  return t;
+}
+
+// A dash left hanging at the end of a line ("in the year of grace -") is dropped.
+std::string stripTrailingDash(std::string t) {
+  static constexpr const char* DASHES[] = {" -", " \xE2\x80\x93", " \xE2\x80\x94"};
+  for (bool again = true; again;) {
+    again = false;
+    for (const char* d : DASHES) {
+      const size_t dl = strlen(d);
+      if (t.size() > dl && t.compare(t.size() - dl, dl, d) == 0) {
+        t = trimmed(t.substr(0, t.size() - dl));
+        again = true;
+      }
+    }
+  }
+  return t;
+}
+
+// WordWeb puts its respelling in a gray span ("<span style="COLOR:GRAY" title="Key: ...">row'mans</span>").
+// It is removed before layout, so it never gets glued to the definition.
+std::string stripWordWebRespelling(const std::string& html) {
+  static constexpr const char* OPEN = "<span style=\"COLOR:GRAY\"";
+  std::string out;
+  out.reserve(html.size());
+  size_t i = 0;
+  while (i < html.size()) {
+    const size_t p = html.find(OPEN, i);
+    if (p == std::string::npos) {
+      out.append(html, i, std::string::npos);
+      break;
+    }
+    const size_t gt = html.find('>', p);
+    const size_t close = html.find("</span>", p);
+    const bool respelling =
+        gt != std::string::npos && close != std::string::npos && html.substr(p, gt - p).find("Key:") != std::string::npos;
+    out.append(html, i, p - i);
+    if (!respelling) {
+      out.append(html, p, 1);
+      i = p + 1;
+      continue;
+    }
+    i = close + 7;
+  }
+  return out;
+}
+
+// Marks every "[...]" in the text as bold. Empty when there is none.
+std::string bracketMask(const std::string& text) {
+  std::string mask(text.size(), '0');
+  bool any = false;
+  for (size_t p = 0; p < text.size(); ++p) {
+    if (text[p] != '[') continue;
+    const size_t q = text.find(']', p + 1);
+    if (q == std::string::npos || q - p > 60) continue;
+    for (size_t k = p; k <= q; ++k) mask[k] = '1';
+    any = true;
+    p = q;
+  }
+  return any ? mask : std::string();
 }
 
 }  // namespace
@@ -95,47 +474,85 @@ void DictionaryDefinitionActivity::onEnter() {
   requestUpdate();
 }
 
-int DictionaryDefinitionActivity::measure(const std::string& text, const bool bold) const {
-  return renderer.getTextAdvanceX(UI_10_FONT_ID, text.c_str(), bold ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR);
+int DictionaryDefinitionActivity::measure(const std::string& text, const bool bold, const bool italic) const {
+  int style = EpdFontFamily::REGULAR;
+  if (bold) style |= EpdFontFamily::BOLD;
+  if (italic) style |= EpdFontFamily::ITALIC;
+  return renderer.getTextAdvanceX(UI_10_FONT_ID, text.c_str(), static_cast<EpdFontFamily::Style>(style));
 }
 
-// The width a list row gives to its label, worked out from the same theme numbers the list uses:
-// the row inset and side padding on both sides, and the room the scroll bar takes when the inset is smaller.
+// The width a list row gives to its label: the row inset and side padding on both sides. The scroll bar is
+// hidden, so it takes no room.
 int DictionaryDefinitionActivity::labelWidthPx() const {
   const auto& m = UITheme::getInstance().getMetrics();
-  const auto& insets = BoardConfig::ACTIVE.viewableInsets;
-  const int scrollInset = m.listScrollSide == 1 ? insets.left : insets.right;
-  const int needed = m.listScrollWidth + scrollInset + 2;
-  const int cut = std::max(0, needed - m.listInset);
-  return renderer.getScreenWidth() - 2 * (m.listInset + m.listSidePadding) - cut;
+  return renderer.getScreenWidth() - 2 * (m.listInset + m.listSidePadding);
+}
+
+// Rows that fit one screen, worked out from the same margins buildScreen() gives the list.
+int DictionaryDefinitionActivity::pageRowsEstimate() const {
+  const auto& m = UITheme::getInstance().getMetrics();
+  const int top = m.topPadding + m.headerHeight - 3 + (m.verticalSpacing > 6 ? m.verticalSpacing - 6 : 0);
+  const int body = renderer.getScreenHeight() - top - m.buttonHintsHeight;
+  return std::max(1, body / std::max(1, m.listRowHeight));
 }
 
 void DictionaryDefinitionActivity::buildRows() {
   rows_.clear();
   items_.clear();
+  pendingNote_.clear();
 
-  bool styled = false;
-  if (htmlDefinition && definition.size() <= kMaxStyledHtmlBytes) {
-    std::vector<std::unique_ptr<Page>> pages;
-    if (buildDictionaryHtmlPages(renderer, UI_10_FONT_ID, definition, kLayoutWidth, kLayoutHeight, pages)) {
-      rowsFromPages(pages, UI_10_FONT_ID);
-      styled = !rows_.empty();
+  // Cambridge also uses <dtrn>; its colour markup and UK/US tags tell the two apart.
+  const bool cambridge = !htmlDefinition && (definition.find("c=\"darkcyan\"") != std::string::npos ||
+                                             definition.find("<abr>UK</abr>") != std::string::npos ||
+                                             definition.find("c=\"darkmagenta\"") != std::string::npos);
+  oxfordStyle_ = !htmlDefinition && !cambridge && definition.find("<dtrn>") != std::string::npos;
+
+  const bool xdxf = !htmlDefinition && (definition.find("<k>") != std::string::npos ||
+                                        definition.find("<dtrn>") != std::string::npos ||
+                                        definition.find("<ex>") != std::string::npos ||
+                                        definition.find("<blockquote>") != std::string::npos);
+  if (xdxf) {
+    rowsFromXdxf(definition);
+  } else {
+    const std::string cleaned = htmlDefinition ? stripWordWebRespelling(definition) : definition;
+    bool styled = false;
+    if (htmlDefinition && definition.size() <= kMaxStyledHtmlBytes) {
+      std::vector<std::unique_ptr<Page>> pages;
+      if (buildDictionaryHtmlPages(renderer, UI_10_FONT_ID, cleaned, kLayoutWidth, kLayoutHeight, pages)) {
+        rowsFromPages(pages, UI_10_FONT_ID);
+        styled = !rows_.empty();
+      }
+    }
+    if (!styled) {
+      rows_.clear();
+      pendingNote_.clear();
+      rowsFromPlainText(htmlToPlainText(cleaned));
     }
   }
-  if (!styled) {
-    rows_.clear();
+  if (rows_.empty() && xdxf) {
+    pendingNote_.clear();
     rowsFromPlainText(htmlToPlainText(definition));
+  }
+
+
+  // Blank rows pad the end to a whole number of screens, so paging moves exactly one screen at a time and the
+  // last screen simply ends early, with no row repeated.
+  if (!rows_.empty()) {
+    const int cap = pageRowsEstimate();
+    while (static_cast<int>(rows_.size()) % cap != 0) rows_.push_back({std::string(), std::string(), false, false, false, 0});
   }
 
   items_.reserve(rows_.size());
   for (size_t i = 0; i < rows_.size(); ++i) {
     fui::ListItem item;
     item.label = rows_[i].text.c_str();
-    item.bold = rows_[i].heading;
+    item.bold = rows_[i].bold;
+    item.italic = rows_[i].italic;
     item.justify = rows_[i].justify;
+    item.boldMask = rows_[i].boldMask.empty() ? nullptr : rows_[i].boldMask.c_str();
     item.actionValue = static_cast<int16_t>(i);
-    if (!rows_[i].heading) {
-      item.labelXOffset = kIndent;
+    if (rows_[i].indent > 0) {
+      item.labelXOffset = rows_[i].indent;
       item.leaderLine = true;
     }
     items_.push_back(item);
@@ -143,7 +560,8 @@ void DictionaryDefinitionActivity::buildRows() {
 }
 
 // Reads the laid-out lines back as paragraphs. A word that follows its neighbour without a gap (punctuation,
-// styled fragments) is joined without a space; a paragraph whose words are all bold is a heading.
+// styled fragments) is joined without a space. A paragraph whose words are all bold is a heading, one whose
+// words are all italic is an example, and a bold run that ends in ":" ("See also:") is a heading of its own.
 void DictionaryDefinitionActivity::rowsFromPages(const std::vector<std::unique_ptr<Page>>& pages, const int fontId) {
   const int space = renderer.getSpaceWidth(fontId, EpdFontFamily::REGULAR);
   for (const auto& page : pages) {
@@ -154,8 +572,15 @@ void DictionaryDefinitionActivity::rowsFromPages(const std::vector<std::unique_p
 
       std::string text;
       bool allBold = true;
+      bool allItalic = true;
+      bool leading = true;
+      bool restItalic = true;
+      size_t leadChars = 0;
       for (uint16_t w = 0; w < block->wordCount(); ++w) {
-        allBold = allBold && (block->wordStyle(w) & EpdFontFamily::BOLD) != 0;
+        const bool bold = (block->wordStyle(w) & EpdFontFamily::BOLD) != 0;
+        const bool italic = (block->wordStyle(w) & EpdFontFamily::ITALIC) != 0;
+        allBold = allBold && bold;
+        allItalic = allItalic && italic;
         if (w > 0) {
           const int previousEnd =
               block->wordXpos(w - 1) +
@@ -163,8 +588,21 @@ void DictionaryDefinitionActivity::rowsFromPages(const std::vector<std::unique_p
           if (block->wordXpos(w) - previousEnd >= space / 2) text += ' ';
         }
         text += block->wordText(w);
+        if (leading && bold) {
+          leadChars = text.size();
+        } else {
+          leading = false;
+          restItalic = restItalic && italic;
+        }
       }
-      addParagraph(text, allBold);
+      // Bold + italic is the internal marker of a section heading: shown as plain bold.
+      if (allBold && allItalic) allItalic = false;
+      if (!allBold && leadChars > 0 && leadChars < text.size() && text[leadChars - 1] == ':') {
+        addParagraph(text.substr(0, leadChars), true, false);
+        addParagraph(text.substr(leadChars), false, restItalic);
+        continue;
+      }
+      addParagraph(text, allBold, allItalic);
     }
   }
 }
@@ -174,30 +612,303 @@ void DictionaryDefinitionActivity::rowsFromPlainText(const std::string& text) {
   while (start <= text.size()) {
     size_t end = text.find('\n', start);
     if (end == std::string::npos) end = text.size();
-    const std::string paragraph = trimmed(text.substr(start, end - start));
-    if (!paragraph.empty()) addParagraph(paragraph, isDictionaryHeading(paragraph.c_str()));
+    addParagraph(text.substr(start, end - start), false, false);
     if (end == text.size()) break;
     start = end + 1;
   }
 }
 
-void DictionaryDefinitionActivity::addParagraph(const std::string& raw, const bool heading) {
-  const std::string text = trimmed(raw);
-  if (text.empty()) return;
-  // A line wrapped in slashes is a pronunciation (IPA): dropped, so the next line moves up.
-  if (text.size() >= 2 && text.front() == '/' && text.back() == '/') return;
+// XDXF-style markup (Oxford, Cambridge): <k> headword, <tr> pronunciation, <abr> part of speech, <ex> example,
+// <b>/<i> styling, <blockquote> and newlines separating paragraphs. Every other tag is dropped, its text kept.
+void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
+  std::string cur;
+  bool curBold = true;
+  bool curItalic = true;
+  bool curText = false;
+  bool curHasEx = false;
+  bool curHasKref = false;      // the paragraph holds a linked phrase
+  bool curOutsideKref = false;  // ... and some text outside the link
+  int krefDepth = 0;
+  bool inPhrases = false;       // the "Phrases" heading was already written for this run of lines
+  int boldDepth = 0;
+  int italicDepth = 0;
+  int skipDepth = 0;
+  bool inEx = false;
+  bool inAbr = false;
+  bool derivMode = false;  // inside "Derivatives:": every derived word and every example is its own paragraph
+  std::string abrText;
 
-  const int width = std::max(80, labelWidthPx() - kWrapSafety - (heading ? 0 : kIndent));
-  wrapInto(text, width, heading);
+  const auto resetParagraph = [&]() {
+    cur.clear();
+    curBold = true;
+    curItalic = true;
+    curText = false;
+    curHasEx = false;
+    curHasKref = false;
+    curOutsideKref = false;
+  };
+  const auto appendText = [&](const std::string& s) {
+    if (skipDepth > 0) return;
+    if (inAbr) {
+      abrText += s;
+      return;
+    }
+    for (const char ch : s) {
+      if (isBlankByte(ch)) continue;
+      curText = true;
+      if (krefDepth == 0 && ch != '-') curOutsideKref = true;
+      if (boldDepth == 0) curBold = false;
+      if (italicDepth == 0 && !inEx) curItalic = false;
+    }
+    cur += s;
+  };
+  const auto emit = [&]() {
+    if (curText) {
+      const std::string t = trimmed(cur);
+      // A run of lines made only of linked phrases gets one "Phrases" heading (Oxford).
+      const bool phraseLine = oxfordStyle_ && curHasKref && !curOutsideKref && !inEx;
+      if (phraseLine && !inPhrases) addParagraph("Phrases", true, false);
+      inPhrases = phraseLine;
+      if (curBold && !t.empty() && t.back() == ':' && t.size() <= 40) derivMode = lowerAscii(t) == "derivatives:";
+      if (inEx) {
+        // several examples can share one <ex>, separated by " | "
+        size_t start = 0;
+        while (true) {
+          const size_t bar = t.find(" | ", start);
+          addParagraph(t.substr(start, bar == std::string::npos ? std::string::npos : bar - start), false, true);
+          if (bar == std::string::npos) break;
+          start = bar + 3;
+        }
+      } else {
+        addParagraph(t, curBold && t.size() <= 40, curItalic || curHasEx);
+      }
+    }
+    resetParagraph();
+  };
+
+  const size_t n = src.size();
+  size_t i = 0;
+  while (i < n) {
+    const char c = src[i];
+    if (c == '<') {
+      const size_t gt = src.find('>', i + 1);
+      if (gt == std::string::npos) {
+        appendText("<");
+        ++i;
+        continue;
+      }
+      const std::string tag = src.substr(i + 1, gt - i - 1);
+      const bool closing = !tag.empty() && tag[0] == '/';
+      const size_t ns = closing ? 1 : 0;
+      size_t ne = ns;
+      while (ne < tag.size() && std::isalnum(static_cast<unsigned char>(tag[ne]))) ++ne;
+      const std::string name = lowerAscii(tag.substr(ns, ne - ns));
+      const bool selfClose = !tag.empty() && tag.back() == '/';
+      if (name.empty()) {  // "x < y": a literal '<'
+        appendText("<");
+        ++i;
+        continue;
+      }
+      // grammar codes such as <E> or <A> are text, not markup
+      if (!closing && name.size() == 1 && tag[ns] >= 'A' && tag[ns] <= 'Z' && tag.find_first_not_of(' ', ne) == std::string::npos) {
+        appendText(std::string("<") + tag[ns] + ">");
+        i = gt + 1;
+        continue;
+      }
+      i = gt + 1;
+      if (name == "k" || name == "tr") {  // headword and pronunciation: not shown
+        if (!selfClose) skipDepth = std::max(0, skipDepth + (closing ? -1 : 1));
+        continue;
+      }
+      if (skipDepth > 0) continue;
+      if (name == "blockquote" || name == "br" || name == "p" || name == "div" || name == "li" || name == "ol" ||
+          name == "ul") {
+        emit();
+        continue;
+      }
+      if (name == "ex") {
+        if (oxfordStyle_) {
+          emit();
+          inEx = !closing;
+        } else if (!closing) {
+          curHasEx = true;  // Cambridge: an example stays in its paragraph, with the "(= ...)" notes around it
+        }
+        continue;
+      }
+      if (name == "b") {
+        if (!closing && derivMode && boldDepth == 0 && curText) emit();
+        boldDepth = std::max(0, boldDepth + (closing ? -1 : 1));
+        continue;
+      }
+      if (name == "i") {
+        if (!closing && derivMode && italicDepth == 0 && curText && !(i < n && src[i] == '[')) emit();
+        italicDepth = std::max(0, italicDepth + (closing ? -1 : 1));
+        if (closing && derivMode && italicDepth == 0 && curText && curItalic) emit();
+        continue;
+      }
+      if (name == "abr") {
+        if (!closing) {
+          inAbr = true;
+          abrText.clear();
+        } else {
+          inAbr = false;
+          const std::string t = trimmed(abrText);
+          if (isTruePos(t) && !curText) {
+            emit();
+            addParagraph(capitalizeWords(lowerAscii(t)), true, false);
+          } else if (!t.empty()) {
+            appendText(std::string(cur.empty() || isBlankByte(cur.back()) ? "" : " ") + t + " ");
+          }
+        }
+        continue;
+      }
+      if (name == "kref") {
+        krefDepth = std::max(0, krefDepth + (closing ? -1 : 1));
+        if (!closing) curHasKref = true;
+        continue;
+      }
+      continue;  // every other tag is ignored; its text stays
+    }
+    if (c == '&') {
+      std::string decoded;
+      const size_t used = decodeEntityAt(src, i, &decoded);
+      if (used > 0) {
+        appendText(decoded);
+        i += used;
+      } else {
+        appendText("&");
+        ++i;
+      }
+      continue;
+    }
+    if (c == '\n') {
+      emit();
+      ++i;
+      continue;
+    }
+    size_t j = i;
+    while (j < n && src[j] != '<' && src[j] != '&' && src[j] != '\n') ++j;
+    appendText(src.substr(i, j - i));
+    i = j;
+  }
+  emit();
 }
 
-// Greedy word wrap at an exact pixel width. Every row of a paragraph except the last is justified.
-void DictionaryDefinitionActivity::wrapInto(const std::string& text, const int width, const bool heading) {
+// One paragraph of the definition, cleaned the same way for every dictionary.
+void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool heading, bool italic) {
+  std::string text = trimmed(tidyCodes(normalizeSpaces(raw)));
+  if (text.empty() || !hasLetterOrDigit(text)) return;  // also drops an orphan "." or bullet
+  if (isPronunciationLine(text)) return;
+
+  // Items glued together by a separator glyph ("↑a ↑b", "x ▪ y ▪ z") become paragraphs of their own.
+  // The "↑" has no glyph in the font, so it is never drawn.
+  static constexpr const char* SEPARATORS[] = {"\xE2\x86\x91", "\xE2\x96\xAA"};
+  for (const char* sep : SEPARATORS) {
+    if (text.find(sep) == std::string::npos) continue;
+    const size_t sl = strlen(sep);
+    size_t start = 0;
+    while (start <= text.size()) {
+      const size_t p = text.find(sep, start);
+      addParagraph(text.substr(start, p == std::string::npos ? std::string::npos : p - start), heading, italic);
+      if (p == std::string::npos) break;
+      start = p + sl;
+    }
+    return;
+  }
+
+  int kind = 0;
+  text = stripLeadingMarker(text, &kind);
+  text = stripTrailingDash(text);
+  if (text.empty() || !hasLetterOrDigit(text)) return;  // a lone "1." or "-"
+  if (kind == 1 && !oxfordStyle_) italic = true;         // a round bullet marks an example (Cambridge)
+  if (lowerAscii(text) == lowerAscii(headword)) return;  // the word is already in the header
+
+  // A label followed by text: "Thesaurus+: ...", "Noun: romance", "See also: ..."
+  const size_t colon = text.find(':');
+  if (colon != std::string::npos && colon > 0 && colon <= 24) {
+    const std::string head = trimmed(text.substr(0, colon));
+    const std::string rest = trimmed(text.substr(colon + 1));
+    const std::string lowHead = lowerAscii(head);
+    if (lowHead == "thesaurus+" || lowHead == "thesaurus") {
+      addParagraph("Thesaurus+", true, false);
+      if (!rest.empty()) addParagraph(rest, false, false);
+      return;
+    }
+    if (isTruePos(head) && (heading || rest.empty() || rest.find(' ') == std::string::npos ||
+                            lowerAscii(rest) == lowerAscii(headword))) {
+      text = capitalizeWords(lowerAscii(head));
+      heading = true;
+    } else if (!heading && isSectionLabel(lowHead)) {
+      addParagraph(upperFirst(head), true, false);
+      if (!rest.empty()) addParagraph(rest, false, false);
+      return;
+    }
+  }
+  if (!heading && isTruePos(text)) {  // a line that is only a part of speech
+    text = capitalizeWords(lowerAscii(text));
+    heading = true;
+  }
+  // A short label such as "Origin:" is a heading too.
+  if (!heading && text.size() <= 26 && text.size() > 2 && text.back() == ':' && text.front() >= 'A' &&
+      text.front() <= 'Z') {
+    heading = true;
+  }
+  if (!heading && isAllCapsWord(text)) heading = true;  // guidewords such as "FLAVOUR"
+  if (isDictionaryHeading(text.c_str())) heading = true;
+  if (heading) {
+    while (!text.empty() && text.back() == ':') text.pop_back();
+    if (text.empty()) return;
+    if (isAllCapsWord(text)) text = capitalizeWords(lowerAscii(text));
+    pendingNote_.clear();
+    wrapInto(text, std::string(), true, false, 0);
+    return;
+  }
+
+  // Cambridge sub-labels ("Verbs", "Adjectives", "verb transitive"): bold, but indented like any other entry.
+  {
+    const std::string low = lowerAscii(text);
+    if (isSubLabel(low) || isPosPhrase(low)) {
+      pendingNote_.clear();
+      wrapInto(upperFirst(text), std::string(), true, false, kSubIndent);
+      return;
+    }
+  }
+
+  // "[with obj]" on its own: kept to open the next definition
+  if (text.front() == '[' && text.back() == ']' && text.find(']') == text.size() - 1 && text.size() <= 40) {
+    pendingNote_ = text;
+    return;
+  }
+  if (!italic && isQuotedExample(text)) italic = true;
+  if (!italic && !pendingNote_.empty()) {
+    text = pendingNote_ + " " + text;
+    pendingNote_.clear();
+  }
+
+  // Oxford: every "[...]" note is drawn bold (bold italic inside an example). Other dictionaries keep them plain.
+  const std::string mask = oxfordStyle_ ? bracketMask(text) : std::string();
+  wrapInto(text, mask, false, italic, kIndent);
+}
+
+// Greedy word wrap at an exact pixel width. The first line of an entry is narrower (it is indented); every row
+// of a paragraph except the last is justified. The bold mask is cut together with the text.
+void DictionaryDefinitionActivity::wrapInto(const std::string& text, const std::string& mask, const bool bold,
+                                            const bool italic, const int indentPx) {
+  const int fullWidth = std::max(80, labelWidthPx() - kWrapSafety);
+  const int firstWidth = indentPx > 0 ? std::max(80, fullWidth - indentPx) : fullWidth;
+
   std::vector<std::string> lines;
+  std::vector<std::string> masks;
   std::string line;
+  std::string lineMask;
+  const auto widthNow = [&]() { return lines.empty() ? firstWidth : fullWidth; };
   const auto flush = [&] {
-    if (!line.empty()) lines.push_back(line);
+    if (!line.empty()) {
+      lines.push_back(line);
+      masks.push_back(lineMask);
+    }
     line.clear();
+    lineMask.clear();
   };
 
   size_t i = 0;
@@ -208,13 +919,16 @@ void DictionaryDefinitionActivity::wrapInto(const std::string& text, const int w
     const size_t start = i;
     while (i < n && !isBlankByte(text[i])) i++;
     std::string token = text.substr(start, i - start);
+    std::string tokMask = mask.empty() ? std::string(token.size(), '0') : mask.substr(start, i - start);
 
     // A word wider than a whole line is split at the widest fitting UTF-8 boundary.
-    while (measure(token, heading) > width && token.size() > 1) {
+    while (token.size() > 1 && measure(token, bold, italic) > (line.empty() ? widthNow() : fullWidth)) {
+      flush();
+      const int w = widthNow();
       size_t cut = 0;
       for (size_t f = 1; f <= token.size(); ++f) {
         if (f == token.size() || (static_cast<unsigned char>(token[f]) & 0xC0) != 0x80) {
-          if (measure(token.substr(0, f), heading) > width) break;
+          if (measure(token.substr(0, f), bold, italic) > w) break;
           cut = f;
         }
       }
@@ -222,25 +936,30 @@ void DictionaryDefinitionActivity::wrapInto(const std::string& text, const int w
         cut = 1;
         while (cut < token.size() && (static_cast<unsigned char>(token[cut]) & 0xC0) == 0x80) cut++;
       }
-      flush();
       lines.push_back(token.substr(0, cut));
+      masks.push_back(tokMask.substr(0, cut));
       token.erase(0, cut);
+      tokMask.erase(0, cut);
     }
     if (token.empty()) continue;
 
     const std::string candidate = line.empty() ? token : line + ' ' + token;
-    if (line.empty() || measure(candidate, heading) <= width) {
+    if (line.empty() || measure(candidate, bold, italic) <= widthNow()) {
+      if (!line.empty()) lineMask += '0';
       line = candidate;
+      lineMask += tokMask;
     } else {
       flush();
       line = token;
+      lineMask = tokMask;
     }
   }
   flush();
 
   for (size_t k = 0; k < lines.size(); ++k) {
     const bool last = k + 1 == lines.size();
-    rows_.push_back({lines[k], heading, !heading && (kJustifyLastLine || !last)});
+    rows_.push_back({lines[k], masks[k].find('1') != std::string::npos ? masks[k] : std::string(), bold, italic,
+                     !bold && (kJustifyLastLine || !last), k == 0 ? indentPx : 0});
   }
 }
 
@@ -261,6 +980,7 @@ void DictionaryDefinitionActivity::buildScreen(UiScreen& screen) {
   props.valueInset = 3;
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.rowGap = 0;
+  props.scrollIndicator = false;  // the Prev/Next hints already show when there is more
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 1;
   props.labelText.lineGap = 6;
@@ -274,20 +994,22 @@ void DictionaryDefinitionActivity::activateIndex(const int) { app.clearTapFlash(
 bool DictionaryDefinitionActivity::canScrollUp() { return activeNav().top > 0; }
 
 bool DictionaryDefinitionActivity::canScrollDown() {
-  return activeNav().top + static_cast<int>(activeNav().pageRows()) < listCount();
+  return static_cast<int>(activeNav().top) + pageRowsEstimate() < listCount();
 }
 
-// One screenful, keeping the last row of the old view as the first row of the new one.
+// One whole screen at a time: the rows flow on exactly where the last screen ended, so nothing repeats.
 void DictionaryDefinitionActivity::scrollPages(const int direction) {
   auto& n = activeNav();
-  const int step = std::max(1, static_cast<int>(n.pageRows()) - 1);
-  bool moved = false;
+  const int cap = pageRowsEstimate();
+  const int count = listCount();
+  const int newTop = static_cast<int>(n.top) + direction * cap;
+  if (newTop < 0 || newTop >= count) return;
   {
     RenderLock lock(*this);
-    moved = n.scrollBy(direction * step, listCount());
-    if (moved) n.selected = std::clamp(n.top, 0, std::max(0, listCount() - 1));
+    n.top = newTop;
+    n.selected = std::clamp(newTop, 0, std::max(0, count - 1));
   }
-  if (moved) requestUpdate();
+  requestUpdate();
 }
 
 void DictionaryDefinitionActivity::navigateButtons() {
