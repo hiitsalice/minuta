@@ -4,8 +4,6 @@ _order: "0"
 _bcp47: "en"
 
 STR_CROSSPOINT: "CrossPoint"
-STR_BOOTING: "BOOTING"
-STR_SLEEPING: "SLEEPING"
 STR_ENTERING_SLEEP: "Going to sleep"
 STR_BROWSE_FILES: "Browse Files"
 STR_FILE_TRANSFER: "File Transfer"

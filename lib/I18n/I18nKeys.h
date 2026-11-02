@@ -27,8 +27,6 @@ extern const char* const CHARACTER_SETS[];
 
 // String IDs
 enum class StrId : uint16_t {
-  STR_BOOTING,
-  STR_SLEEPING,
   STR_ENTERING_SLEEP,
   STR_BROWSE_FILES,
   STR_FILE_TRANSFER,

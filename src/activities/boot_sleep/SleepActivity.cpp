@@ -26,7 +26,7 @@
 #include "activities/reader/ReaderUtils.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
-#include "images/Logo120.h"
+#include "images/SleepingLogo.h"
 #include "images/MoonIcon.h"
 
 namespace {
@@ -568,36 +568,123 @@ void SleepActivity::renderCustomSleepScreen() const {
 // firmware's only clean refresh in normal operation is the single-pass 0xD7
 // sequence, used once for the sleep image. It never runs the multi-flash GC
 // waveform (0xF7) that FULL_REFRESH selects (#2471's blinking complaint).
+
 void SleepActivity::renderDefaultSleepScreen() const {
   const auto pageWidth = renderer.getScreenWidth();
   const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
 
-  // Centre the logo + Minuta + status text as one vertical group.
-  constexpr int logoSize = 120;
-  constexpr int logoTextGap = -30;
-  constexpr int textLineGap = 8;
+  constexpr int logoWidth = 150;
+  constexpr int logoHeight = 86;
+  constexpr int arcDepth = 8;
+  constexpr int tracking = 1;
 
-  const int titleHeight = renderer.getTextHeight(UI_12_FONT_ID);
-  const int statusHeight = renderer.getTextHeight(UI_10_FONT_ID);
+  // Centre the actual curved glyph bounds, not the font line boxes.
+  // The title's outermost glyph pixels extend from titleY - 3.
+  constexpr int compositionHeight = 133;
+  const int groupTop = (pageHeight - compositionHeight) / 2;
+  const int titleY = groupTop + 3;
 
-  const int groupHeight = logoSize + logoTextGap + titleHeight + textLineGap + statusHeight;
-  const int groupTop = (pageHeight - groupHeight) / 2;
+  // The bottom of the 'n' in Minuta is titleY + 14.
+  // The logo begins at titleY + 21: exactly 6 blank pixels.
+  const int logoY = titleY + 21;
 
-  const int logoY = groupTop;
-  const int titleY = logoY + logoSize + logoTextGap;
-  const int statusY = titleY + titleHeight + textLineGap;
+  // The top of the 'p' is statusY + 5.
+  // The logo ends at logoY + 85: exactly 9 blank pixels.
+  const int statusY = logoY + 89;
 
-  renderer.drawImage(Logo120, (pageWidth - logoSize) / 2, logoY, logoSize, logoSize);
+  const int logoX = (pageWidth - logoWidth) / 2;
 
-  renderer.drawCenteredText(UI_12_FONT_ID, titleY, "Minuta", true, EpdFontFamily::REGULAR);
+  constexpr int bitmapWidth = logoHeight;
+  constexpr int bitmapHeight = logoWidth;
+  constexpr int rowBytes = (bitmapWidth + 7) / 8;
 
-  renderer.drawCenteredText(UI_10_FONT_ID, statusY, tr(STR_SLEEPING), true, EpdFontFamily::ITALIC);
+  for (int row = 0; row < bitmapHeight; ++row) {
+    for (int col = 0; col < bitmapWidth; ++col) {
+      const uint8_t byte = SleepingLogo[row * rowBytes + (col >> 3)];
+      const bool white = (byte >> (7 - (col & 7))) & 1;
+
+      if (!white) {
+        renderer.drawPixel(
+            logoX + (bitmapHeight - 1 - row),
+            logoY + col,
+            true);
+      }
+    }
+  }
+
+  {
+    const char* text = "Minuta";
+    constexpr int length = 6;
+    constexpr int arcDepth = 4;
+    constexpr int tracking = 1;
+    char glyph[2] = {'\0', '\0'};
+
+    int totalWidth = tracking * (length - 1);
+    for (int i = 0; i < length; ++i) {
+      glyph[0] = text[i];
+      totalWidth += renderer.getTextAdvanceX(
+          UI_12_FONT_ID, glyph, EpdFontFamily::REGULAR);
+    }
+
+    int x = (pageWidth - totalWidth) / 2;
+    int travelled = 0;
+
+    for (int i = 0; i < length; ++i) {
+      glyph[0] = text[i];
+      const int advance = renderer.getTextAdvanceX(
+          UI_12_FONT_ID, glyph, EpdFontFamily::REGULAR);
+
+      const int delta = travelled * 2 + advance - totalWidth;
+      const int offset = totalWidth > 0
+          ? -arcDepth * (totalWidth * totalWidth - delta * delta) /
+                (totalWidth * totalWidth)
+          : 0;
+
+      renderer.drawText(
+          UI_12_FONT_ID, x, titleY + offset,
+          glyph, true, EpdFontFamily::REGULAR);
+
+      x += advance + tracking;
+      travelled += advance + tracking;
+    }
+  }
+
+  const char* text = "sleeping";
+  const int length = 8;
+  char glyph[2] = {'\0', '\0'};
+
+  int totalWidth = tracking * (length - 1);
+  for (int i = 0; i < length; ++i) {
+    glyph[0] = text[i];
+    totalWidth += renderer.getTextAdvanceX(
+        UI_10_FONT_ID, glyph, EpdFontFamily::REGULAR);
+  }
+
+  int x = (pageWidth - totalWidth) / 2;
+  int travelled = 0;
+
+  for (int i = 0; i < length; ++i) {
+    glyph[0] = text[i];
+    const int advance = renderer.getTextAdvanceX(
+        UI_10_FONT_ID, glyph, EpdFontFamily::REGULAR);
+
+    const int delta = travelled * 2 + advance - totalWidth;
+    const int offset = totalWidth > 0
+        ? -arcDepth * delta * delta / (totalWidth * totalWidth)
+        : 0;
+
+    renderer.drawText(
+        UI_10_FONT_ID, x, statusY + offset,
+        glyph, true, EpdFontFamily::REGULAR);
+
+    x += advance + tracking;
+    travelled += advance + tracking;
+  }
 
   renderer.displayBuffer(HalDisplay::HALF_REFRESH);
 }
-
 void SleepActivity::renderBitmapSleepScreen(const Bitmap& bitmap, const bool preserveBackground) const {
   const auto pageWidth = renderer.getScreenWidth();
   const auto pageHeight = renderer.getScreenHeight();
