@@ -51,6 +51,5 @@ void BootActivity::onEnter() {
       true,
       EpdFontFamily::ITALIC);
 
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 42, CROSSPOINT_VERSION);
   renderer.displayBuffer();
 }
