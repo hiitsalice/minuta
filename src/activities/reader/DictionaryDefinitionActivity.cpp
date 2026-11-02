@@ -542,6 +542,7 @@ void DictionaryDefinitionActivity::buildRows() {
     while (static_cast<int>(rows_.size()) % cap != 0) rows_.push_back({std::string(), std::string(), false, false, false, 0});
   }
 
+
   items_.reserve(rows_.size());
   for (size_t i = 0; i < rows_.size(); ++i) {
     fui::ListItem item;
