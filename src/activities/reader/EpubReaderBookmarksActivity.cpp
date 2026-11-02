@@ -190,7 +190,7 @@ bool EpubReaderBookmarksActivity::handleButtons() {
 
   if (confirmHeld && !confirmLongHandled &&
       mappedInput.isPressed(MappedInputManager::Button::Confirm) &&
-      mappedInput.getHeldTime() > ENTER_DELETE_MODE_MS) {
+      mappedInput.getHeldTime() >= ENTER_DELETE_MODE_MS) {
     deleteSelectedItem();
     confirmLongHandled = true;
     return true;

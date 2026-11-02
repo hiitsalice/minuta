@@ -406,7 +406,7 @@ void KeyboardEntryActivity::loop() {
   }
 
   if (upHeld && !upLongHandled && mappedInput.isPressed(MappedInputManager::Button::Up) &&
-      mappedInput.getHeldTime() > LONG_PRESS_MS) {
+      mappedInput.getHeldTime() >= LONG_PRESS_MS) {
     cursorMode = true;
     upLongHandled = true;
     hintVisible = true;
@@ -480,7 +480,7 @@ void KeyboardEntryActivity::loop() {
   });
 
   if (rightHeld && !rightLongHandled && mappedInput.isPressed(MappedInputManager::Button::Right) &&
-      mappedInput.getHeldTime() > LONG_PRESS_MS) {
+      mappedInput.getHeldTime() >= LONG_PRESS_MS) {
     if (cursorMode && inputType == InputType::Password && !togglePos) {
       savedCursorPos = rightStartCursorPos;
       togglePos = true;
@@ -512,14 +512,14 @@ void KeyboardEntryActivity::loop() {
   const bool selectedDel = selKey && selKey->value == fui::QWERTY_KEY_BACKSPACE;
 
   if (confirmHeld && !confirmLongHandled && mappedInput.isPressed(MappedInputManager::Button::Confirm) &&
-      mappedInput.getHeldTime() > DEL_LONG_PRESS_MS && selectedDel) {
+      mappedInput.getHeldTime() >= DEL_LONG_PRESS_MS && selectedDel) {
     clearAllOrAltOnSelected();
     confirmLongHandled = true;
     requestUpdate();
   }
 
   if (confirmHeld && !confirmLongHandled && mappedInput.isPressed(MappedInputManager::Button::Confirm) &&
-      mappedInput.getHeldTime() > LONG_PRESS_MS) {
+      mappedInput.getHeldTime() >= LONG_PRESS_MS) {
     if (!selectedDel && clearAllOrAltOnSelected()) {
       requestUpdate();
       confirmLongHandled = true;

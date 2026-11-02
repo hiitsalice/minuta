@@ -255,7 +255,7 @@ enum LONG_PRESS_MENU_FUNCTION {
   void* sdFontResolverCtx = nullptr;
 
   uint16_t getPowerButtonDuration() const {
-    return 400;
+    return 700;
   }
   int getReaderFontId() const;
 

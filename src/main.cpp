@@ -449,6 +449,17 @@ void setup() {
       break;
   }
 
+  // Keep the normal boot splash visible for two full seconds after its
+  // first render has physically completed. Special recovery/error routes
+  // take priority and the silent reboot path intentionally skips the splash.
+  const bool showTimedBootSplash =
+      !recoveryFirmwareMode && !rebootedFromPanic &&
+      powerManager.getBatteryPercentage() != 0 && resume != BootResume::Silent;
+  if (showTimedBootSplash) {
+    activityManager.requestUpdateAndWait();
+    delay(2000);
+  }
+
   // Output polarity is resolved per render by ActivityManager (night mode
   // inverts only the reading surfaces), so nothing to restore here.
 
@@ -570,7 +581,7 @@ void loop() {
 
     if (powerReleasedSinceLowBatteryWake && millis() >= allowSleepAt &&
         gpio.isPressed(HalGPIO::BTN_POWER) &&
-        gpio.getPowerButtonHeldTime() > SETTINGS.getPowerButtonDuration()) {
+        gpio.getPowerButtonHeldTime() >= SETTINGS.getPowerButtonDuration()) {
       enterDeepSleep();
       return;
     }
@@ -618,7 +629,7 @@ void loop() {
   if (!gpio.isPressed(HalGPIO::BTN_POWER)) powerReleasedSinceWake = true;
 
   if (powerReleasedSinceWake && millis() >= allowSleepAt && gpio.isPressed(HalGPIO::BTN_POWER) &&
-      gpio.getPowerButtonHeldTime() > SETTINGS.getPowerButtonDuration()) {
+      gpio.getPowerButtonHeldTime() >= SETTINGS.getPowerButtonDuration()) {
     // If the screenshot combination is potentially being pressed, don't sleep
     if (gpio.isPressed(HalGPIO::BTN_DOWN)) {
       return;
