@@ -583,7 +583,7 @@ void SleepActivity::renderDefaultSleepScreen() const {
   // Centre the actual curved glyph bounds, not the font line boxes.
   // The title's outermost glyph pixels extend from titleY - 3.
   constexpr int compositionHeight = 133;
-  const int groupTop = (pageHeight - compositionHeight) / 2 + 3;
+  const int groupTop = (pageHeight - compositionHeight) / 2 + 6;
   const int titleY = groupTop + 3;
 
   // The bottom of the 'n' in Minuta is titleY + 14.

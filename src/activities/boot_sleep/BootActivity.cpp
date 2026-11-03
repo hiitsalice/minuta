@@ -22,7 +22,7 @@ void BootActivity::onEnter() {
   // Centre the actual curved glyph bounds, not the font line boxes.
   // The title's outermost glyph pixels extend from titleY - 3.
   constexpr int compositionHeight = 133;
-  const int groupTop = (pageHeight - compositionHeight) / 2 + 3;
+  const int groupTop = (pageHeight - compositionHeight) / 2 + 6;
   const int titleY = groupTop + 3;
 
   // The bottom of the 'n' in Minuta is titleY + 14.
@@ -68,7 +68,7 @@ void BootActivity::onEnter() {
       if (i == 0 || right > maxRight) maxRight = right;
     }
 
-    const int startX = (pageWidth - (maxRight - minLeft)) / 2 - minLeft + 1;
+    const int startX = (pageWidth - (maxRight - minLeft)) / 2 - minLeft;
 
     for (int i = 0; i < length; ++i) {
       glyph[0] = text[i];

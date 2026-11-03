@@ -457,7 +457,7 @@ void setup() {
       powerManager.getBatteryPercentage() != 0 && resume != BootResume::Silent;
   if (showTimedBootSplash) {
     activityManager.requestUpdateAndWait();
-    delay(1500);
+    delay(700);
   }
 
   // Output polarity is resolved per render by ActivityManager (night mode
