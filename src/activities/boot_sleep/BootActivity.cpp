@@ -21,13 +21,13 @@ void BootActivity::onEnter() {
 
   // Centre the actual curved glyph bounds, not the font line boxes.
   // The title's outermost glyph pixels extend from titleY - 3.
-  constexpr int compositionHeight = 128;
-  const int groupTop = (pageHeight - compositionHeight) / 2;
+  constexpr int compositionHeight = 133;
+  const int groupTop = (pageHeight - compositionHeight) / 2 + 3;
   const int titleY = groupTop + 3;
 
   // The bottom of the 'n' in Minuta is titleY + 14.
-  // The logo begins at titleY + 21: exactly 6 blank pixels.
-  const int logoY = titleY + 21;
+  // The logo begins at titleY + 20: exactly 5 blank pixels.
+  const int logoY = groupTop + 23;
 
   // The top of the 'p' is statusY + 5.
   // The logo ends at logoY + 85: exactly 9 blank pixels.
@@ -40,33 +40,52 @@ void BootActivity::onEnter() {
     constexpr int tracking = 1;
     char glyph[2] = {'\0', '\0'};
 
-    int totalWidth = tracking * (length - 1);
-    for (int i = 0; i < length; ++i) {
-      glyph[0] = text[i];
-      totalWidth += renderer.getTextAdvanceX(
-          UI_12_FONT_ID, glyph, EpdFontFamily::REGULAR);
-    }
+    int totalWidth = renderer.getTextAdvanceX(
+        UI_12_FONT_ID, text, EpdFontFamily::REGULAR) +
+        tracking * (length - 1);
+    char prefix[9] = {};
+    constexpr int verticalOffsets[6] = {0, -2, -4, -4, -2, 0};
+    constexpr int horizontalOffsets[6] = {0, -1, -1, -1, -1, -2};
 
-    int x = (pageWidth - totalWidth) / 2;
+    int minLeft = 0;
+    int maxRight = 0;
     int travelled = 0;
 
     for (int i = 0; i < length; ++i) {
       glyph[0] = text[i];
+      for (int j = 0; j < i; ++j) prefix[j] = text[j];
+      prefix[i] = '\0';
+
+      travelled = renderer.getTextAdvanceX(
+          UI_12_FONT_ID, prefix, EpdFontFamily::REGULAR) + tracking * i;
+
+      const int advance = renderer.getTextAdvanceX(
+          UI_12_FONT_ID, glyph, EpdFontFamily::REGULAR);
+      const int left = travelled + horizontalOffsets[i];
+      const int right = left + advance;
+
+      if (i == 0 || left < minLeft) minLeft = left;
+      if (i == 0 || right > maxRight) maxRight = right;
+    }
+
+    const int startX = (pageWidth - (maxRight - minLeft)) / 2 - minLeft + 1;
+
+    for (int i = 0; i < length; ++i) {
+      glyph[0] = text[i];
+      for (int j = 0; j < i; ++j) prefix[j] = text[j];
+      prefix[i] = '\0';
+      const int travelled = renderer.getTextAdvanceX(
+          UI_12_FONT_ID, prefix, EpdFontFamily::REGULAR) + tracking * i;
       const int advance = renderer.getTextAdvanceX(
           UI_12_FONT_ID, glyph, EpdFontFamily::REGULAR);
 
-      const int delta = travelled * 2 + advance - totalWidth;
-      const int offset = totalWidth > 0
-          ? -arcDepth * (totalWidth * totalWidth - delta * delta) /
-                (totalWidth * totalWidth)
-          : 0;
+      const int offset = verticalOffsets[i];
 
       renderer.drawText(
-          UI_12_FONT_ID, x, titleY + offset,
+          UI_12_FONT_ID, startX + travelled + horizontalOffsets[i],
+          titleY + offset - 1,
           glyph, true, EpdFontFamily::REGULAR);
 
-      x += advance + tracking;
-      travelled += advance + tracking;
     }
   }
 
@@ -78,36 +97,16 @@ void BootActivity::onEnter() {
       logoWidth);
 
   const char* text = "booting";
-  const int length = 7;
-  char glyph[2] = {'\0', '\0'};
+  constexpr int verticalOffsets[] = {-9, -3, 0, 0, 0, -3, -9};
+  constexpr int horizontalOffsets[] = {0, 1, 2, 3, 6, 7, 8};
+  const int textWidth = renderer.getTextAdvanceX(
+      UI_10_FONT_ID, text, EpdFontFamily::REGULAR);
+  const int startX = (pageWidth - textWidth - 8) / 2 + 2;
 
-  int totalWidth = tracking * (length - 1);
-  for (int i = 0; i < length; ++i) {
-    glyph[0] = text[i];
-    totalWidth += renderer.getTextAdvanceX(
-        UI_10_FONT_ID, glyph, EpdFontFamily::REGULAR);
-  }
-
-  int x = (pageWidth - totalWidth) / 2;
-  int travelled = 0;
-
-  for (int i = 0; i < length; ++i) {
-    glyph[0] = text[i];
-    const int advance = renderer.getTextAdvanceX(
-        UI_10_FONT_ID, glyph, EpdFontFamily::REGULAR);
-
-    const int delta = travelled * 2 + advance - totalWidth;
-    const int offset = totalWidth > 0
-        ? -arcDepth * delta * delta / (totalWidth * totalWidth)
-        : 0;
-
-    renderer.drawText(
-        UI_10_FONT_ID, x, statusY + offset,
-        glyph, true, EpdFontFamily::REGULAR);
-
-    x += advance + tracking;
-    travelled += advance + tracking;
-  }
+  renderer.drawText(
+      UI_10_FONT_ID, startX, statusY + 1, text, true,
+      EpdFontFamily::REGULAR, BidiUtils::BidiBaseDir::AUTO,
+      verticalOffsets, horizontalOffsets);
 
   renderer.displayBuffer();
 }

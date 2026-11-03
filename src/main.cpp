@@ -449,7 +449,7 @@ void setup() {
       break;
   }
 
-  // Keep the normal boot splash visible for two full seconds after its
+  // Keep the normal boot splash visible for 1.5 seconds after its
   // first render has physically completed. Special recovery/error routes
   // take priority and the silent reboot path intentionally skips the splash.
   const bool showTimedBootSplash =
@@ -457,7 +457,7 @@ void setup() {
       powerManager.getBatteryPercentage() != 0 && resume != BootResume::Silent;
   if (showTimedBootSplash) {
     activityManager.requestUpdateAndWait();
-    delay(2000);
+    delay(1500);
   }
 
   // Output polarity is resolved per render by ActivityManager (night mode
