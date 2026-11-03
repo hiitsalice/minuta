@@ -594,7 +594,7 @@ void SleepActivity::renderDefaultSleepScreen() const {
   // The logo ends at logoY + 85: exactly 9 blank pixels.
   const int statusY = logoY + 89;
 
-  const int logoX = (pageWidth - logoWidth) / 2;
+  const int logoX = (pageWidth - logoWidth) / 2 + 1;
 
   constexpr int bitmapWidth = logoHeight;
   constexpr int bitmapHeight = logoWidth;
