@@ -11,5 +11,5 @@ void LowBatteryWarningActivity::onEnter() {
   renderer.drawCenteredText(UI_10_FONT_ID, 432,
                             "Please charge your device and have a rest :)",
                             true, EpdFontFamily::REGULAR);
-  renderer.displayBuffer();
+  renderer.displayBuffer(HalDisplay::HALF_REFRESH);
 }

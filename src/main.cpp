@@ -470,7 +470,7 @@ void setup() {
   } else if (rebootedFromPanic) {
     // If we rebooted from a panic, go to crash report screen to show the panic info
     activityManager.goToCrashReport();
-  } else if (powerManager.getBatteryPercentage() == 0) {
+  } else if (powerManager.getBatteryPercentage() == 0 && !gpio.isUsbConnected()) {
     lowBatteryWarningActive = true;
     activityManager.replaceActivity(
         std::make_unique<LowBatteryWarningActivity>(renderer, mappedInputManager));
@@ -572,9 +572,26 @@ void loop() {
   }
 
   // In low-battery mode, ignore all input except holding POWER to sleep.
-  // Waking restarts setup(), which checks the battery percentage again.
+  // Process the queued warning once before entering the input lockout.
   if (lowBatteryWarningActive) {
+    static bool warningActivityProcessed = false;
     static bool powerReleasedSinceLowBatteryWake = false;
+
+    if (!warningActivityProcessed) {
+      warningActivityProcessed = true;
+      activityManager.loop();
+    }
+
+    // Keep the warning visible while charging until the battery rises above 0%.
+    if (powerManager.getBatteryPercentage() > 0) {
+      lowBatteryWarningActive = false;
+      warningActivityProcessed = false;
+      powerReleasedSinceLowBatteryWake = false;
+      activityManager.goHome(HomeMenuItem::NONE, true);
+      activityManager.loop();
+      return;
+    }
+
     if (!gpio.isPressed(HalGPIO::BTN_POWER)) {
       powerReleasedSinceLowBatteryWake = true;
     }
@@ -587,6 +604,16 @@ void loop() {
     }
 
     delay(10);
+    return;
+  }
+
+  // A zero battery reading interrupts the current activity.
+  // The exclusive-storage loop above is intentionally left undisturbed.
+  if (!gpio.isUsbConnected() && powerManager.getBatteryPercentage() == 0) {
+    lowBatteryWarningActive = true;
+    activityManager.replaceActivity(
+        std::make_unique<LowBatteryWarningActivity>(renderer, mappedInputManager));
+    activityManager.loop();
     return;
   }
 
