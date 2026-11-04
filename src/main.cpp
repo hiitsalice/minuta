@@ -7,6 +7,14 @@
 #include <HalDisplay.h>
 #include <HalGPIO.h>
 #include <HalPowerManager.h>
+
+#ifndef SIMULATOR
+#define MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE() \
+  powerManager.isLowBatteryLockoutActive(gpio.isUsbConnected())
+#else
+#define MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE() false
+#endif
+
 #include <HalStorage.h>
 #ifndef SIMULATOR
 #include <Preferences.h>
@@ -470,10 +478,6 @@ void setup() {
   } else if (rebootedFromPanic) {
     // If we rebooted from a panic, go to crash report screen to show the panic info
     activityManager.goToCrashReport();
-  } else if (powerManager.getBatteryPercentage() == 0 && !gpio.isUsbConnected()) {
-    lowBatteryWarningActive = true;
-    activityManager.replaceActivity(
-        std::make_unique<LowBatteryWarningActivity>(renderer, mappedInputManager));
   } else if (resume == BootResume::Silent && snapshotTarget == SILENT_REBOOT_TARGET_READER &&
              !APP_STATE.openEpubPath.empty()) {
     activityManager.goToReader(APP_STATE.openEpubPath);
@@ -582,8 +586,10 @@ void loop() {
       activityManager.loop();
     }
 
-    // Keep the warning visible while charging until the battery rises above 0%.
-    if (powerManager.getBatteryPercentage() > 0) {
+    // The latched warning can only be released by USB connection.
+    const bool stillLocked =
+        MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE();
+    if (!stillLocked) {
       lowBatteryWarningActive = false;
       warningActivityProcessed = false;
       powerReleasedSinceLowBatteryWake = false;
@@ -609,7 +615,7 @@ void loop() {
 
   // A zero battery reading interrupts the current activity.
   // The exclusive-storage loop above is intentionally left undisturbed.
-  if (!gpio.isUsbConnected() && powerManager.getBatteryPercentage() == 0) {
+  if (MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE()) {
     lowBatteryWarningActive = true;
     activityManager.replaceActivity(
         std::make_unique<LowBatteryWarningActivity>(renderer, mappedInputManager));

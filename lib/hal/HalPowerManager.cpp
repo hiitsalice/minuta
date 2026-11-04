@@ -15,6 +15,7 @@ HalPowerManager powerManager;  // Singleton instance
 
 // GPIO13 controls the X4 battery power latch.
 static constexpr gpio_num_t XTEINK_C3_GPIO13 = GPIO_NUM_13;
+static constexpr uint8_t LOW_BATTERY_CONFIRM_READINGS = 6;
 
 void HalPowerManager::begin() {
   if (BoardConfig::ACTIVE.batteryAdc >= 0) {
@@ -109,29 +110,149 @@ void HalPowerManager::startDeepSleep(HalGPIO& gpio) const {
   freeink::PowerManager::deepSleepUntilPowerButton();
 }
 
+bool HalPowerManager::isBatteryPercentageKnown() const {
+  return _batteryReadingKnown;
+}
+
+bool HalPowerManager::isLowBatteryLockoutActive(bool usbConnected) const {
+  const unsigned long now = millis();
+
+  // USB is the only way to clear a confirmed lockout.
+  if (usbConnected) {
+    _lowBatteryZeroReadings = 0;
+    _lowBatteryLastConfirmationMs = 0;
+    _lowBatteryLockoutActive = false;
+    _lowBatteryAwaitingFreshReading = true;
+    _lowBatteryLastProcessedSequence = _batterySampleSequence;
+    return false;
+  }
+
+  // Once locked, ignore all battery percentage changes.
+  if (_lowBatteryLockoutActive) {
+    return true;
+  }
+
+  // After USB is unplugged, require a new physical reading.
+  if (_lowBatteryAwaitingFreshReading) {
+    if (_batterySampleSequence == _lowBatteryLastProcessedSequence) {
+      if (!_batteryHasSample ||
+          now - _batteryLastPollMs >= BATTERY_POLL_MS) {
+        getBatteryPercentage();
+      }
+      return false;
+    }
+
+    _lowBatteryLastProcessedSequence = _batterySampleSequence;
+
+    if (!_batteryLastReadingValid) {
+      return false;
+    }
+
+    _lowBatteryAwaitingFreshReading = false;
+
+    const uint16_t percentage =
+        BoardConfig::ACTIVE.batteryGauge.gaugeAddr != 0
+            ? _batteryCachedPercent
+            : _batteryCachedPercent / 10;
+
+    if (percentage == 0) {
+      _lowBatteryZeroReadings = 1;
+      _lowBatteryLastConfirmationMs = now;
+    } else {
+      _lowBatteryZeroReadings = 0;
+      _lowBatteryLastConfirmationMs = 0;
+    }
+
+    return false;
+  }
+
+  // Process each physical sample only once.
+  if (_batterySampleSequence != _lowBatteryLastProcessedSequence) {
+    _lowBatteryLastProcessedSequence = _batterySampleSequence;
+
+    // Invalid readings neither count nor reset the sequence.
+    if (_batteryLastReadingValid) {
+      const uint16_t percentage =
+          BoardConfig::ACTIVE.batteryGauge.gaugeAddr != 0
+              ? _batteryCachedPercent
+              : _batteryCachedPercent / 10;
+
+      if (percentage > 0) {
+        _lowBatteryZeroReadings = 0;
+        _lowBatteryLastConfirmationMs = 0;
+      } else {
+        if (_lowBatteryZeroReadings < LOW_BATTERY_CONFIRM_READINGS) {
+          ++_lowBatteryZeroReadings;
+        }
+        _lowBatteryLastConfirmationMs = now;
+      }
+    }
+  }
+
+  // Only request additional samples while confirming a zero-percent reading.
+  if (_lowBatteryZeroReadings > 0 &&
+      _lowBatteryZeroReadings < LOW_BATTERY_CONFIRM_READINGS &&
+      now - _lowBatteryLastConfirmationMs >= BATTERY_POLL_MS) {
+    getBatteryPercentage();
+  }
+
+  if (_lowBatteryZeroReadings >= LOW_BATTERY_CONFIRM_READINGS) {
+    _lowBatteryLockoutActive = true;
+  }
+
+  return _lowBatteryLockoutActive;
+}
+
 uint16_t HalPowerManager::getBatteryPercentage() const {
+  const unsigned long now = millis();
+
+  // Reuse the latest sample during the polling interval.
+  if (_batteryHasSample &&
+      now - _batteryLastPollMs < BATTERY_POLL_MS) {
+    return BoardConfig::ACTIVE.batteryGauge.gaugeAddr != 0
+               ? _batteryCachedPercent
+               : _batteryCachedPercent / 10;
+  }
+
+  _batteryLastPollMs = now;
+  _batteryHasSample = true;
+  ++_batterySampleSequence;
+
   static const BatteryMonitor battery;
+
   if (BoardConfig::ACTIVE.batteryGauge.gaugeAddr != 0) {
-    const unsigned long now = millis();
-    if (_batteryLastPollMs != 0 && (now - _batteryLastPollMs) < BATTERY_POLL_MS) {
+    uint16_t percent = 0;
+
+    if (!battery.readPercentageChecked(percent)) {
+      _batteryLastReadingValid = false;
       return _batteryCachedPercent;
     }
 
-    _batteryLastPollMs = now;
-    uint16_t percent = 0;
-    if (!battery.readPercentageChecked(percent)) {
-      return _batteryCachedPercent;
-    }
     _batteryCachedPercent = percent;
+    _batteryReadingKnown = true;
+    _batteryLastReadingValid = true;
     return _batteryCachedPercent;
   }
 
-  // smooth the battery %.
-  if (_batteryCachedPercent == 0) {
-    _batteryCachedPercent = 10 * battery.readPercentage();
-  } else {
-    _batteryCachedPercent = (_batteryCachedPercent * 9 + battery.readPercentage() * 10) / 10;
+  // A failed ADC read must not be mistaken for a valid 0% reading.
+  const BatteryMonitor::Status status = battery.readStatus();
+
+  if (!status.percentageKnown) {
+    _batteryLastReadingValid = false;
+    return _batteryCachedPercent / 10;
   }
+
+  _batteryReadingKnown = true;
+  _batteryLastReadingValid = true;
+
+  // Smooth the battery percentage, retaining tenths internally.
+  if (_batteryCachedPercent == 0) {
+    _batteryCachedPercent = 10 * status.percentage;
+  } else {
+    _batteryCachedPercent =
+        (_batteryCachedPercent * 9 + status.percentage * 10) / 10;
+  }
+
   return _batteryCachedPercent / 10;
 }
 

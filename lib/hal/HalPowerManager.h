@@ -17,8 +17,18 @@ class HalPowerManager {
   int normalFreq = 0;  // MHz
   bool isLowPower = false;
 
-  mutable int _batteryCachedPercent = 0;         // Last read battery percentage (0-100)
-  mutable unsigned long _batteryLastPollMs = 0;  // Timestamp of last battery read in milliseconds
+  mutable int _batteryCachedPercent = 0;
+  mutable unsigned long _batteryLastPollMs = 0;
+  mutable bool _batteryHasSample = false;
+  mutable bool _batteryReadingKnown = false;
+  mutable bool _batteryLastReadingValid = false;
+  mutable uint32_t _batterySampleSequence = 0;
+
+  mutable uint8_t _lowBatteryZeroReadings = 0;
+  mutable unsigned long _lowBatteryLastConfirmationMs = 0;
+  mutable uint32_t _lowBatteryLastProcessedSequence = 0;
+  mutable bool _lowBatteryLockoutActive = false;
+  mutable bool _lowBatteryAwaitingFreshReading = false;
 
   enum LockMode { None, NormalSpeed };
   LockMode currentLockMode = None;
@@ -44,6 +54,12 @@ class HalPowerManager {
 
   // Get battery percentage (range 0-100)
   uint16_t getBatteryPercentage() const;
+
+  // Whether the cached percentage comes from a successful battery reading.
+  bool isBatteryPercentageKnown() const;
+
+  // Confirm low battery and maintain a USB-released lockout.
+  bool isLowBatteryLockoutActive(bool usbConnected) const;
 
   // RAII helper class to manage power saving locks
   // Usage: create an instance of Lock in a scope to disable power saving, for example when running a task that needs
