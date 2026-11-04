@@ -657,9 +657,10 @@ bool paragraphHasContent(const std::string& raw) {
   return !t.empty() && hasLetterOrDigit(t);
 }
 
-// "Verb: have (had, having, has)": *pos is "Verb"; word forms in the brackets go to *forms, any other bracketed
-// text is kept in *extra.
-bool splitPosLine(const std::string& text, std::string* pos, std::vector<std::string>* forms, std::string* extra) {
+// "Verb: have (had, having, has)": *pos is "Verb" and *base the word itself ("have"). Word forms in the brackets go
+// to *forms; any other bracketed text is kept in *extra.
+bool splitPosLine(const std::string& text, std::string* pos, std::string* base, std::vector<std::string>* forms,
+                  std::string* extra) {
   const size_t colon = text.find(':');
   if (colon == std::string::npos || colon > 20) return false;
   const std::string head = trimmed(text.substr(0, colon));
@@ -669,6 +670,7 @@ bool splitPosLine(const std::string& text, std::string* pos, std::vector<std::st
   extra->clear();
   const std::string rest = trimmed(text.substr(colon + 1));
   const size_t open = rest.find('(');
+  *base = lowerAscii(trimmed(open == std::string::npos ? rest : rest.substr(0, open)));
   const size_t close = rest.rfind(')');
   if (open == std::string::npos || close == std::string::npos || close < open) return true;
   const std::string inner = rest.substr(open + 1, close - open - 1);
@@ -712,12 +714,6 @@ std::string joinList(const std::vector<std::string>& items, const char* sep) {
   return out;
 }
 
-// WordWeb entries are restructured in four steps:
-//  1. a label that arrives as plain text ("Usage: UK", "Encyclopedia:") becomes a heading with its text beneath it;
-//  2. "Usage" + "UK" + a definition becomes "[UK] definition";
-//  3. a part-of-speech line ("Verb: have (had, having, has)") becomes a bold heading, and its word forms go into
-//     that part of speech's own "Derived forms" section, placed right after its definitions, without repeats;
-//  4. sections with nothing in them are dropped.
 bool isDerivedLabel(const std::string& l) { return l == "derived forms" || l == "derived form"; }
 
 void splitItems(const std::string& text, std::vector<std::string>* items) {
@@ -734,10 +730,77 @@ void splitItems(const std::string& text, std::vector<std::string>* items) {
 }
 
 bool containsLower(const std::vector<std::string>& v, const std::string& item) {
-  const std::string low = lowerAscii(item);
-  return std::any_of(v.begin(), v.end(), [&low](const std::string& s) { return lowerAscii(s) == low; });
+  const std::string low = lowerAscii(trimmed(item));
+  return std::any_of(v.begin(), v.end(), [&low](const std::string& s) { return lowerAscii(trimmed(s)) == low; });
 }
 
+// Is `form` a regular inflection of `base` for this part of speech? (plural, -s, -ing, -ed, -er, -est)
+bool isRegularForm(const std::string& form, const std::string& baseRaw, const std::string& pos) {
+  const std::string f = lowerAscii(trimmed(form));
+  const std::string b = lowerAscii(trimmed(baseRaw));
+  if (b.size() < 2 || f.empty()) return false;
+  const char last = b.back();
+  const bool endsE = last == 'e';
+  const bool endsY = last == 'y' && std::string("aeiou").find(b[b.size() - 2]) == std::string::npos;
+  const std::string stem = b.substr(0, b.size() - 1);
+  std::vector<std::string> v;
+  if (pos == "noun" || pos == "verb") {
+    v.push_back(b + "s");
+    v.push_back(b + "es");
+    if (endsY) v.push_back(stem + "ies");
+  }
+  if (pos == "verb") {
+    v.push_back(b + "ing");
+    v.push_back(b + "ed");
+    v.push_back(b + last + "ing");
+    v.push_back(b + last + "ed");
+    if (endsE) {
+      v.push_back(stem + "ing");
+      v.push_back(b + "d");
+    }
+    if (endsY) v.push_back(stem + "ied");
+  }
+  if (pos == "adjective" || pos == "adverb") {
+    v.push_back(b + "er");
+    v.push_back(b + "est");
+    v.push_back(b + last + "er");
+    v.push_back(b + last + "est");
+    if (endsE) {
+      v.push_back(b + "r");
+      v.push_back(b + "st");
+    }
+    if (endsY) {
+      v.push_back(stem + "ier");
+      v.push_back(stem + "iest");
+    }
+  }
+  return std::find(v.begin(), v.end(), f) != v.end();
+}
+
+// A short row under "Usage" that is a tag ("UK", "informal"), not a definition.
+bool isUsageTag(const std::string& raw, const bool first) {
+  const std::string t = trimmed(raw);
+  if (t.empty() || t.size() > 24 || t.find('.') != std::string::npos || !paragraphHasContent(t)) return false;
+  int words = 1;
+  for (const char ch : t) {
+    if (ch == ' ') ++words;
+  }
+  if (words > 2) return false;
+  if (first) return true;
+  bool caps = true;
+  for (const char ch : t) {
+    if (ch >= 'a' && ch <= 'z') caps = false;
+  }
+  return caps || (t[0] >= 'a' && t[0] <= 'z');
+}
+
+// WordWeb entries are restructured in four steps:
+//  1. a label that arrives as plain text ("Usage: UK", "Encyclopedia:") becomes a heading with its text beneath it;
+//  2. "Usage" + "UK" becomes a "[UK]" tag on the definition after it (or before it, or alone);
+//  3. a part-of-speech line ("Verb: have (had, having, has)") becomes a bold heading, and its word forms go into
+//     that part of speech's own "Derived forms" section, right after its definitions, without repeats. A form
+//     belongs to the part of speech that lists it in brackets, else to the one whose word it inflects;
+//  4. sections with nothing in them are dropped.
 void restructureWordWeb(std::vector<Para>& paras) {
   // 1. plain-text labels become headings
   std::vector<Para> norm;
@@ -757,33 +820,59 @@ void restructureWordWeb(std::vector<Para>& paras) {
     norm.push_back(p);
   }
 
-  // 2. "Usage" + "UK" + a definition -> "[UK] definition"
+  // 2. usage tags
   std::vector<Para> folded;
   for (size_t i = 0; i < norm.size(); ++i) {
-    if (kFoldUsageTag && norm[i].heading && labelOf(norm[i].text) == "usage" && i + 2 < norm.size() &&
-        !norm[i + 1].heading && trimmed(norm[i + 1].text).size() <= 24 && !norm[i + 2].heading &&
-        !norm[i + 2].italic) {
-      folded.push_back({"[" + trimmed(norm[i + 1].text) + "] " + norm[i + 2].text, false, false});
-      i += 2;
+    if (!(kFoldUsageTag && norm[i].heading && labelOf(norm[i].text) == "usage")) {
+      folded.push_back(norm[i]);
       continue;
     }
-    folded.push_back(norm[i]);
+    std::vector<std::string> tags;
+    size_t j = i + 1;
+    while (j < norm.size() && !norm[j].heading && !norm[j].italic && tags.size() < 3 &&
+           isUsageTag(norm[j].text, tags.empty())) {
+      tags.push_back(trimmed(norm[j].text));
+      ++j;
+    }
+    if (tags.empty()) {
+      folded.push_back(norm[i]);
+      continue;
+    }
+    const std::string tag = "[" + joinList(tags, ", ") + "]";
+    if (j < norm.size() && !norm[j].heading && !norm[j].italic) {
+      folded.push_back({tag + " " + norm[j].text, false, false});
+      i = j;
+    } else {
+      bool attached = false;
+      for (size_t k = folded.size(); k-- > 0;) {
+        if (folded[k].heading) break;
+        if (folded[k].italic) continue;
+        folded[k].text = tag + " " + folded[k].text;
+        attached = true;
+        break;
+      }
+      if (!attached) folded.push_back({tag, false, false});
+      i = j - 1;
+    }
   }
 
   // 3. part-of-speech lines
   struct Block {
     size_t start;
+    std::string pos;
+    std::string base;
     std::vector<std::string> forms;
   };
   std::vector<Para> out;
   std::vector<Block> blocks;
   for (const auto& p : folded) {
     std::string pos;
-    std::vector<std::string> forms;
+    std::string base;
     std::string extra;
-    if (splitPosLine(p.text, &pos, &forms, &extra)) {
+    std::vector<std::string> forms;
+    if (splitPosLine(p.text, &pos, &base, &forms, &extra)) {
       out.push_back({pos, true, false});
-      blocks.push_back({out.size() - 1, forms});
+      blocks.push_back({out.size() - 1, lowerAscii(pos), base, forms});
       if (!extra.empty()) out.push_back({extra, false, false});
       continue;
     }
@@ -791,8 +880,18 @@ void restructureWordWeb(std::vector<Para>& paras) {
   }
 
   const size_t nb = blocks.size();
-  // the items of each block's own "Derived forms" sections; an item that another part of speech names in its
-  // brackets belongs to that one
+  const auto ownerOf = [&](const std::string& item, const size_t b) -> size_t {
+    if (containsLower(blocks[b].forms, item)) return b;
+    for (size_t k = 0; k < nb; ++k) {
+      if (k != b && containsLower(blocks[k].forms, item)) return k;
+    }
+    if (isRegularForm(item, blocks[b].base, blocks[b].pos)) return b;
+    for (size_t k = 0; k < nb; ++k) {
+      if (k != b && isRegularForm(item, blocks[k].base, blocks[k].pos)) return k;
+    }
+    return b;
+  };
+
   std::vector<std::vector<std::string>> kept(nb), moved(nb);
   for (size_t b = 0; b < nb; ++b) {
     const size_t start = blocks[b].start;
@@ -803,20 +902,8 @@ void restructureWordWeb(std::vector<Para>& paras) {
         std::vector<std::string> found;
         splitItems(out[e].text, &found);
         for (const auto& item : found) {
-          size_t owner = b;
-          if (!containsLower(blocks[b].forms, item)) {
-            for (size_t c = 0; c < nb; ++c) {
-              if (c != b && containsLower(blocks[c].forms, item)) {
-                owner = c;
-                break;
-              }
-            }
-          }
-          if (owner == b) {
-            kept[b].push_back(item);
-          } else {
-            moved[owner].push_back(item);
-          }
+          const size_t owner = ownerOf(item, b);
+          (owner == b ? kept[b] : moved[owner]).push_back(item);
         }
       }
     }
@@ -826,8 +913,8 @@ void restructureWordWeb(std::vector<Para>& paras) {
     const auto add = [&](const std::string& item) {
       if (!containsLower(items[b], item)) items[b].push_back(item);
     };
-    for (const auto& it : kept[b]) add(it);
     for (const auto& it : blocks[b].forms) add(it);
+    for (const auto& it : kept[b]) add(it);
     for (const auto& it : moved[b]) add(it);
   }
 
@@ -850,8 +937,8 @@ void restructureWordWeb(std::vector<Para>& paras) {
     for (size_t k = start + 1; k < end && !hasContent; ++k) {
       hasContent = !out[k].heading && paragraphHasContent(out[k].text);
     }
-    if (!hasContent) {  // a part of speech with nothing in it, besides word forms, is dropped
-      out.erase(out.begin() + static_cast<std::ptrdiff_t>(start), out.begin() + static_cast<std::ptrdiff_t>(end));
+    if (!hasContent) {  // a part of speech with nothing in it: only its heading goes
+      out.erase(out.begin() + static_cast<std::ptrdiff_t>(start));
       continue;
     }
     if (items[b].empty()) continue;
@@ -868,7 +955,7 @@ void restructureWordWeb(std::vector<Para>& paras) {
     out.insert(out.begin() + static_cast<std::ptrdiff_t>(at), head);
   }
 
-  // 4. headings with nothing under them: an empty "Encyclopedia", or a "Noun" with no definitions
+  // 4. headings with nothing under them
   for (bool again = true; again;) {
     again = false;
     for (size_t i = 0; i < out.size(); ++i) {
@@ -878,7 +965,7 @@ void restructureWordWeb(std::vector<Para>& paras) {
       for (size_t k = i + 1; k < out.size(); ++k) {
         if (out[k].heading) {
           if (!isPos || isTruePos(labelOf(out[k].text))) break;
-          continue;  // a section heading inside this part of speech
+          continue;
         }
         if (paragraphHasContent(out[k].text)) {
           hasContent = true;
@@ -903,6 +990,78 @@ std::string leadingBracketMask(const std::string& text) {
   std::string mask(text.size(), '0');
   for (size_t k = 0; k <= q; ++k) mask[k] = '1';
   return mask;
+}
+
+// ---- Oxford section numbers, bracket spacing, runs of part-of-speech tags, heading levels ----
+// "I", "II." or "III)" -> "I", "II", "III": the big section numbers of an entry. Empty when it is not one.
+std::string romanLabel(const std::string& raw) {
+  std::string t = trimmed(raw);
+  if (!t.empty() && (t.back() == '.' || t.back() == ')')) t.pop_back();
+  static constexpr const char* NUMERALS[] = {"I",  "II",  "III", "IV",  "V",   "VI",  "VII", "VIII",
+                                             "IX", "X",   "XI",  "XII", "XIII", "XIV", "XV"};
+  for (const char* num : NUMERALS) {
+    if (t == num) return t;
+  }
+  return std::string();
+}
+
+bool isRomanHeading(const std::string& s) {
+  return s.size() >= 2 && s.back() == ')' && !romanLabel(s.substr(0, s.size() - 1)).empty();
+}
+
+// Text made only of separators between two part-of-speech tags: ",", "&", "and", "or".
+bool isSeparatorOnly(const std::string& s) {
+  std::string t = s;
+  for (char& ch : t) {
+    if (ch == ',' || ch == ';' || ch == '&' || ch == '/') ch = ' ';
+  }
+  t = lowerAscii(trimmed(t));
+  return t.empty() || t == "and" || t == "or";
+}
+
+std::string joinPosSeparator(const std::string& raw) {
+  if (raw.find('&') != std::string::npos) return " & ";
+  const std::string low = lowerAscii(raw);
+  if (low.find("and") != std::string::npos) return " and ";
+  if (low.find("or") != std::string::npos) return " or ";
+  return ", ";
+}
+
+// "( pl. opportunities)" -> "(pl. opportunities)": no space just inside a bracket.
+std::string tidyParens(std::string s) {
+  for (bool again = true; again;) {
+    again = false;
+    for (size_t p = s.find("( "); p != std::string::npos; p = s.find("( ", p)) {
+      s.erase(p + 1, 1);
+      again = true;
+    }
+    for (size_t p = s.find(" )"); p != std::string::npos; p = s.find(" )", p)) {
+      s.erase(p, 1);
+      again = true;
+    }
+  }
+  return s;
+}
+
+// 0 = a big section number ("I)"), 1 = a part of speech, 2 = any other section heading.
+int headingLevel(const std::string& text) {
+  if (isRomanHeading(text)) return 0;
+  std::string cleaned = lowerAscii(trimmed(text));
+  for (char& ch : cleaned) {
+    if (ch == ',' || ch == '&' || ch == '/') ch = ' ';
+  }
+  std::string words;
+  size_t i = 0;
+  while (i < cleaned.size()) {
+    while (i < cleaned.size() && cleaned[i] == ' ') ++i;
+    const size_t start = i;
+    while (i < cleaned.size() && cleaned[i] != ' ') ++i;
+    if (i > start) {
+      const std::string w = cleaned.substr(start, i - start);
+      if (w != "and" && w != "or") words += (words.empty() ? "" : " ") + w;
+    }
+  }
+  return isPosPhrase(words) ? 1 : 2;
 }
 
 // Marks every "[...]" in the text as bold. Empty when there is none.
@@ -1003,11 +1162,13 @@ void DictionaryDefinitionActivity::buildRows() {
   }
 
 
+  pruneEmptySections();
+
   // Blank rows pad the end to a whole number of screens, so paging moves exactly one screen at a time and the
   // last screen simply ends early, with no row repeated.
   if (!rows_.empty()) {
     const int cap = pageRowsEstimate();
-    while (static_cast<int>(rows_.size()) % cap != 0) rows_.push_back({std::string(), std::string(), false, false, false, 0});
+    while (static_cast<int>(rows_.size()) % cap != 0) rows_.push_back({std::string(), std::string(), false, false, false, 0, false});
   }
 
 
@@ -1095,7 +1256,14 @@ void DictionaryDefinitionActivity::rowsFromPlainText(const std::string& text) {
 // XDXF-style markup (Oxford, Cambridge): <k> headword, <tr> pronunciation, <abr> part of speech, <ex> example,
 // <b>/<i> styling, <blockquote> and newlines separating paragraphs. Every other tag is dropped, its text kept.
 void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
+  struct Seg {
+    std::string text;
+    bool bold;
+    bool italic;
+    bool abr;
+  };
   std::string cur;
+  std::vector<Seg> segs;
   bool curBold = true;
   bool curItalic = true;
   bool curText = false;
@@ -1103,17 +1271,21 @@ void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
   bool curHasKref = false;      // the paragraph holds a linked phrase
   bool curOutsideKref = false;  // ... and some text outside the link
   int krefDepth = 0;
-  bool inPhrases = false;       // the "Phrases" heading was already written for this run of lines
+  bool inPhrases = false;     // the "Phrases" heading was already written for this run of lines
   int boldDepth = 0;
   int italicDepth = 0;
   int skipDepth = 0;
   bool inEx = false;
   bool inAbr = false;
-  bool derivMode = false;  // inside "Derivatives:": every derived word and every example is its own paragraph
+  bool derivMode = false;     // inside "Derivatives:": each derived word becomes one row
+  bool posRunActive = false;  // "preposition, conjunction & adverb": a run of part-of-speech tags is one heading
+  std::string posRunText;
+  std::string posRunSep;
   std::string abrText;
 
   const auto resetParagraph = [&]() {
     cur.clear();
+    segs.clear();
     curBold = true;
     curItalic = true;
     curText = false;
@@ -1121,29 +1293,105 @@ void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
     curHasKref = false;
     curOutsideKref = false;
   };
-  const auto appendText = [&](const std::string& s) {
-    if (skipDepth > 0) return;
-    if (inAbr) {
-      abrText += s;
-      return;
+  const auto flushPosRun = [&]() {
+    if (!posRunActive) return;
+    posRunActive = false;
+    const std::string heading = posRunText;
+    posRunText.clear();
+    posRunSep.clear();
+    addParagraph(heading, true, false);
+  };
+  // One row per derived word: "hatable (also hateable) (adjective)", with its example in italic beneath.
+  const auto emitDerivatives = [&]() -> bool {
+    struct Entry {
+      std::string word;
+      std::string paren;
+      std::string pos;
+      std::string notes;
+      std::string example;
+    };
+    const auto collapse = [](const std::string& x) {
+      std::string o;
+      bool space = false;
+      for (const char ch : x) {
+        if (isBlankByte(ch)) {
+          space = !o.empty();
+          continue;
+        }
+        if (space) o += ' ';
+        space = false;
+        o += ch;
+      }
+      return o;
+    };
+    std::vector<Entry> entries;
+    int depth = 0;
+    std::string capture;
+    for (const auto& seg : segs) {
+      if (seg.abr) {
+        const std::string t = trimmed(seg.text);
+        if (t.empty()) continue;
+        if (depth > 0) {
+          capture += " " + t + " ";
+        } else if (!entries.empty()) {
+          if (isTruePos(t)) {
+            entries.back().pos = lowerAscii(t);
+          } else {
+            entries.back().notes += std::string(entries.back().notes.empty() ? "" : " ") + "[" + t + "]";
+          }
+        }
+        continue;
+      }
+      if (depth == 0 && seg.bold && !seg.italic) {
+        const std::string w = collapse(seg.text);
+        if (!w.empty()) entries.push_back({w, std::string(), std::string(), std::string(), std::string()});
+        continue;
+      }
+      if (depth == 0 && seg.italic) {
+        const std::string t = collapse(seg.text);
+        if (t.empty() || entries.empty()) continue;
+        std::string& target = t[0] == '[' ? entries.back().notes : entries.back().example;
+        target += std::string(target.empty() ? "" : " ") + t;
+        continue;
+      }
+      for (const char ch : seg.text) {
+        if (ch == '(') {
+          if (depth == 0) capture.clear();
+          ++depth;
+        } else if (ch == ')') {
+          if (depth > 0 && --depth == 0 && !entries.empty()) {
+            const std::string p = collapse(capture);
+            if (!p.empty()) {
+              entries.back().paren += std::string(entries.back().paren.empty() ? "" : " ") + "(" + p + ")";
+            }
+            capture.clear();
+          }
+        } else if (depth > 0) {
+          capture += ch;
+        }
+      }
     }
-    for (const char ch : s) {
-      if (isBlankByte(ch)) continue;
-      curText = true;
-      if (krefDepth == 0 && ch != '-') curOutsideKref = true;
-      if (boldDepth == 0) curBold = false;
-      if (italicDepth == 0 && !inEx) curItalic = false;
+    if (entries.empty()) return false;
+    for (const auto& e : entries) {
+      std::string row = e.word;
+      if (!e.paren.empty()) row += " " + e.paren;
+      if (!e.pos.empty()) row += " (" + e.pos + ")";
+      if (!e.notes.empty()) row += " " + e.notes;
+      addParagraph(row, false, false);
+      if (!e.example.empty()) addParagraph(e.example, false, true);
     }
-    cur += s;
+    return true;
   };
   const auto emit = [&]() {
+    flushPosRun();
     if (curText) {
       const std::string t = trimmed(cur);
+      const bool isLabel = curBold && !t.empty() && t.back() == ':' && t.size() <= 40;
+      if (isLabel) derivMode = lowerAscii(t) == "derivatives:";
       // A run of lines made only of linked phrases gets one "Phrases" heading (Oxford).
       const bool phraseLine = oxfordStyle_ && curHasKref && !curOutsideKref && !inEx;
       if (phraseLine && !inPhrases) addParagraph("Phrases", true, false);
       inPhrases = phraseLine;
-      if (curBold && !t.empty() && t.back() == ':' && t.size() <= 40) derivMode = lowerAscii(t) == "derivatives:";
       if (inEx) {
         // several examples can share one <ex>, separated by " | "
         size_t start = 0;
@@ -1153,11 +1401,41 @@ void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
           if (bar == std::string::npos) break;
           start = bar + 3;
         }
+      } else if (derivMode && !isLabel) {
+        if (!emitDerivatives()) addParagraph(t, false, false);
       } else {
-        addParagraph(t, curBold && t.size() <= 40, curHasEx || (derivMode && curItalic));
+        addParagraph(t, curBold && t.size() <= 40, curHasEx);
       }
     }
     resetParagraph();
+  };
+  const auto appendText = [&](const std::string& s) {
+    if (skipDepth > 0) return;
+    if (inAbr) {
+      abrText += s;
+      return;
+    }
+    if (posRunActive) {
+      if (isSeparatorOnly(s)) {
+        posRunSep += s;
+        return;
+      }
+      flushPosRun();
+    }
+    // a bold Roman numeral ("I.", "II") opens a big section of its own (Oxford)
+    if (oxfordStyle_ && boldDepth > 0 && !curText && !romanLabel(s).empty()) {
+      addParagraph(trimmed(s), true, false);
+      return;
+    }
+    for (const char ch : s) {
+      if (isBlankByte(ch)) continue;
+      curText = true;
+      if (krefDepth == 0 && ch != '-') curOutsideKref = true;
+      if (boldDepth == 0) curBold = false;
+      if (italicDepth == 0 && !inEx) curItalic = false;
+    }
+    segs.push_back({s, boldDepth > 0, italicDepth > 0 || inEx, false});
+    cur += s;
   };
 
   const size_t n = src.size();
@@ -1184,7 +1462,8 @@ void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
         continue;
       }
       // grammar codes such as <E> or <A> are text, not markup
-      if (!closing && name.size() == 1 && tag[ns] >= 'A' && tag[ns] <= 'Z' && tag.find_first_not_of(' ', ne) == std::string::npos) {
+      if (!closing && name.size() == 1 && tag[ns] >= 'A' && tag[ns] <= 'Z' &&
+          tag.find_first_not_of(' ', ne) == std::string::npos) {
         appendText(std::string("<") + tag[ns] + ">");
         i = gt + 1;
         continue;
@@ -1210,14 +1489,11 @@ void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
         continue;
       }
       if (name == "b") {
-        if (!closing && derivMode && boldDepth == 0 && curText) emit();
         boldDepth = std::max(0, boldDepth + (closing ? -1 : 1));
         continue;
       }
       if (name == "i") {
-        if (!closing && derivMode && italicDepth == 0 && curText && !(i < n && src[i] == '[')) emit();
         italicDepth = std::max(0, italicDepth + (closing ? -1 : 1));
-        if (closing && derivMode && italicDepth == 0 && curText && curItalic) emit();
         continue;
       }
       if (name == "abr") {
@@ -1227,11 +1503,27 @@ void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
         } else {
           inAbr = false;
           const std::string t = trimmed(abrText);
-          if (isTruePos(t) && !curText) {
-            emit();
-            addParagraph(capitalizeWords(lowerAscii(t)), true, false);
+          if (derivMode) {
+            if (!t.empty()) {
+              segs.push_back({t, false, false, true});
+              curText = true;
+              cur += " " + t + " ";
+            }
+          } else if (isTruePos(t) && (posRunActive || !curText)) {
+            if (posRunActive) {
+              posRunText += joinPosSeparator(posRunSep) + capitalizeWords(lowerAscii(t));
+              posRunSep.clear();
+            } else {
+              emit();
+              posRunActive = true;
+              posRunText = capitalizeWords(lowerAscii(t));
+              posRunSep.clear();
+            }
           } else if (!t.empty()) {
-            appendText(std::string(cur.empty() || isBlankByte(cur.back()) ? "" : " ") + t + " ");
+            flushPosRun();
+            const char last = cur.empty() ? ' ' : cur.back();
+            const bool noSpace = isBlankByte(last) || last == '(' || last == '[';
+            appendText(std::string(noSpace ? "" : " ") + t + " ");
           }
         }
         continue;
@@ -1270,8 +1562,17 @@ void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
 
 // One paragraph of the definition, cleaned the same way for every dictionary.
 void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool heading, bool italic) {
-  std::string text = trimmed(tidyCodes(normalizeSpaces(raw)));
+  std::string text = tidyParens(trimmed(tidyCodes(normalizeSpaces(raw))));
   if (text.empty() || !hasLetterOrDigit(text)) return;  // also drops an orphan "." or bullet
+  // Oxford's big section numbers: "I", "II." -> "I)", "II)"
+  if (oxfordStyle_) {
+    const std::string roman = romanLabel(text);
+    if (!roman.empty()) {
+      pendingNote_.clear();
+      wrapInto(roman + ")", std::string(), true, false, 0);
+      return;
+    }
+  }
   if (isPronunciationLine(text)) return;
   text = stripUnsupportedGlyphs(text);  // scripts the UI font cannot draw would only fill the log with errors
   if (text.empty() || !hasLetterOrDigit(text)) return;
@@ -1440,7 +1741,28 @@ void DictionaryDefinitionActivity::wrapInto(const std::string& text, const std::
   for (size_t k = 0; k < lines.size(); ++k) {
     const bool last = k + 1 == lines.size();
     rows_.push_back({lines[k], masks[k].find('1') != std::string::npos ? masks[k] : std::string(), bold, italic,
-                     !bold && (kJustifyLastLine || !last), k == 0 ? indentPx : 0});
+                     !bold && (kJustifyLastLine || !last), k == 0 ? indentPx : 0, k > 0});
+  }
+}
+
+// A heading with nothing under it (an empty "Encyclopedia", a "Noun" with no definitions) is removed, whatever
+// the reason it is empty. A part of speech may hold section headings; any other heading may not.
+void DictionaryDefinitionActivity::pruneEmptySections() {
+  const auto isHead = [this](const size_t k) { return rows_[k].bold && rows_[k].indent == 0 && !rows_[k].cont; };
+  for (bool again = true; again;) {
+    again = false;
+    for (size_t k = 0; k < rows_.size(); ++k) {
+      if (!isHead(k)) continue;
+      size_t next = k + 1;
+      while (next < rows_.size() && rows_[next].cont) ++next;
+      const bool empty = next >= rows_.size() ||
+                         (isHead(next) && headingLevel(rows_[next].text) <= headingLevel(rows_[k].text));
+      if (empty) {
+        rows_.erase(rows_.begin() + static_cast<std::ptrdiff_t>(k), rows_.begin() + static_cast<std::ptrdiff_t>(next));
+        again = true;
+        break;
+      }
+    }
   }
 }
 

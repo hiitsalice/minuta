@@ -29,6 +29,7 @@ class DictionaryDefinitionActivity final : public UiListActivity {
     bool italic;           // example sentence
     bool justify;
     int indent;            // indent of the text in px (0 = none); a thin leader line is drawn in front when > 0
+    bool cont;             // second or later line of a wrapped paragraph
   };
 
   int listCount() const override { return static_cast<int>(rows_.size()); }
@@ -47,6 +48,7 @@ class DictionaryDefinitionActivity final : public UiListActivity {
   int measure(const std::string& text, bool bold, bool italic) const;
   int labelWidthPx() const;
   int pageRowsEstimate() const;
+  void pruneEmptySections();
   void scrollPages(int direction);
   bool canScrollUp();
   bool canScrollDown();
