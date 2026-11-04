@@ -33,6 +33,8 @@ constexpr int kSubIndent = 18;
 constexpr int kWrapSafety = 4;
 // The last line of each paragraph is left-aligned. Set to true to stretch it as well.
 constexpr bool kJustifyLastLine = false;
+// Text in scripts the UI font cannot draw (Cyrillic, Greek, Arabic, ...) is removed: it would only log errors.
+constexpr bool kStripUnsupportedGlyphs = true;
 
 // The HTML parser lays each paragraph out on one very wide line; the lines are wrapped again here.
 constexpr uint16_t kLayoutWidth = 30000;
@@ -440,6 +442,192 @@ std::string stripWordWebRespelling(const std::string& html) {
   return out;
 }
 
+// ---- named HTML entities ----
+// The XML parser only knows &amp; &lt; &gt; &quot; &apos; and numeric references. Any other name makes it reject the
+// whole entry, which then falls back to raw text. Named entities are turned into the character itself first.
+struct NamedEntity {
+  const char* name;
+  uint32_t cp;  // 0 = dropped
+};
+
+constexpr NamedEntity kEntities[] = {
+    {"lsqb", 0x5B},   {"rsqb", 0x5D},   {"lbrack", 0x5B}, {"rbrack", 0x5D}, {"lpar", 0x28},   {"rpar", 0x29},
+    {"lcub", 0x7B},   {"rcub", 0x7D},   {"lbrace", 0x7B}, {"rbrace", 0x7D}, {"num", 0x23},    {"dollar", 0x24},
+    {"percnt", 0x25}, {"ast", 0x2A},    {"plus", 0x2B},   {"comma", 0x2C},  {"period", 0x2E}, {"colon", 0x3A},
+    {"semi", 0x3B},   {"equals", 0x3D}, {"quest", 0x3F},  {"excl", 0x21},   {"commat", 0x40}, {"sol", 0x2F},
+    {"bsol", 0x5C},   {"lowbar", 0x5F}, {"grave", 0x60},  {"verbar", 0x7C}, {"vert", 0x7C},   {"hyphen", 0x2D},
+    {"dash", 0x2D},   {"nbsp", 0xA0},   {"ensp", 0x2002}, {"emsp", 0x2003}, {"thinsp", 0x2009}, {"hairsp", 0x200A},
+    {"ndash", 0x2013}, {"mdash", 0x2014}, {"hellip", 0x2026}, {"lsquo", 0x2018}, {"rsquo", 0x2019},
+    {"sbquo", 0x201A}, {"ldquo", 0x201C}, {"rdquo", 0x201D}, {"bdquo", 0x201E}, {"laquo", 0xAB}, {"raquo", 0xBB},
+    {"bull", 0x2022}, {"middot", 0xB7}, {"copy", 0xA9},   {"reg", 0xAE},    {"trade", 0x2122}, {"deg", 0xB0},
+    {"plusmn", 0xB1}, {"times", 0xD7},  {"divide", 0xF7}, {"frac12", 0xBD}, {"frac14", 0xBC}, {"frac34", 0xBE},
+    {"pound", 0xA3},  {"euro", 0x20AC}, {"yen", 0xA5},    {"cent", 0xA2},   {"sect", 0xA7},  {"para", 0xB6},
+    {"dagger", 0x2020}, {"Dagger", 0x2021}, {"prime", 0x2032}, {"Prime", 0x2033}, {"micro", 0xB5},
+    {"sup1", 0xB9},   {"sup2", 0xB2},   {"sup3", 0xB3},   {"ordf", 0xAA},   {"ordm", 0xBA},  {"iexcl", 0xA1},
+    {"iquest", 0xBF}, {"minus", 0x2212}, {"ne", 0x2260},  {"le", 0x2264},   {"ge", 0x2265},
+    {"larr", 0x2190}, {"rarr", 0x2192}, {"uarr", 0x2191}, {"darr", 0x2193},
+    {"shy", 0},       {"zwj", 0},       {"zwnj", 0},      {"lrm", 0},       {"rlm", 0},
+    {"Agrave", 0xC0}, {"Aacute", 0xC1}, {"Acirc", 0xC2},  {"Atilde", 0xC3}, {"Auml", 0xC4},  {"Aring", 0xC5},
+    {"AElig", 0xC6},  {"Ccedil", 0xC7}, {"Egrave", 0xC8}, {"Eacute", 0xC9}, {"Ecirc", 0xCA}, {"Euml", 0xCB},
+    {"Igrave", 0xCC}, {"Iacute", 0xCD}, {"Icirc", 0xCE},  {"Iuml", 0xCF},   {"Ntilde", 0xD1}, {"Ograve", 0xD2},
+    {"Oacute", 0xD3}, {"Ocirc", 0xD4},  {"Otilde", 0xD5}, {"Ouml", 0xD6},   {"Oslash", 0xD8}, {"Ugrave", 0xD9},
+    {"Uacute", 0xDA}, {"Ucirc", 0xDB},  {"Uuml", 0xDC},   {"Yacute", 0xDD}, {"szlig", 0xDF},
+    {"agrave", 0xE0}, {"aacute", 0xE1}, {"acirc", 0xE2},  {"atilde", 0xE3}, {"auml", 0xE4},  {"aring", 0xE5},
+    {"aelig", 0xE6},  {"ccedil", 0xE7}, {"egrave", 0xE8}, {"eacute", 0xE9}, {"ecirc", 0xEA}, {"euml", 0xEB},
+    {"igrave", 0xEC}, {"iacute", 0xED}, {"icirc", 0xEE},  {"iuml", 0xEF},   {"ntilde", 0xF1}, {"ograve", 0xF2},
+    {"oacute", 0xF3}, {"ocirc", 0xF4},  {"otilde", 0xF5}, {"ouml", 0xF6},   {"oslash", 0xF8}, {"ugrave", 0xF9},
+    {"uacute", 0xFA}, {"ucirc", 0xFB},  {"uuml", 0xFC},   {"yacute", 0xFD}, {"yuml", 0xFF},
+};
+
+// An entity at s[i] ('&'): the XML ones and numeric references are decoded; named HTML ones come from the table;
+// any other well-formed name is dropped (it would show as raw "&name;" text). Returns the length used, or 0.
+size_t decodeEntity(const std::string& s, const size_t i, std::string* out) {
+  const size_t used = decodeEntityAt(s, i, out);
+  if (used > 0) return used;
+  size_t j = i + 1;
+  while (j < s.size() && j - i <= 32 && std::isalnum(static_cast<unsigned char>(s[j]))) ++j;
+  if (j >= s.size() || s[j] != ';' || j == i + 1) return 0;
+  const std::string name = s.substr(i + 1, j - i - 1);
+  out->clear();
+  for (const auto& e : kEntities) {
+    if (name == e.name) {
+      if (e.cp != 0) appendUtf8(*out, e.cp);
+      break;
+    }
+  }
+  return j - i + 1;
+}
+
+// Rewrites every named entity before the text reaches the XML parser. The five XML entities and numeric
+// references stay as they are, because the parser knows them.
+std::string normalizeEntities(const std::string& s) {
+  std::string out;
+  out.reserve(s.size());
+  for (size_t i = 0; i < s.size();) {
+    if (s[i] != '&') {
+      out += s[i++];
+      continue;
+    }
+    const size_t semi = s.find(';', i + 1);
+    if (semi != std::string::npos && semi - i <= 12) {
+      const std::string name = s.substr(i + 1, semi - i - 1);
+      if (name == "amp" || name == "lt" || name == "gt" || name == "quot" || name == "apos" ||
+          (!name.empty() && name[0] == '#')) {
+        out.append(s, i, semi - i + 1);
+        i = semi + 1;
+        continue;
+      }
+    }
+    std::string decoded;
+    const size_t used = decodeEntity(s, i, &decoded);
+    if (used > 0) {
+      out += decoded;
+      i += used;
+    } else {
+      out += s[i++];
+    }
+  }
+  return out;
+}
+
+// ---- characters the UI font cannot draw ----
+bool isUnsupportedCodepoint(const uint32_t cp) {
+  return (cp >= 0x250 && cp <= 0x2FF) ||    // phonetic letters and modifiers
+         (cp >= 0x370 && cp <= 0x10FF) ||   // Greek, Cyrillic, Armenian, Hebrew, Arabic, Indic, Thai, Georgian
+         (cp >= 0x1200 && cp <= 0x1AFF) ||  // Ethiopic, Cherokee, Runic, Khmer, ...
+         (cp >= 0x1C80 && cp <= 0x1DBF) ||  // more Cyrillic, phonetic extensions
+         (cp >= 0x1F00 && cp <= 0x1FFF) ||  // Greek extended
+         (cp >= 0x2070 && cp <= 0x209F) ||  // super- and subscripts
+         (cp >= 0x2100 && cp <= 0x23FF) ||  // letterlike symbols, arrows, maths, technical
+         (cp >= 0x2460 && cp <= 0x27BF) ||  // enclosed characters, boxes, shapes, dingbats
+         (cp >= 0x2900 && cp <= 0x2BFF) ||  // more arrows and symbols
+         (cp >= 0x2DE0 && cp <= 0x2DFF) || (cp >= 0xA640 && cp <= 0xA69F) ||  // Cyrillic extended
+         (cp >= 0xE000 && cp <= 0xF8FF) ||  // private use
+         (cp >= 0xFFF0 && cp <= 0xFFFF) ||  // specials
+         (cp >= 0x10000 && cp <= 0x1FFFF);  // emoji, maths alphanumerics, historic scripts
+}
+
+void replaceAll(std::string& s, const char* from, const char* to) {
+  const size_t fl = strlen(from);
+  const size_t tl = strlen(to);
+  for (size_t p = s.find(from); p != std::string::npos; p = s.find(from, p + tl)) s.replace(p, fl, to);
+}
+
+// Removes characters the UI font has no glyph for, then tidies the gap (doubled spaces, empty brackets).
+std::string stripUnsupportedGlyphs(const std::string& s) {
+  if (!kStripUnsupportedGlyphs) return s;
+  std::string out;
+  out.reserve(s.size());
+  bool changed = false;
+  for (size_t i = 0; i < s.size();) {
+    uint32_t cp = 0;
+    const size_t len = decodeAt(s, i, &cp);
+    if (isUnsupportedCodepoint(cp)) {
+      changed = true;
+    } else {
+      out.append(s, i, len);
+    }
+    i += len;
+  }
+  if (!changed) return s;
+  for (int pass = 0; pass < 4; ++pass) {
+    const std::string before = out;
+    replaceAll(out, "  ", " ");
+    replaceAll(out, "( ", "(");
+    replaceAll(out, " )", ")");
+    replaceAll(out, "()", "");
+    replaceAll(out, "[]", "");
+    replaceAll(out, "\xE2\x80\x9C\xE2\x80\x9D", "");
+    replaceAll(out, ": )", ")");
+    replaceAll(out, ", )", ")");
+    replaceAll(out, "; )", ")");
+    replaceAll(out, " ,", ",");
+    replaceAll(out, ",,", ",");
+    if (out == before) break;
+  }
+  return trimmed(out);
+}
+
+// ---- headings ----
+bool isKnownHeading(const std::string& low) {
+  static constexpr const char* NAMES[] = {
+      "noun", "proper noun", "proper name", "verb", "adjective", "adverb", "pronoun", "preposition",
+      "conjunction", "interjection", "determiner", "article", "numeral", "particle", "prefix", "suffix",
+      "infix", "circumfix", "affix", "phrase", "proverb", "idiom", "initialism", "abbreviation", "acronym",
+      "contraction", "symbol", "letter", "character", "number", "classifier", "postposition", "participle",
+      "root", "combining form", "verb phrase", "noun phrase", "prepositional phrase", "alternative forms",
+      "alternative form", "alternative spellings", "derived terms", "related terms", "synonyms", "antonyms",
+      "hypernyms", "hyponyms", "etymology", "pronunciation", "usage notes", "usage note", "translations",
+      "descendants", "anagrams", "references", "further reading", "see also", "collocations", "statistics"};
+  return std::any_of(std::begin(NAMES), std::end(NAMES), [&low](const char* n) { return low == n; });
+}
+
+// A paragraph that is bold from start to end is a heading only when it reads like one: a known section name, or a
+// short Title Case phrase of 2 to 4 words ("Proper Noun"). A single word or a sentence-case phrase
+// ("A place name") is a definition.
+bool looksLikeHeadingText(const std::string& raw) {
+  std::string t = trimmed(raw);
+  while (!t.empty() && t.back() == ':') t.pop_back();
+  t = trimmed(t);
+  if (t.empty() || t.size() > 40) return false;
+  const std::string low = lowerAscii(t);
+  if (isKnownHeading(low) || isSectionLabel(low) || isPosPhrase(low)) return true;
+  int words = 0;
+  size_t i = 0;
+  while (i < t.size()) {
+    while (i < t.size() && t[i] == ' ') ++i;
+    if (i >= t.size()) break;
+    if (!(t[i] >= 'A' && t[i] <= 'Z')) return false;
+    while (i < t.size() && t[i] != ' ') {
+      const unsigned char ch = static_cast<unsigned char>(t[i]);
+      if (!(std::isalpha(ch) || t[i] == '-')) return false;
+      ++i;
+    }
+    ++words;
+  }
+  return words >= 2 && words <= 4;
+}
+
 // Marks every "[...]" in the text as bold. Empty when there is none.
 std::string bracketMask(const std::string& text) {
   std::string mask(text.size(), '0');
@@ -506,6 +694,7 @@ void DictionaryDefinitionActivity::buildRows() {
                                              definition.find("<abr>UK</abr>") != std::string::npos ||
                                              definition.find("c=\"darkmagenta\"") != std::string::npos);
   oxfordStyle_ = !htmlDefinition && !cambridge && definition.find("<dtrn>") != std::string::npos;
+  cambridgeStyle_ = cambridge;
 
   const bool xdxf = !htmlDefinition && (definition.find("<k>") != std::string::npos ||
                                         definition.find("<dtrn>") != std::string::npos ||
@@ -514,7 +703,7 @@ void DictionaryDefinitionActivity::buildRows() {
   if (xdxf) {
     rowsFromXdxf(definition);
   } else {
-    const std::string cleaned = htmlDefinition ? stripWordWebRespelling(definition) : definition;
+    const std::string cleaned = htmlDefinition ? normalizeEntities(stripWordWebRespelling(definition)) : definition;
     bool styled = false;
     if (htmlDefinition && definition.size() <= kMaxStyledHtmlBytes) {
       std::vector<std::unique_ptr<Page>> pages;
@@ -531,7 +720,7 @@ void DictionaryDefinitionActivity::buildRows() {
   }
   if (rows_.empty() && xdxf) {
     pendingNote_.clear();
-    rowsFromPlainText(htmlToPlainText(definition));
+    rowsFromPlainText(htmlToPlainText(normalizeEntities(definition)));
   }
 
 
@@ -597,13 +786,14 @@ void DictionaryDefinitionActivity::rowsFromPages(const std::vector<std::unique_p
         }
       }
       // Bold + italic is the internal marker of a section heading: shown as plain bold.
-      if (allBold && allItalic) allItalic = false;
+      const bool marker = allBold && allItalic;  // the internal marker of a real section heading
+      if (marker) allItalic = false;
       if (!allBold && leadChars > 0 && leadChars < text.size() && text[leadChars - 1] == ':') {
         addParagraph(text.substr(0, leadChars), true, false);
         addParagraph(text.substr(leadChars), false, restItalic);
         continue;
       }
-      addParagraph(text, allBold, allItalic);
+      addParagraph(text, allBold && (marker || looksLikeHeadingText(text)), allItalic);
     }
   }
 }
@@ -772,7 +962,7 @@ void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
     }
     if (c == '&') {
       std::string decoded;
-      const size_t used = decodeEntityAt(src, i, &decoded);
+      const size_t used = decodeEntity(src, i, &decoded);
       if (used > 0) {
         appendText(decoded);
         i += used;
@@ -800,6 +990,8 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
   std::string text = trimmed(tidyCodes(normalizeSpaces(raw)));
   if (text.empty() || !hasLetterOrDigit(text)) return;  // also drops an orphan "." or bullet
   if (isPronunciationLine(text)) return;
+  text = stripUnsupportedGlyphs(text);  // scripts the UI font cannot draw would only fill the log with errors
+  if (text.empty() || !hasLetterOrDigit(text)) return;
 
   // Items glued together by a separator glyph ("↑a ↑b", "x ▪ y ▪ z") become paragraphs of their own.
   // The "↑" has no glyph in the font, so it is never drawn.
@@ -849,17 +1041,18 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
     text = capitalizeWords(lowerAscii(text));
     heading = true;
   }
-  // A short label such as "Origin:" is a heading too.
-  if (!heading && text.size() <= 26 && text.size() > 2 && text.back() == ':' && text.front() >= 'A' &&
-      text.front() <= 'Z') {
+  // A known label such as "Origin:" is a heading too. Any other line that ends in a colon ("A place in Wales:")
+  // is an ordinary definition that introduces the lines below it.
+  if (!heading && text.size() > 2 && text.back() == ':' &&
+      isSectionLabel(lowerAscii(trimmed(text.substr(0, text.size() - 1))))) {
     heading = true;
   }
-  if (!heading && isAllCapsWord(text)) heading = true;  // guidewords such as "FLAVOUR"
+  if (!heading && cambridgeStyle_ && isAllCapsWord(text)) heading = true;  // guidewords such as "FLAVOUR"
   if (isDictionaryHeading(text.c_str())) heading = true;
   if (heading) {
     while (!text.empty() && text.back() == ':') text.pop_back();
     if (text.empty()) return;
-    if (isAllCapsWord(text)) text = capitalizeWords(lowerAscii(text));
+    if (cambridgeStyle_ && isAllCapsWord(text)) text = capitalizeWords(lowerAscii(text));
     pendingNote_.clear();
     wrapInto(text, std::string(), true, false, 0);
     return;
@@ -868,7 +1061,7 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
   // Cambridge sub-labels ("Verbs", "Adjectives", "verb transitive"): bold, but indented like any other entry.
   {
     const std::string low = lowerAscii(text);
-    if (isSubLabel(low) || isPosPhrase(low)) {
+    if (cambridgeStyle_ && (isSubLabel(low) || isPosPhrase(low))) {
       pendingNote_.clear();
       wrapInto(upperFirst(text), std::string(), true, false, kSubIndent);
       return;

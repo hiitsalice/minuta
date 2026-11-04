@@ -57,6 +57,7 @@ class DictionaryDefinitionActivity final : public UiListActivity {
   std::string definition;
   const bool htmlDefinition;
   bool oxfordStyle_ = false;  // Oxford markup: examples come from <ex>, every "[...]" note is bold
+  bool cambridgeStyle_ = false;  // Cambridge markup: guidewords and sub-labels are headings
   std::string pendingNote_;   // a lone "[with obj]" waiting to open the next definition
   std::vector<Row> rows_;
   std::vector<freeink::ui::ListItem> items_;
