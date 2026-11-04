@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <iterator>
@@ -628,6 +629,224 @@ bool looksLikeHeadingText(const std::string& raw) {
   return words >= 2 && words <= 4;
 }
 
+// ---- WordWeb entries ----
+// Fold a "Usage: UK" label in front of a definition into a "[UK]" tag on that definition.
+constexpr bool kFoldUsageTag = true;
+
+struct Para {
+  std::string text;
+  bool heading;
+  bool italic;
+};
+
+// Lower case, without a trailing colon: "Derived forms:" -> "derived forms"
+std::string labelOf(const std::string& text) {
+  std::string t = trimmed(text);
+  while (!t.empty() && t.back() == ':') t.pop_back();
+  return lowerAscii(trimmed(t));
+}
+
+// Would this paragraph still show something after addParagraph() has cleaned it?
+bool paragraphHasContent(const std::string& raw) {
+  std::string t = trimmed(tidyCodes(normalizeSpaces(raw)));
+  if (t.empty() || !hasLetterOrDigit(t) || isPronunciationLine(t)) return false;
+  t = stripUnsupportedGlyphs(t);
+  if (t.empty() || !hasLetterOrDigit(t)) return false;
+  int kind = 0;
+  t = stripTrailingDash(stripLeadingMarker(t, &kind));
+  return !t.empty() && hasLetterOrDigit(t);
+}
+
+// "Verb: have (had, having, has)": *pos is "Verb"; word forms in the brackets go to *forms, any other bracketed
+// text is kept in *extra.
+bool splitPosLine(const std::string& text, std::string* pos, std::vector<std::string>* forms, std::string* extra) {
+  const size_t colon = text.find(':');
+  if (colon == std::string::npos || colon > 20) return false;
+  const std::string head = trimmed(text.substr(0, colon));
+  if (!isTruePos(head)) return false;
+  *pos = capitalizeWords(lowerAscii(head));
+  forms->clear();
+  extra->clear();
+  const std::string rest = trimmed(text.substr(colon + 1));
+  const size_t open = rest.find('(');
+  const size_t close = rest.rfind(')');
+  if (open == std::string::npos || close == std::string::npos || close < open) return true;
+  const std::string inner = rest.substr(open + 1, close - open - 1);
+  std::vector<std::string> items;
+  bool wordsOnly = true;
+  size_t start = 0;
+  while (start <= inner.size()) {
+    size_t end = inner.find_first_of(",;", start);
+    if (end == std::string::npos) end = inner.size();
+    const std::string item = trimmed(inner.substr(start, end - start));
+    if (!item.empty()) {
+      int words = 1;
+      for (const char ch : item) {
+        const unsigned char u = static_cast<unsigned char>(ch);
+        if (ch == ' ') {
+          ++words;
+        } else if (!(std::isalpha(u) || u >= 0x80 || ch == '-' || ch == '\'')) {
+          wordsOnly = false;
+        }
+      }
+      if (words > 3 || item.size() > 30) wordsOnly = false;
+      items.push_back(item);
+    }
+    if (end >= inner.size()) break;
+    start = end + 1;
+  }
+  if (!items.empty() && wordsOnly) {
+    *forms = items;
+  } else if (!inner.empty()) {
+    *extra = "(" + inner + ")";
+  }
+  return true;
+}
+
+// Every word and comma-separated item of a "Derived forms" row, lower case.
+void addWords(std::vector<std::string>& have, const std::string& text) {
+  size_t start = 0;
+  while (start <= text.size()) {
+    size_t end = text.find_first_of(",;", start);
+    if (end == std::string::npos) end = text.size();
+    std::string item = lowerAscii(trimmed(text.substr(start, end - start)));
+    while (!item.empty() && item.back() == '.') item.pop_back();
+    if (!item.empty()) {
+      have.push_back(item);
+      size_t w = 0;
+      while (w < item.size()) {
+        while (w < item.size() && item[w] == ' ') ++w;
+        const size_t ws = w;
+        while (w < item.size() && item[w] != ' ') ++w;
+        if (w > ws) have.push_back(item.substr(ws, w - ws));
+      }
+    }
+    if (end >= text.size()) break;
+    start = end + 1;
+  }
+}
+
+std::string joinList(const std::vector<std::string>& items, const char* sep) {
+  std::string out;
+  for (size_t i = 0; i < items.size(); ++i) {
+    if (i > 0) out += sep;
+    out += items[i];
+  }
+  return out;
+}
+
+// WordWeb: a part-of-speech line with word forms becomes a bold heading; the forms move into that part of
+// speech's "Derived forms" section without repeating what is already there. "Usage: UK" is folded into a tag,
+// and headings with nothing under them are dropped.
+void restructureWordWeb(std::vector<Para>& paras) {
+  std::vector<Para> out;
+  std::vector<std::string> forms;
+  size_t blockStart = 0;
+  bool inBlock = false;
+
+  const auto finishBlock = [&]() {
+    if (inBlock && !forms.empty()) {
+      size_t headIdx = std::string::npos;
+      for (size_t k = blockStart + 1; k < out.size(); ++k) {
+        const std::string l = labelOf(out[k].text);
+        if (out[k].heading && (l == "derived forms" || l == "derived form")) {
+          headIdx = k;
+          break;
+        }
+      }
+      std::vector<std::string> have;
+      size_t insertAt = out.size();
+      if (headIdx != std::string::npos) {
+        size_t k = headIdx + 1;
+        for (; k < out.size() && !out[k].heading; ++k) addWords(have, out[k].text);
+        insertAt = k;
+      }
+      std::vector<std::string> missing;
+      for (const auto& f : forms) {
+        if (std::find(have.begin(), have.end(), lowerAscii(f)) == have.end() &&
+            std::find(missing.begin(), missing.end(), f) == missing.end()) {
+          missing.push_back(f);
+        }
+      }
+      if (!missing.empty()) {
+        const Para line{joinList(missing, ", "), false, false};
+        if (headIdx != std::string::npos) {
+          out.insert(std::next(out.begin(), static_cast<std::ptrdiff_t>(insertAt)), line);
+        } else {
+          out.push_back({"Derived forms", true, false});
+          out.push_back(line);
+        }
+      }
+    }
+    forms.clear();
+  };
+
+  for (const auto& p : paras) {
+    std::string pos;
+    std::vector<std::string> f;
+    std::string extra;
+    if (splitPosLine(p.text, &pos, &f, &extra)) {
+      finishBlock();
+      out.push_back({pos, true, false});
+      blockStart = out.size() - 1;
+      inBlock = true;
+      forms = f;
+      if (!extra.empty()) out.push_back({extra, false, false});
+      continue;
+    }
+    out.push_back(p);
+  }
+  finishBlock();
+
+  // "Usage: UK" in front of a definition becomes a "[UK]" tag on that definition
+  std::vector<Para> merged;
+  for (size_t i = 0; i < out.size(); ++i) {
+    if (kFoldUsageTag && out[i].heading && labelOf(out[i].text) == "usage" && i + 2 < out.size() &&
+        !out[i + 1].heading && trimmed(out[i + 1].text).size() <= 24 && !out[i + 2].heading && !out[i + 2].italic) {
+      merged.push_back({"[" + trimmed(out[i + 1].text) + "] " + out[i + 2].text, false, false});
+      i += 2;
+      continue;
+    }
+    merged.push_back(out[i]);
+  }
+
+  // headings with nothing under them: an empty "Encyclopedia", or a "Noun" with no definitions
+  for (bool again = true; again;) {
+    again = false;
+    for (size_t i = 0; i < merged.size(); ++i) {
+      if (!merged[i].heading) continue;
+      const bool isPos = isTruePos(labelOf(merged[i].text));
+      bool hasContent = false;
+      for (size_t k = i + 1; k < merged.size(); ++k) {
+        if (merged[k].heading) {
+          if (!isPos || isTruePos(labelOf(merged[k].text))) break;
+          continue;  // a section heading inside this part of speech
+        }
+        if (paragraphHasContent(merged[k].text)) {
+          hasContent = true;
+          break;
+        }
+      }
+      if (!hasContent) {
+        merged.erase(std::next(merged.begin(), static_cast<std::ptrdiff_t>(i)));
+        again = true;
+        break;
+      }
+    }
+  }
+  paras = std::move(merged);
+}
+
+// WordWeb: only a leading "[UK]"-style tag is drawn bold.
+std::string leadingBracketMask(const std::string& text) {
+  if (text.empty() || text[0] != '[') return std::string();
+  const size_t q = text.find(']');
+  if (q == std::string::npos || q > 40) return std::string();
+  std::string mask(text.size(), '0');
+  for (size_t k = 0; k <= q; ++k) mask[k] = '1';
+  return mask;
+}
+
 // Marks every "[...]" in the text as bold. Empty when there is none.
 std::string bracketMask(const std::string& text) {
   std::string mask(text.size(), '0');
@@ -695,6 +914,8 @@ void DictionaryDefinitionActivity::buildRows() {
                                              definition.find("c=\"darkmagenta\"") != std::string::npos);
   oxfordStyle_ = !htmlDefinition && !cambridge && definition.find("<dtrn>") != std::string::npos;
   cambridgeStyle_ = cambridge;
+  wordWebStyle_ = htmlDefinition && (definition.find("bword://") != std::string::npos ||
+                                     definition.find("COLOR:GRAY") != std::string::npos);
 
   const bool xdxf = !htmlDefinition && (definition.find("<k>") != std::string::npos ||
                                         definition.find("<dtrn>") != std::string::npos ||
@@ -754,6 +975,7 @@ void DictionaryDefinitionActivity::buildRows() {
 // words are all italic is an example, and a bold run that ends in ":" ("See also:") is a heading of its own.
 void DictionaryDefinitionActivity::rowsFromPages(const std::vector<std::unique_ptr<Page>>& pages, const int fontId) {
   const int space = renderer.getSpaceWidth(fontId, EpdFontFamily::REGULAR);
+  std::vector<Para> paras;
   for (const auto& page : pages) {
     for (const auto& element : page->elements) {
       if (element->getTag() != TAG_PageLine) continue;
@@ -789,13 +1011,16 @@ void DictionaryDefinitionActivity::rowsFromPages(const std::vector<std::unique_p
       const bool marker = allBold && allItalic;  // the internal marker of a real section heading
       if (marker) allItalic = false;
       if (!allBold && leadChars > 0 && leadChars < text.size() && text[leadChars - 1] == ':') {
-        addParagraph(text.substr(0, leadChars), true, false);
-        addParagraph(text.substr(leadChars), false, restItalic);
+        paras.push_back({text.substr(0, leadChars), true, false});
+        paras.push_back({text.substr(leadChars), false, wordWebStyle_ && restItalic});
         continue;
       }
-      addParagraph(text, allBold && (marker || looksLikeHeadingText(text)), allItalic);
+      // Only WordWeb marks its examples in italic; elsewhere italic text is never taken for an example.
+      paras.push_back({text, allBold && (marker || looksLikeHeadingText(text)), wordWebStyle_ && allItalic});
     }
   }
+  if (wordWebStyle_) restructureWordWeb(paras);
+  for (const auto& p : paras) addParagraph(p.text, p.heading, p.italic);
 }
 
 void DictionaryDefinitionActivity::rowsFromPlainText(const std::string& text) {
@@ -871,7 +1096,7 @@ void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
           start = bar + 3;
         }
       } else {
-        addParagraph(t, curBold && t.size() <= 40, curItalic || curHasEx);
+        addParagraph(t, curBold && t.size() <= 40, curHasEx || (derivMode && curItalic));
       }
     }
     resetParagraph();
@@ -1013,7 +1238,7 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
   text = stripLeadingMarker(text, &kind);
   text = stripTrailingDash(text);
   if (text.empty() || !hasLetterOrDigit(text)) return;  // a lone "1." or "-"
-  if (kind == 1 && !oxfordStyle_) italic = true;         // a round bullet marks an example (Cambridge)
+  if (kind == 1 && cambridgeStyle_) italic = true;  // a round bullet marks an example (Cambridge only)
   if (lowerAscii(text) == lowerAscii(headword)) return;  // the word is already in the header
 
   // A label followed by text: "Thesaurus+: ...", "Noun: romance", "See also: ..."
@@ -1073,14 +1298,18 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
     pendingNote_ = text;
     return;
   }
-  if (!italic && isQuotedExample(text)) italic = true;
+  if (!italic && wordWebStyle_ && isQuotedExample(text)) italic = true;
   if (!italic && !pendingNote_.empty()) {
     text = pendingNote_ + " " + text;
     pendingNote_.clear();
   }
 
   // Oxford: every "[...]" note is drawn bold (bold italic inside an example). Other dictionaries keep them plain.
-  const std::string mask = oxfordStyle_ ? bracketMask(text) : std::string();
+  // A definition that ends in a colon only introduces the lines below it: it ends in a full stop instead.
+  if (!oxfordStyle_ && !cambridgeStyle_ && !italic && !text.empty() && text.back() == ':') text.back() = '.';
+
+  const std::string mask =
+      oxfordStyle_ ? bracketMask(text) : (wordWebStyle_ ? leadingBracketMask(text) : std::string());
   wrapInto(text, mask, false, italic, kIndent);
 }
 
