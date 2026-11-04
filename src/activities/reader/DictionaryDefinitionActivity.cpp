@@ -703,29 +703,6 @@ bool splitPosLine(const std::string& text, std::string* pos, std::vector<std::st
   return true;
 }
 
-// Every word and comma-separated item of a "Derived forms" row, lower case.
-void addWords(std::vector<std::string>& have, const std::string& text) {
-  size_t start = 0;
-  while (start <= text.size()) {
-    size_t end = text.find_first_of(",;", start);
-    if (end == std::string::npos) end = text.size();
-    std::string item = lowerAscii(trimmed(text.substr(start, end - start)));
-    while (!item.empty() && item.back() == '.') item.pop_back();
-    if (!item.empty()) {
-      have.push_back(item);
-      size_t w = 0;
-      while (w < item.size()) {
-        while (w < item.size() && item[w] == ' ') ++w;
-        const size_t ws = w;
-        while (w < item.size() && item[w] != ' ') ++w;
-        if (w > ws) have.push_back(item.substr(ws, w - ws));
-      }
-    }
-    if (end >= text.size()) break;
-    start = end + 1;
-  }
-}
-
 std::string joinList(const std::vector<std::string>& items, const char* sep) {
   std::string out;
   for (size_t i = 0; i < items.size(); ++i) {
@@ -735,106 +712,187 @@ std::string joinList(const std::vector<std::string>& items, const char* sep) {
   return out;
 }
 
-// WordWeb: a part-of-speech line with word forms becomes a bold heading; the forms move into that part of
-// speech's "Derived forms" section without repeating what is already there. "Usage: UK" is folded into a tag,
-// and headings with nothing under them are dropped.
-void restructureWordWeb(std::vector<Para>& paras) {
-  std::vector<Para> out;
-  std::vector<std::string> forms;
-  size_t blockStart = 0;
-  bool inBlock = false;
+// WordWeb entries are restructured in four steps:
+//  1. a label that arrives as plain text ("Usage: UK", "Encyclopedia:") becomes a heading with its text beneath it;
+//  2. "Usage" + "UK" + a definition becomes "[UK] definition";
+//  3. a part-of-speech line ("Verb: have (had, having, has)") becomes a bold heading, and its word forms go into
+//     that part of speech's own "Derived forms" section, placed right after its definitions, without repeats;
+//  4. sections with nothing in them are dropped.
+bool isDerivedLabel(const std::string& l) { return l == "derived forms" || l == "derived form"; }
 
-  const auto finishBlock = [&]() {
-    if (inBlock && !forms.empty()) {
-      size_t headIdx = std::string::npos;
-      for (size_t k = blockStart + 1; k < out.size(); ++k) {
-        const std::string l = labelOf(out[k].text);
-        if (out[k].heading && (l == "derived forms" || l == "derived form")) {
-          headIdx = k;
-          break;
-        }
-      }
-      std::vector<std::string> have;
-      size_t insertAt = out.size();
-      if (headIdx != std::string::npos) {
-        size_t k = headIdx + 1;
-        for (; k < out.size() && !out[k].heading; ++k) addWords(have, out[k].text);
-        insertAt = k;
-      }
-      std::vector<std::string> missing;
-      for (const auto& f : forms) {
-        if (std::find(have.begin(), have.end(), lowerAscii(f)) == have.end() &&
-            std::find(missing.begin(), missing.end(), f) == missing.end()) {
-          missing.push_back(f);
-        }
-      }
-      if (!missing.empty()) {
-        const Para line{joinList(missing, ", "), false, false};
-        if (headIdx != std::string::npos) {
-          out.insert(std::next(out.begin(), static_cast<std::ptrdiff_t>(insertAt)), line);
-        } else {
-          out.push_back({"Derived forms", true, false});
-          out.push_back(line);
+void splitItems(const std::string& text, std::vector<std::string>* items) {
+  size_t start = 0;
+  while (start <= text.size()) {
+    size_t end = text.find_first_of(",;", start);
+    if (end == std::string::npos) end = text.size();
+    std::string item = trimmed(text.substr(start, end - start));
+    while (!item.empty() && item.back() == '.') item.pop_back();
+    if (!item.empty()) items->push_back(item);
+    if (end >= text.size()) break;
+    start = end + 1;
+  }
+}
+
+bool containsLower(const std::vector<std::string>& v, const std::string& item) {
+  const std::string low = lowerAscii(item);
+  return std::any_of(v.begin(), v.end(), [&low](const std::string& s) { return lowerAscii(s) == low; });
+}
+
+void restructureWordWeb(std::vector<Para>& paras) {
+  // 1. plain-text labels become headings
+  std::vector<Para> norm;
+  for (const auto& p : paras) {
+    if (!p.heading && !p.italic) {
+      const size_t colon = p.text.find(':');
+      if (colon != std::string::npos && colon > 0 && colon <= 24) {
+        const std::string head = trimmed(p.text.substr(0, colon));
+        const std::string rest = trimmed(p.text.substr(colon + 1));
+        if (!isTruePos(head) && isSectionLabel(lowerAscii(head))) {
+          norm.push_back({upperFirst(head), true, false});
+          if (!rest.empty()) norm.push_back({rest, false, false});
+          continue;
         }
       }
     }
-    forms.clear();
-  };
+    norm.push_back(p);
+  }
 
-  for (const auto& p : paras) {
+  // 2. "Usage" + "UK" + a definition -> "[UK] definition"
+  std::vector<Para> folded;
+  for (size_t i = 0; i < norm.size(); ++i) {
+    if (kFoldUsageTag && norm[i].heading && labelOf(norm[i].text) == "usage" && i + 2 < norm.size() &&
+        !norm[i + 1].heading && trimmed(norm[i + 1].text).size() <= 24 && !norm[i + 2].heading &&
+        !norm[i + 2].italic) {
+      folded.push_back({"[" + trimmed(norm[i + 1].text) + "] " + norm[i + 2].text, false, false});
+      i += 2;
+      continue;
+    }
+    folded.push_back(norm[i]);
+  }
+
+  // 3. part-of-speech lines
+  struct Block {
+    size_t start;
+    std::vector<std::string> forms;
+  };
+  std::vector<Para> out;
+  std::vector<Block> blocks;
+  for (const auto& p : folded) {
     std::string pos;
-    std::vector<std::string> f;
+    std::vector<std::string> forms;
     std::string extra;
-    if (splitPosLine(p.text, &pos, &f, &extra)) {
-      finishBlock();
+    if (splitPosLine(p.text, &pos, &forms, &extra)) {
       out.push_back({pos, true, false});
-      blockStart = out.size() - 1;
-      inBlock = true;
-      forms = f;
+      blocks.push_back({out.size() - 1, forms});
       if (!extra.empty()) out.push_back({extra, false, false});
       continue;
     }
     out.push_back(p);
   }
-  finishBlock();
 
-  // "Usage: UK" in front of a definition becomes a "[UK]" tag on that definition
-  std::vector<Para> merged;
-  for (size_t i = 0; i < out.size(); ++i) {
-    if (kFoldUsageTag && out[i].heading && labelOf(out[i].text) == "usage" && i + 2 < out.size() &&
-        !out[i + 1].heading && trimmed(out[i + 1].text).size() <= 24 && !out[i + 2].heading && !out[i + 2].italic) {
-      merged.push_back({"[" + trimmed(out[i + 1].text) + "] " + out[i + 2].text, false, false});
-      i += 2;
-      continue;
+  const size_t nb = blocks.size();
+  // the items of each block's own "Derived forms" sections; an item that another part of speech names in its
+  // brackets belongs to that one
+  std::vector<std::vector<std::string>> kept(nb), moved(nb);
+  for (size_t b = 0; b < nb; ++b) {
+    const size_t start = blocks[b].start;
+    const size_t end = b + 1 < nb ? blocks[b + 1].start : out.size();
+    for (size_t k = start + 1; k < end; ++k) {
+      if (!(out[k].heading && isDerivedLabel(labelOf(out[k].text)))) continue;
+      for (size_t e = k + 1; e < end && !out[e].heading; ++e) {
+        std::vector<std::string> found;
+        splitItems(out[e].text, &found);
+        for (const auto& item : found) {
+          size_t owner = b;
+          if (!containsLower(blocks[b].forms, item)) {
+            for (size_t c = 0; c < nb; ++c) {
+              if (c != b && containsLower(blocks[c].forms, item)) {
+                owner = c;
+                break;
+              }
+            }
+          }
+          if (owner == b) {
+            kept[b].push_back(item);
+          } else {
+            moved[owner].push_back(item);
+          }
+        }
+      }
     }
-    merged.push_back(out[i]);
+  }
+  std::vector<std::vector<std::string>> items(nb);
+  for (size_t b = 0; b < nb; ++b) {
+    const auto add = [&](const std::string& item) {
+      if (!containsLower(items[b], item)) items[b].push_back(item);
+    };
+    for (const auto& it : kept[b]) add(it);
+    for (const auto& it : blocks[b].forms) add(it);
+    for (const auto& it : moved[b]) add(it);
   }
 
-  // headings with nothing under them: an empty "Encyclopedia", or a "Noun" with no definitions
+  // last block first, so the positions of the earlier blocks stay valid
+  for (size_t b = nb; b-- > 0;) {
+    const size_t start = blocks[b].start;
+    size_t end = b + 1 < nb ? blocks[b + 1].start : out.size();
+    // the old "Derived forms" sections leave; one new section goes right after the definitions
+    for (size_t k = start + 1; k < end;) {
+      if (out[k].heading && isDerivedLabel(labelOf(out[k].text))) {
+        size_t e = k + 1;
+        while (e < end && !out[e].heading) ++e;
+        out.erase(out.begin() + static_cast<std::ptrdiff_t>(k), out.begin() + static_cast<std::ptrdiff_t>(e));
+        end -= e - k;
+      } else {
+        ++k;
+      }
+    }
+    bool hasContent = false;
+    for (size_t k = start + 1; k < end && !hasContent; ++k) {
+      hasContent = !out[k].heading && paragraphHasContent(out[k].text);
+    }
+    if (!hasContent) {  // a part of speech with nothing in it, besides word forms, is dropped
+      out.erase(out.begin() + static_cast<std::ptrdiff_t>(start), out.begin() + static_cast<std::ptrdiff_t>(end));
+      continue;
+    }
+    if (items[b].empty()) continue;
+    size_t at = end;
+    for (size_t k = start + 1; k < end; ++k) {
+      if (out[k].heading) {
+        at = k;
+        break;
+      }
+    }
+    const Para head{"Derived forms", true, false};
+    const Para line{joinList(items[b], ", "), false, false};
+    out.insert(out.begin() + static_cast<std::ptrdiff_t>(at), line);
+    out.insert(out.begin() + static_cast<std::ptrdiff_t>(at), head);
+  }
+
+  // 4. headings with nothing under them: an empty "Encyclopedia", or a "Noun" with no definitions
   for (bool again = true; again;) {
     again = false;
-    for (size_t i = 0; i < merged.size(); ++i) {
-      if (!merged[i].heading) continue;
-      const bool isPos = isTruePos(labelOf(merged[i].text));
+    for (size_t i = 0; i < out.size(); ++i) {
+      if (!out[i].heading) continue;
+      const bool isPos = isTruePos(labelOf(out[i].text));
       bool hasContent = false;
-      for (size_t k = i + 1; k < merged.size(); ++k) {
-        if (merged[k].heading) {
-          if (!isPos || isTruePos(labelOf(merged[k].text))) break;
+      for (size_t k = i + 1; k < out.size(); ++k) {
+        if (out[k].heading) {
+          if (!isPos || isTruePos(labelOf(out[k].text))) break;
           continue;  // a section heading inside this part of speech
         }
-        if (paragraphHasContent(merged[k].text)) {
+        if (paragraphHasContent(out[k].text)) {
           hasContent = true;
           break;
         }
       }
       if (!hasContent) {
-        merged.erase(std::next(merged.begin(), static_cast<std::ptrdiff_t>(i)));
+        out.erase(out.begin() + static_cast<std::ptrdiff_t>(i));
         again = true;
         break;
       }
     }
   }
-  paras = std::move(merged);
+  paras = std::move(out);
 }
 
 // WordWeb: only a leading "[UK]"-style tag is drawn bold.
