@@ -13,8 +13,8 @@ namespace fui = freeink::ui;
 namespace {
 constexpr StrId menuItems[NetworkModeSelectionActivity::MENU_ITEM_COUNT] = {
     StrId::STR_JOIN_NETWORK,
-    StrId::STR_CALIBRE_WIRELESS,
     StrId::STR_CREATE_HOTSPOT,
+    StrId::STR_CALIBRE_WIRELESS,
 #if FREEINK_CAP_USB_MSC
     StrId::STR_USB_DRIVE,
 #endif

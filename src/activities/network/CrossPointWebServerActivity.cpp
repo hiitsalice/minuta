@@ -148,11 +148,11 @@ void CrossPointWebServerActivity::returnToNetworkModeSelection() {
 }
 
 void CrossPointWebServerActivity::onNetworkModeSelected(NetworkMode mode) {
-  const char* modeName = "Join Network";
+  const char* modeName = "Network Mode";
   if (mode == NetworkMode::CONNECT_CALIBRE) {
-    modeName = "Connect to Calibre";
+    modeName = "Calibre Wireless";
   } else if (mode == NetworkMode::CREATE_HOTSPOT) {
-    modeName = "Create Hotspot";
+    modeName = "Hotspot Mode";
 #if FREEINK_CAP_USB_MSC
   } else if (mode == NetworkMode::USB_DRIVE) {
     modeName = "USB Drive";
@@ -430,7 +430,7 @@ void CrossPointWebServerActivity::render(RenderLock&&) {
     const auto pageHeight = renderer.getScreenHeight();
 
     GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight},
-                   isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_FILE_TRANSFER), nullptr);
+                   isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_JOIN_NETWORK), nullptr);
 
     if (state == WebServerActivityState::SERVER_RUNNING) {
       renderServerRunning();
@@ -450,7 +450,7 @@ void CrossPointWebServerActivity::renderServerRunning() const {
   const int lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
 
   GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight},
-                 isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_FILE_TRANSFER), nullptr);
+                 isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_JOIN_NETWORK), nullptr);
 
   // Draw two text fragments on one centred line, each with its own font style.
   const auto drawMixedLine = [&](const char* first, EpdFontFamily::Style firstStyle,
