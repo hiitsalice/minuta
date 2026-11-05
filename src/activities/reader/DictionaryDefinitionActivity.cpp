@@ -29,8 +29,8 @@ namespace {
 constexpr int kIndent = 36;
 // Cambridge sub-labels (Verbs, Adjectives, ...) sit one step in between: heading, then label, then content.
 constexpr int kSubIndent = 18;
-// A thin rule is drawn this many pixels below the top of every "Thesaurus+" row.
-constexpr int kThesaurusRulePx = 6;
+// "Thesaurus+" gets a short line in front of it: 6px of line, then a 6px gap before the word.
+constexpr int kThesaurusLead = 12;
 // Text is wrapped this much narrower than the row's text area, so no line is ever cut off.
 // Raise it if any row still ends in "...".
 constexpr int kWrapSafety = 4;
@@ -1271,7 +1271,10 @@ void DictionaryDefinitionActivity::buildRows() {
     item.italic = rows_[i].italic;
     item.justify = rows_[i].justify;
     item.boldMask = rows_[i].boldMask.empty() ? nullptr : rows_[i].boldMask.c_str();
-    item.ruleAbove = rows_[i].ruleAbove ? kThesaurusRulePx : 0;
+    if (rows_[i].ruleAbove) {  // "Thesaurus+": a 6px line right in front of the word
+      item.labelXOffset = kThesaurusLead;
+      item.leaderLine = true;
+    }
     item.actionValue = static_cast<int16_t>(i);
     if (rows_[i].indent > 0) {
       item.labelXOffset = rows_[i].indent;
@@ -1700,12 +1703,9 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
     if (!pos.empty()) addParagraph(pos, true, false);
     return;
   }
-  if (isPronunciationLine(text)) return;
-  text = stripUnsupportedGlyphs(text);  // scripts the UI font cannot draw would only fill the log with errors
-  if (text.empty() || !hasLetterOrDigit(text)) return;
-
-  // Items glued together by a separator glyph ("↑a ↑b", "x ▪ y ▪ z") become paragraphs of their own.
-  // The "↑" has no glyph in the font, so it is never drawn.
+  // Items glued together by a separator ("↑a ↑b", "x ▪ y ▪ z") become paragraphs of their own. This has to happen
+  // before the characters the font cannot draw are removed, or the separator would vanish and the items would run
+  // together into one row.
   static constexpr const char* SEPARATORS[] = {"\xE2\x86\x91", "\xE2\x96\xAA"};
   for (const char* sep : SEPARATORS) {
     if (text.find(sep) == std::string::npos) continue;
@@ -1719,6 +1719,9 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
     }
     return;
   }
+  if (isPronunciationLine(text)) return;
+  text = stripUnsupportedGlyphs(text);  // scripts the UI font cannot draw would only fill the log with errors
+  if (text.empty() || !hasLetterOrDigit(text)) return;
 
   int kind = 0;
   text = stripLeadingMarker(text, &kind);
@@ -1926,30 +1929,19 @@ void DictionaryDefinitionActivity::pruneEmptySections() {
   }
 }
 
-// Cambridge: sense headings are numbered once the empty sections are gone, so the numbers never skip. A heading the
-// dictionary numbered itself (and every guideword) takes the next number; a phrase it did not number is lettered
-// under the heading before it. A new part of speech starts again at 1).
+// Cambridge: sense headings are numbered once the empty sections are gone, so the numbers never skip. Every
+// section heading (a guideword, or a phrase that opens a sense) takes the next number; a new part of speech
+// starts again at 1).
 void DictionaryDefinitionActivity::numberSenseHeadings() {
-  int sibling = 0;
-  int child = 0;
+  int number = 0;
   for (auto& r : rows_) {
     if (r.cont || !r.bold) continue;
     if (r.numKind == 0) {
       const std::string low = labelOf(r.text);
-      if (isTruePos(low) || isPosPhrase(low)) {
-        sibling = 0;
-        child = 0;
-      }
+      if (isTruePos(low) || isPosPhrase(low)) number = 0;
       continue;
     }
-    if (r.numKind == 2 && sibling > 0) {
-      ++child;
-      r.text = std::string(1, static_cast<char>('a' + (child - 1) % 26)) + ") " + r.text;
-    } else {
-      ++sibling;
-      child = 0;
-      r.text = std::to_string(sibling) + ") " + r.text;
-    }
+    r.text = std::to_string(++number) + ") " + r.text;
   }
 }
 

@@ -32,7 +32,7 @@ class DictionaryDefinitionActivity final : public UiListActivity {
     bool cont;             // second or later line of a wrapped paragraph
     bool leader;           // a thin leader line is drawn in front of an indented row
     uint8_t numKind;       // Cambridge: 1 = numbered sense heading, 2 = lettered sub-heading
-    bool ruleAbove;        // a thin rule is drawn above this row (Cambridge "Thesaurus+")
+    bool ruleAbove;        // Cambridge "Thesaurus+": a short line is drawn in front of the word
   };
 
   int listCount() const override { return static_cast<int>(rows_.size()); }
