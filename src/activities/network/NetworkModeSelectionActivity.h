@@ -19,7 +19,9 @@ enum class NetworkMode { JOIN_NETWORK, CREATE_HOTSPOT, CONNECT_CALIBRE, USB_DRIV
  */
 class NetworkModeSelectionActivity final : public UiListActivity {
  public:
-  explicit NetworkModeSelectionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);
+  explicit NetworkModeSelectionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
+                                       int initialSelection = 0);
+  void onEnter() override;
 
 #if FREEINK_CAP_USB_MSC
   static constexpr int MENU_ITEM_COUNT = 4;
@@ -31,6 +33,7 @@ class NetworkModeSelectionActivity final : public UiListActivity {
   void onCancel();
 
  private:
+  int initialSelection_ = 0;
   int listCount() const override;
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;

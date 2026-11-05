@@ -21,8 +21,9 @@ constexpr StrId menuItems[NetworkModeSelectionActivity::MENU_ITEM_COUNT] = {
 };
 }  // namespace
 
-NetworkModeSelectionActivity::NetworkModeSelectionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
-    : UiListActivity("NetworkModeSelection", renderer, mappedInput) {
+NetworkModeSelectionActivity::NetworkModeSelectionActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
+                                                           const int initialSelection)
+    : UiListActivity("NetworkModeSelection", renderer, mappedInput), initialSelection_(initialSelection) {
   // Entirely static, so built once here rather than every buildScreen() call.
   for (int i = 0; i < MENU_ITEM_COUNT; i++) {
     fui::ListItem item;
@@ -30,6 +31,11 @@ NetworkModeSelectionActivity::NetworkModeSelectionActivity(GfxRenderer& renderer
     item.actionValue = static_cast<int16_t>(i);
     rowItems_[i] = item;
   }
+}
+
+void NetworkModeSelectionActivity::onEnter() {
+  UiListActivity::onEnter();
+  moveSelectionTo(initialSelection_);
 }
 
 int NetworkModeSelectionActivity::listCount() const { return MENU_ITEM_COUNT; }

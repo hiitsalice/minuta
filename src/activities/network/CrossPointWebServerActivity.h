@@ -32,6 +32,7 @@ class CrossPointWebServerActivity final : public Activity {
 
   // Network mode
   NetworkMode networkMode = NetworkMode::JOIN_NETWORK;
+  int selectedNetworkModeIndex = 0;
   bool isApMode = false;
 
   // Web server - owned by this activity
