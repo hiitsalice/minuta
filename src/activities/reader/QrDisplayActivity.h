@@ -16,5 +16,5 @@ class QrDisplayActivity final : public Activity {
   void render(RenderLock&&) override;
 
  private:
-  std::string textPayload;
+   std::string textPayload;
 };

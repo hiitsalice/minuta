@@ -16,8 +16,6 @@ void QrDisplayActivity::onEnter() {
 void QrDisplayActivity::onExit() { Activity::onExit(); }
 
 void QrDisplayActivity::loop() {
-  int x = 0;
-  int y = 0;
   if (mappedInput.wasReleased(MappedInputManager::Button::Back) ||
       mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     finish();
@@ -31,13 +29,13 @@ void QrDisplayActivity::render(RenderLock&&) {
   const auto pageWidth = renderer.getScreenWidth();
   const auto pageHeight = renderer.getScreenHeight();
 
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_DISPLAY_QR), nullptr, false, false);
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight},
+                 tr(STR_DISPLAY_QR), nullptr, false, false);
 
-  const int availableWidth = pageWidth - 40;
-  const int availableHeight = pageHeight - metrics.topPadding - metrics.headerHeight - metrics.verticalSpacing * 2 - 40;
-  const int startY = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing;
-
-  const Rect qrBounds(20, startY, availableWidth, availableHeight);
+  constexpr int QR_CODE_SIZE = 200;
+  const int qrX = (pageWidth - QR_CODE_SIZE) / 2;
+  const int qrY = (pageHeight - QR_CODE_SIZE) / 2;
+  const Rect qrBounds(qrX, qrY, QR_CODE_SIZE, QR_CODE_SIZE);
   QrUtils::drawQrCode(renderer, qrBounds, textPayload);
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
