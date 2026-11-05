@@ -31,6 +31,8 @@ class DictionaryDefinitionActivity final : public UiListActivity {
     int indent;            // indent of the text in px (0 = none); a thin leader line is drawn in front when > 0
     bool cont;             // second or later line of a wrapped paragraph
     bool leader;           // a thin leader line is drawn in front of an indented row
+    uint8_t numKind;       // Cambridge: 1 = numbered sense heading, 2 = lettered sub-heading
+    bool ruleAbove;        // a thin rule is drawn above this row (Cambridge "Thesaurus+")
   };
 
   int listCount() const override { return static_cast<int>(rows_.size()); }
@@ -45,11 +47,12 @@ class DictionaryDefinitionActivity final : public UiListActivity {
   void rowsFromPlainText(const std::string& text);
   void rowsFromXdxf(const std::string& source);
   void addParagraph(const std::string& text, bool heading, bool italic);
-  void wrapInto(const std::string& text, const std::string& mask, bool bold, bool italic, int indentPx, bool leader = true);
+  void wrapInto(const std::string& text, const std::string& mask, bool bold, bool italic, int indentPx, bool leader = true, int numKind = 0);
   int measure(const std::string& text, bool bold, bool italic) const;
   int labelWidthPx() const;
   int pageRowsEstimate() const;
   void pruneEmptySections();
+  void numberSenseHeadings();
   void scrollPages(int direction);
   bool canScrollUp();
   bool canScrollDown();
@@ -63,6 +66,8 @@ class DictionaryDefinitionActivity final : public UiListActivity {
   bool cambridgeStyle_ = false;  // Cambridge markup: guidewords and sub-labels are headings
   bool wordWebStyle_ = false;   // WordWeb markup: part-of-speech lines are restructured
   int guideNumber_ = 0;         // Cambridge: number of the last guideword under the current part of speech
+  bool inCollocations_ = false;  // Cambridge: inside Collocations/Idioms/..., where bold phrases are not senses
+  int pendingSense_ = 0;         // Cambridge: a lone "2." was seen; the next heading is a numbered sense
   std::string pendingNote_;   // a lone "[with obj]" waiting to open the next definition
   std::vector<Row> rows_;
   std::vector<freeink::ui::ListItem> items_;

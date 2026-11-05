@@ -1,5 +1,8 @@
 #include "TxtReaderActivity.h"
 
+#include "CrossPointState.h"
+#include "RecentBooksStore.h"
+
 #include <BidiUtils.h>
 #include <FontCacheManager.h>
 #include <GfxRenderer.h>
@@ -342,7 +345,19 @@ void TxtReaderActivity::renderStatusBar() const {
 }
 
 void TxtReaderActivity::loop() {
-  if (!isAtEndOfBook()) {
+  const bool atEndOfBook = isAtEndOfBook();
+
+  // Match EPUB's optional automatic removal from Recents while finished.
+  if (SETTINGS.removeReadBooksFromRecents && txt) {
+    if (atEndOfBook && !recentsEntryRemoved) {
+      recentsEntryRemoved = RECENT_BOOKS.removeByPath(bookPath);
+    } else if (!atEndOfBook && recentsEntryRemoved) {
+      RECENT_BOOKS.addBook(bookPath, getBookTitle(), getBookAuthor(), getBookThumbBmpPath());
+      recentsEntryRemoved = false;
+    }
+  }
+
+  if (!atEndOfBook) {
     ReaderActivity::loop();
     return;
   }
@@ -356,6 +371,7 @@ void TxtReaderActivity::loop() {
     return;
   }
 
+  // Home from the end screen finishes the Markdown book.
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     {
       RenderLock lock;
@@ -369,6 +385,11 @@ void TxtReaderActivity::loop() {
         saveProgress();
       }
     }
+
+    // Explicitly finishing a book removes it from Recents, even when the
+    // automatic remove-read-books setting is disabled.
+    RECENT_BOOKS.removeByPath(bookPath);
+    recentsEntryRemoved = true;
 
     onGoHome();
     return;

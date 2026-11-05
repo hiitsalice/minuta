@@ -21,6 +21,7 @@ class TxtReaderActivity final : public ReaderActivity {
   int linesPerPage = 0;
   int viewportWidth = 0;
   bool initialized = false;
+  bool recentsEntryRemoved = false;
 
   // Cached settings for cache validation
   int cachedFontId = 0;

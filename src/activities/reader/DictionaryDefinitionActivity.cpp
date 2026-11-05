@@ -29,6 +29,8 @@ namespace {
 constexpr int kIndent = 36;
 // Cambridge sub-labels (Verbs, Adjectives, ...) sit one step in between: heading, then label, then content.
 constexpr int kSubIndent = 18;
+// A thin rule is drawn this many pixels below the top of every "Thesaurus+" row.
+constexpr int kThesaurusRulePx = 6;
 // Text is wrapped this much narrower than the row's text area, so no line is ever cut off.
 // Raise it if any row still ends in "...".
 constexpr int kWrapSafety = 4;
@@ -1136,6 +1138,19 @@ std::string leadingPartOfSpeech(const std::string& text, const std::string& head
   return std::string();
 }
 
+// ---- Cambridge sections ----
+// Blocks of word patterns: bold phrases inside them are entries, not senses.
+bool isCambridgeBlockLabel(const std::string& low) {
+  return low == "collocations" || low == "idioms" || low == "phrasal verbs" || low == "common errors" ||
+         low == "phrases" || low == "phrase" || low == "word family" || low == "language note";
+}
+
+// Headings that are not senses: they are never numbered.
+bool isCambridgeLabel(const std::string& low) {
+  return isCambridgeBlockLabel(low) || low == "thesaurus+" || low == "thesaurus" || low == "see also" ||
+         isSectionLabel(low) || isSubLabel(low) || isKnownHeading(low);
+}
+
 // Marks every "[...]" in the text as bold. Empty when there is none.
 std::string bracketMask(const std::string& text) {
   std::string mask(text.size(), '0');
@@ -1197,6 +1212,8 @@ void DictionaryDefinitionActivity::buildRows() {
   items_.clear();
   pendingNote_.clear();
   guideNumber_ = 0;
+  inCollocations_ = false;
+  pendingSense_ = 0;
 
   // Cambridge also uses <dtrn>; its colour markup and UK/US tags tell the two apart.
   const bool cambridge = !htmlDefinition && (definition.find("c=\"darkcyan\"") != std::string::npos ||
@@ -1236,6 +1253,7 @@ void DictionaryDefinitionActivity::buildRows() {
 
 
   pruneEmptySections();
+  numberSenseHeadings();
 
   // Blank rows pad the end to a whole number of screens, so paging moves exactly one screen at a time and the
   // last screen simply ends early, with no row repeated.
@@ -1253,6 +1271,7 @@ void DictionaryDefinitionActivity::buildRows() {
     item.italic = rows_[i].italic;
     item.justify = rows_[i].justify;
     item.boldMask = rows_[i].boldMask.empty() ? nullptr : rows_[i].boldMask.c_str();
+    item.ruleAbove = rows_[i].ruleAbove ? kThesaurusRulePx : 0;
     item.actionValue = static_cast<int16_t>(i);
     if (rows_[i].indent > 0) {
       item.labelXOffset = rows_[i].indent;
@@ -1604,6 +1623,24 @@ void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
       if (name == "kref") {
         krefDepth = std::max(0, krefDepth + (closing ? -1 : 1));
         if (!closing) curHasKref = true;
+        if (closing && krefDepth == 0 && cambridgeStyle_ && curText) {
+          // A list of links ("Idioms", "Phrasal Verbs", "Thesaurus+") becomes one row per link: a separator is left
+          // after each link that is followed by another link or by the end of the paragraph.
+          size_t k = i;
+          for (int hop = 0; hop < 4; ++hop) {
+            while (k < n && (src[k] == ' ' || src[k] == '\t')) ++k;
+            if (k < n && src[k] == '<' && src.compare(k, 5, "<kref") != 0 && src.compare(k, 12, "</blockquote") != 0) {
+              const size_t g = src.find('>', k);
+              if (g == std::string::npos) break;
+              k = g + 1;
+              continue;
+            }
+            break;
+          }
+          if (k >= n || src[k] == '\n' || src.compare(k, 5, "<kref") == 0 || src.compare(k, 12, "</blockquote") == 0) {
+            cur += '\x1F';
+          }
+        }
         continue;
       }
       continue;  // every other tag is ignored; its text stays
@@ -1635,6 +1672,17 @@ void DictionaryDefinitionActivity::rowsFromXdxf(const std::string& src) {
 
 // One paragraph of the definition, cleaned the same way for every dictionary.
 void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool heading, bool italic) {
+  // Items of a list of links arrive joined by a separator: each one is a paragraph of its own.
+  if (raw.find('\x1F') != std::string::npos) {
+    size_t start = 0;
+    while (start <= raw.size()) {
+      const size_t p = raw.find('\x1F', start);
+      addParagraph(raw.substr(start, p == std::string::npos ? std::string::npos : p - start), heading, italic);
+      if (p == std::string::npos) break;
+      start = p + 1;
+    }
+    return;
+  }
   std::string text = tidyParens(trimmed(tidyCodes(normalizeSpaces(raw))));
   if (text.empty() || !hasLetterOrDigit(text)) return;  // also drops an orphan "." or bullet
   // Oxford's big section numbers: "I", "II." -> "I)", "II)"
@@ -1675,6 +1723,13 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
   int kind = 0;
   text = stripLeadingMarker(text, &kind);
   text = stripTrailingDash(text);
+  const bool hadNumber = kind == 3 || pendingSense_ > 0;  // the dictionary gave this paragraph a sense number
+  if (cambridgeStyle_ && kind == 3 && (text.empty() || !hasLetterOrDigit(text))) {
+    pendingSense_ = 1;  // a lone "2.": the next heading is a numbered sense of its own
+    return;
+  }
+  pendingSense_ = 0;
+  if (cambridgeStyle_ && kind == 3 && !heading) inCollocations_ = false;  // a new numbered sense ends a Collocations block
   if (text.empty() || !hasLetterOrDigit(text)) return;  // a lone "1." or "-"
   if (kind == 1 && cambridgeStyle_) italic = true;  // a round bullet marks an example (Cambridge only)
   if (lowerAscii(text) == lowerAscii(headword)) return;  // the word is already in the header
@@ -1715,18 +1770,27 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
   if (heading) {
     while (!text.empty() && text.back() == ':') text.pop_back();
     if (text.empty()) return;
-    if (cambridgeStyle_ && isAllCapsWord(text)) {
-      // a guideword ("FLAVOUR"): numbered within its part of speech
-      text = std::to_string(++guideNumber_) + ") " + capitalizeWords(lowerAscii(text));
-    } else if (isPosPhrase(labelOf(text))) {
-      guideNumber_ = 0;  // a new part of speech starts the numbering again
+    int numKind = 0;  // Cambridge: 1 = numbered sense heading, 2 = lettered under the previous one
+    if (cambridgeStyle_) {
+      const std::string low = labelOf(text);
+      if (isAllCapsWord(text)) {  // a guideword ("FLAVOUR"): a numbered section of its part of speech
+        text = capitalizeWords(lowerAscii(text));
+        numKind = 1;
+        inCollocations_ = false;
+      } else if (isTruePos(low) || isPosPhrase(low)) {
+        inCollocations_ = false;
+      } else if (isCambridgeBlockLabel(low)) {
+        inCollocations_ = true;
+      } else if (!isCambridgeLabel(low) && !inCollocations_) {
+        numKind = hadNumber ? 1 : 2;  // a phrase that opens a sense: numbered like a guideword, or lettered under it
+      }
     }
     if (!rows_.empty() && rows_.back().bold && rows_.back().indent == 0 && !rows_.back().cont &&
         lowerAscii(rows_.back().text) == lowerAscii(text)) {
       return;  // the same heading twice in a row
     }
     pendingNote_.clear();
-    wrapInto(text, std::string(), true, false, 0);
+    wrapInto(text, std::string(), true, false, 0, true, numKind);
     return;
   }
 
@@ -1736,6 +1800,7 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
     if (cambridgeStyle_ && isPosPhrase(low)) {  // "verb transitive": a part-of-speech note, bold and one step in
       pendingNote_.clear();
       guideNumber_ = 0;
+      inCollocations_ = false;
       wrapInto(upperFirst(text), std::string(), true, false, kSubIndent, true);
       return;
     }
@@ -1769,7 +1834,7 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
 // Greedy word wrap at an exact pixel width. The first line of an entry is narrower (it is indented); every row
 // of a paragraph except the last is justified. The bold mask is cut together with the text.
 void DictionaryDefinitionActivity::wrapInto(const std::string& text, const std::string& mask, const bool bold,
-                                            const bool italic, const int indentPx, const bool leader) {
+                                            const bool italic, const int indentPx, const bool leader, const int numKind) {
   const int fullWidth = std::max(80, labelWidthPx() - kWrapSafety);
   const int firstWidth = indentPx > 0 ? std::max(80, fullWidth - indentPx) : fullWidth;
 
@@ -1835,7 +1900,8 @@ void DictionaryDefinitionActivity::wrapInto(const std::string& text, const std::
   for (size_t k = 0; k < lines.size(); ++k) {
     const bool last = k + 1 == lines.size();
     rows_.push_back({lines[k], masks[k].find('1') != std::string::npos ? masks[k] : std::string(), bold, italic,
-                     !bold && (kJustifyLastLine || !last), k == 0 ? indentPx : 0, k > 0, leader});
+                     !bold && (kJustifyLastLine || !last), k == 0 ? indentPx : 0, k > 0, leader,
+                     static_cast<uint8_t>(k == 0 ? numKind : 0), k == 0 && bold && lines[k] == "Thesaurus+"});
   }
 }
 
@@ -1856,6 +1922,33 @@ void DictionaryDefinitionActivity::pruneEmptySections() {
         again = true;
         break;
       }
+    }
+  }
+}
+
+// Cambridge: sense headings are numbered once the empty sections are gone, so the numbers never skip. A heading the
+// dictionary numbered itself (and every guideword) takes the next number; a phrase it did not number is lettered
+// under the heading before it. A new part of speech starts again at 1).
+void DictionaryDefinitionActivity::numberSenseHeadings() {
+  int sibling = 0;
+  int child = 0;
+  for (auto& r : rows_) {
+    if (r.cont || !r.bold) continue;
+    if (r.numKind == 0) {
+      const std::string low = labelOf(r.text);
+      if (isTruePos(low) || isPosPhrase(low)) {
+        sibling = 0;
+        child = 0;
+      }
+      continue;
+    }
+    if (r.numKind == 2 && sibling > 0) {
+      ++child;
+      r.text = std::string(1, static_cast<char>('a' + (child - 1) % 26)) + ") " + r.text;
+    } else {
+      ++sibling;
+      child = 0;
+      r.text = std::to_string(sibling) + ") " + r.text;
     }
   }
 }
