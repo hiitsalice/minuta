@@ -24,7 +24,7 @@ class Txt {
   void setupCacheDir() const;
   bool clearCache() const;
 
-  // Cover image support - looks for cover.bmp/jpg/jpeg/png in same folder as txt file
+  // Cover image support - looks for cover.bmp/jpg/jpeg/png in same folder as Markdown file
   [[nodiscard]] std::string getCoverBmpPath() const;
   [[nodiscard]] bool generateCoverBmp() const;
   [[nodiscard]] std::string findCoverImage() const;

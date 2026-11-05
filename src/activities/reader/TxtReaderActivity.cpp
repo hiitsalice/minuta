@@ -341,6 +341,40 @@ void TxtReaderActivity::renderStatusBar() const {
   GUI.drawStatusBar(renderer, progress, currentPage + 1, totalPages, title);
 }
 
+void TxtReaderActivity::loop() {
+  if (!isAtEndOfBook()) {
+    ReaderActivity::loop();
+    return;
+  }
+
+  if (handleFormatInput()) return;
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Left) ||
+      mappedInput.wasReleased(MappedInputManager::Button::PageBack)) {
+    onReturnFromEndOfBook();
+    requestUpdate();
+    return;
+  }
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+    {
+      RenderLock lock;
+      if (txt) {
+        if (!txt->clearCache()) {
+          LOG_ERR("TRS", "Failed to clear finished Markdown cache");
+        }
+
+        txt->setupCacheDir();
+        currentPage = 0;
+        saveProgress();
+      }
+    }
+
+    onGoHome();
+    return;
+  }
+}
+
 bool TxtReaderActivity::pageTurn(bool isForward) {
   // Ignore paging until initializeReader has established the page index
   if (!initialized) {
@@ -517,7 +551,7 @@ void TxtReaderActivity::savePageIndexCache() const {
 
 ScreenshotInfo TxtReaderActivity::getScreenshotInfo() const {
   ScreenshotInfo info;
-  info.readerType = ScreenshotInfo::ReaderType::Txt;
+  info.readerType = ScreenshotInfo::ReaderType::Markdown;
   if (txt) {
     const std::string t = txt->getTitle();
     snprintf(info.title, sizeof(info.title), "%s", t.c_str());

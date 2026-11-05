@@ -39,12 +39,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     STATUS_BAR_PROGRESS_BAR_THICKNESS_COUNT
   };
   enum STATUS_BAR_TITLE { BOOK_TITLE = 0, CHAPTER_TITLE = 1, HIDE_TITLE = 2, STATUS_BAR_TITLE_COUNT };
-  enum XTC_STATUS_BAR_MODE {
-    XTC_STATUS_BAR_HIDE = 0,
-    XTC_STATUS_BAR_BOTTOM = 1,
-    XTC_STATUS_BAR_TOP = 2,
-    XTC_STATUS_BAR_MODE_COUNT
-  };
 
   enum ORIENTATION {
     PORTRAIT = 0,       // 480x800 logical coordinates (current default)
@@ -164,7 +158,6 @@ enum LONG_PRESS_MENU_FUNCTION {
   uint8_t statusBarProgressBarThickness = PROGRESS_BAR_THICK;
   uint8_t statusBarTitle = HIDE_TITLE;
   uint8_t statusBarBattery = 0;
-  uint8_t xtcStatusBarMode = XTC_STATUS_BAR_HIDE;
   // Text rendering settings
   uint8_t extraParagraphSpacing = 1;
   uint8_t textAntiAliasing = 0;
@@ -282,7 +275,6 @@ enum LONG_PRESS_MENU_FUNCTION {
     bool showBatteryPercent = false;
     uint8_t progressBarMode = HIDE_PROGRESS;  // STATUS_BAR_PROGRESS_BAR
     uint8_t progressBarHeightPx = 0;          // (thickness+1)*2; 0 when the bar is hidden
-    uint8_t xtcMode = XTC_STATUS_BAR_HIDE;    // XTC_STATUS_BAR_MODE
 
     bool showsProgressBar() const { return progressBarMode != HIDE_PROGRESS; }
     bool showsTitle() const { return titleMode != HIDE_TITLE; }

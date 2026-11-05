@@ -4,7 +4,6 @@
 #include <FsHelpers.h>
 #include <HalStorage.h>
 #include <Logging.h>
-#include <Xtc.h>
 
 #include <algorithm>
 #include <iterator>
@@ -127,13 +126,9 @@ RecentBook RecentBooksStore::getDataFromBook(std::string path) const {
     Epub epub(path, "/.crosspoint");
     epub.load(false, true);
     return RecentBook{path, epub.getTitle(), epub.getAuthor(), epub.getThumbBmpPath()};
-  } else if (FsHelpers::hasXtcExtension(lastBookFileName)) {
-    // Handle XTC file
-    Xtc xtc(path, "/.crosspoint");
-    if (xtc.load()) {
-      return RecentBook{path, xtc.getTitle(), xtc.getAuthor(), xtc.getThumbBmpPath()};
-    }
-  } else if (FsHelpers::hasTxtExtension(lastBookFileName) || FsHelpers::hasMarkdownExtension(lastBookFileName)) {
+  } else if (FsHelpers::hasMarkdownExtension(lastBookFileName)) {
+    // Keep the recent-book title free of its .md extension.
+    lastBookFileName.resize(lastBookFileName.length() - 3);
     return RecentBook{path, lastBookFileName, "", ""};
   }
   return RecentBook{path, "", "", ""};

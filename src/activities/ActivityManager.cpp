@@ -26,6 +26,7 @@
 #include "settings/SettingsActivity.h"
 #include "util/BmpViewerActivity.h"
 #include "util/FullScreenMessageActivity.h"
+#include "util/UnsupportedFileFormatActivity.h"
 
 static portMUX_TYPE activityManagerSpinlock = portMUX_INITIALIZER_UNLOCKED;
 
@@ -251,6 +252,31 @@ void ActivityManager::goToReader(std::string path, const bool allowFastInitialRe
       return;
     }
     replaceActivity(std::move(activity));
+    return;
+  }
+
+  // Reject unsupported book formats without replacing the current screen.
+  // Keep the existing activity underneath the information popup so dismissing
+  // it returns to the same folder, recent-books list, or Home screen.
+  const bool isSupportedBookFormat =
+      FsHelpers::hasEpubExtension(path) || FsHelpers::hasMarkdownExtension(path);
+
+  if (!isSupportedBookFormat) {
+    const bool isRemovedFormat =
+        FsHelpers::hasTxtExtension(path) || FsHelpers::hasXtcExtension(path);
+
+    if (!isRemovedFormat) {
+      LOG_ERR("ACT", "Unsupported file format: %s", path.c_str());
+      return;
+    }
+
+    auto message = std::make_unique<UnsupportedFileFormatActivity>(renderer, mappedInput);
+
+    if (currentActivity) {
+      pushActivity(std::move(message));
+    } else {
+      replaceActivity(std::move(message));
+    }
     return;
   }
 

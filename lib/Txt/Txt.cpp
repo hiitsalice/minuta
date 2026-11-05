@@ -40,9 +40,9 @@ std::string Txt::getTitle() const {
   size_t lastSlash = filepath.find_last_of('/');
   std::string filename = (lastSlash != std::string::npos) ? filepath.substr(lastSlash + 1) : filepath;
 
-  // Remove .txt extension
-  if (FsHelpers::hasTxtExtension(filename)) {
-    filename.resize(filename.length() - 4);
+  // Remove the Markdown extension.
+  if (FsHelpers::hasMarkdownExtension(filename)) {
+    filename.resize(filename.length() - 3);
   }
 
   return filename;
@@ -58,20 +58,20 @@ void Txt::setupCacheDir() const {
 }
 
 std::string Txt::findCoverImage() const {
-  // Get the folder containing the txt file
+  // Get the folder containing the Markdown file
   size_t lastSlash = filepath.find_last_of('/');
   std::string folder = (lastSlash != std::string::npos) ? filepath.substr(0, lastSlash) : "";
   if (folder.empty()) {
     folder = "/";
   }
 
-  // Get the base filename without extension (e.g., "mybook" from "/books/mybook.txt")
+  // Get the base filename without extension (e.g., "mybook" from "/books/mybook.md")
   std::string baseName = getTitle();
 
   // Image extensions to try
   const char* extensions[] = {".bmp", ".jpg", ".jpeg", ".png", ".BMP", ".JPG", ".JPEG", ".PNG"};
 
-  // First priority: look for image with same name as txt file (e.g., mybook.jpg)
+  // First priority: look for image with same name as Markdown file (e.g., mybook.jpg)
   for (const auto& ext : extensions) {
     std::string coverPath = folder + "/" + baseName + ext;
     if (Storage.exists(coverPath.c_str())) {

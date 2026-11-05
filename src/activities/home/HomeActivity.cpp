@@ -4,12 +4,12 @@
 #include <Bitmap.h>
 #include <Epub.h>
 #include <FsHelpers.h>
+#include <Txt.h>
 #include <GfxRenderer.h>
 #include <HalDisplay.h>
 #include <HalStorage.h>
 #include <I18n.h>
 #include <Utf8.h>
-#include <Xtc.h>
 
 #include <algorithm>
 #include <cstring>
@@ -60,50 +60,94 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
   Rect popupRect;
 
   int progress = 0;
+  const int totalBooks = static_cast<int>(recentBooks.size());
+
+  auto updateLoadingProgress = [&]() {
+    if (!showingLoading) {
+      showingLoading = true;
+      popupRect = GUI.drawPopup(renderer, tr(STR_LOADING_POPUP));
+    }
+
+    const int percentage = 10 + (progress * 90 / totalBooks);
+    GUI.fillPopupProgress(renderer, popupRect, percentage);
+  };
+
   for (RecentBook& book : recentBooks) {
-    if (!book.coverBmpPath.empty()) {
-      std::string coverPath = UITheme::getCoverThumbPath(book.coverBmpPath, coverHeight);
-      if (!Storage.exists(coverPath.c_str())) {
-        // If epub, try to load the metadata for title/author and cover
-        if (FsHelpers::hasEpubExtension(book.path)) {
+    if (FsHelpers::hasEpubExtension(book.path)) {
+      // EPUB thumbnails use their existing height-specific cache paths.
+      if (!book.coverBmpPath.empty()) {
+        const std::string coverPath = UITheme::getCoverThumbPath(book.coverBmpPath, coverHeight);
+
+        if (!Storage.exists(coverPath.c_str())) {
           Epub epub(book.path, "/.crosspoint");
-          // Skip loading css since we only need metadata here
+
+          // Skip loading CSS since we only need metadata and the cover here.
           epub.load(false, true);
 
-          // Try to generate thumbnail image for Continue Reading card
-          if (!showingLoading) {
-            showingLoading = true;
-            popupRect = GUI.drawPopup(renderer, tr(STR_LOADING_POPUP));
-          }
-          GUI.fillPopupProgress(renderer, popupRect, 10 + progress * (90 / recentBooks.size()));
-          bool success = epub.generateThumbBmp(coverHeight);
+          updateLoadingProgress();
+
+          const bool success = epub.generateThumbBmp(coverHeight);
           if (!success) {
             RECENT_BOOKS.updateBook(book.path, book.title, book.author, "");
             book.coverBmpPath = "";
           }
+
           coverRendered = false;
           requestUpdate();
-        } else if (FsHelpers::hasXtcExtension(book.path)) {
-          // Handle XTC file
-          Xtc xtc(book.path, "/.crosspoint");
-          if (xtc.load()) {
-            // Try to generate thumbnail image for Continue Reading card
-            if (!showingLoading) {
-              showingLoading = true;
-              popupRect = GUI.drawPopup(renderer, tr(STR_LOADING_POPUP));
-            }
-            GUI.fillPopupProgress(renderer, popupRect, 10 + progress * (90 / recentBooks.size()));
-            bool success = xtc.generateThumbBmp(coverHeight);
-            if (!success) {
-              RECENT_BOOKS.updateBook(book.path, book.title, book.author, "");
-              book.coverBmpPath = "";
-            }
-            coverRendered = false;
-            requestUpdate();
+        }
+      }
+    } else if (FsHelpers::hasMarkdownExtension(book.path)) {
+      // Markdown covers use the existing txt_ cache and a single cover.bmp.
+      // The path can be derived even when an older recent-book entry has
+      // an empty coverBmpPath.
+      Txt markdown(book.path, "/.crosspoint");
+      const std::string generatedCoverPath = markdown.getCoverBmpPath();
+
+      if (Storage.exists(generatedCoverPath.c_str())) {
+        // Recover the stored path for existing Markdown cover caches.
+        if (book.coverBmpPath != generatedCoverPath) {
+          book.coverBmpPath = generatedCoverPath;
+          RECENT_BOOKS.updateBook(book.path, book.title, book.author, generatedCoverPath);
+
+          coverRendered = false;
+          requestUpdate();
+        }
+      } else {
+        const std::string sourceCoverPath = markdown.findCoverImage();
+
+        // Txt::generateCoverBmp() currently supports BMP and JPG/JPEG,
+        // but not PNG. Do not attempt a conversion it cannot perform.
+        const bool supportedCover =
+            FsHelpers::hasBmpExtension(sourceCoverPath) ||
+            FsHelpers::hasJpgExtension(sourceCoverPath);
+
+        if (supportedCover) {
+          updateLoadingProgress();
+
+          const bool success = markdown.generateCoverBmp();
+
+          if (success) {
+            book.coverBmpPath = generatedCoverPath;
+            RECENT_BOOKS.updateBook(book.path, book.title, book.author, generatedCoverPath);
+          } else {
+            book.coverBmpPath = "";
+            RECENT_BOOKS.updateBook(book.path, book.title, book.author, "");
           }
+
+          coverRendered = false;
+          requestUpdate();
+        } else if (!book.coverBmpPath.empty()) {
+          // Remove a stale path when its generated cache or source cover
+          // is no longer available.
+          book.coverBmpPath = "";
+          RECENT_BOOKS.updateBook(book.path, book.title, book.author, "");
+
+          coverRendered = false;
+          requestUpdate();
         }
       }
     }
+
     progress++;
   }
 

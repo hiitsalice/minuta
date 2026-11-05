@@ -21,7 +21,6 @@ enum MenuItem {
   ITEM_PROGRESS_BAR_THICKNESS,
   ITEM_TITLE,
   ITEM_BATTERY,
-  ITEM_XTC_STATUS_BAR,
   ITEM_COUNT
 };
 
@@ -35,7 +34,6 @@ const StrId menuNames[ITEM_COUNT] = {
     StrId::STR_PROGRESS_BAR_THICKNESS,
     StrId::STR_TITLE,
     StrId::STR_BATTERY,
-    StrId::STR_XTC_STATUS_BAR,
 };
 constexpr int PROGRESS_BAR_ITEMS = 3;
 const StrId progressBarNames[PROGRESS_BAR_ITEMS] = {StrId::STR_BOOK, StrId::STR_CHAPTER, StrId::STR_HIDE};
@@ -46,9 +44,6 @@ const StrId progressBarThicknessNames[PROGRESS_BAR_THICKNESS_ITEMS] = {
 
 constexpr int TITLE_ITEMS = 3;
 const StrId titleNames[TITLE_ITEMS] = {StrId::STR_BOOK, StrId::STR_CHAPTER, StrId::STR_HIDE};
-
-constexpr int XTC_STATUS_BAR_ITEMS = 3;
-const StrId xtcStatusBarNames[XTC_STATUS_BAR_ITEMS] = {StrId::STR_HIDE, StrId::STR_BOTTOM, StrId::STR_TOP};
 
 const int verticalPreviewTextPadding = 40;
 }  // namespace
@@ -70,10 +65,6 @@ void StatusBarSettingsActivity::onEnter() {
 
   if (SETTINGS.statusBarTitle >= TITLE_ITEMS) {
     SETTINGS.statusBarTitle = CrossPointSettings::STATUS_BAR_TITLE::HIDE_TITLE;
-  }
-
-  if (SETTINGS.xtcStatusBarMode >= XTC_STATUS_BAR_ITEMS) {
-    SETTINGS.xtcStatusBarMode = CrossPointSettings::XTC_STATUS_BAR_MODE::XTC_STATUS_BAR_HIDE;
   }
 
   // Labels never change (unlike the values, which track live SETTINGS
@@ -118,9 +109,6 @@ void StatusBarSettingsActivity::handleSelection() {
     case ITEM_BATTERY:
       SETTINGS.statusBarBattery = (SETTINGS.statusBarBattery + 1) % 2;
       break;
-    case ITEM_XTC_STATUS_BAR:
-      SETTINGS.xtcStatusBarMode = (SETTINGS.xtcStatusBarMode + 1) % XTC_STATUS_BAR_ITEMS;
-      break;
     default:
       return;
   }
@@ -141,8 +129,6 @@ std::string StatusBarSettingsActivity::rowValueText(const int index) {
       return I18N.get(titleNames[SETTINGS.statusBarTitle]);
     case ITEM_BATTERY:
       return SETTINGS.statusBarBattery ? tr(STR_SHOW) : tr(STR_HIDE);
-    case ITEM_XTC_STATUS_BAR:
-      return I18N.get(xtcStatusBarNames[SETTINGS.xtcStatusBarMode]);
     default:
       return tr(STR_HIDE);
   }

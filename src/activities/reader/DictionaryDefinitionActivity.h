@@ -30,6 +30,7 @@ class DictionaryDefinitionActivity final : public UiListActivity {
     bool justify;
     int indent;            // indent of the text in px (0 = none); a thin leader line is drawn in front when > 0
     bool cont;             // second or later line of a wrapped paragraph
+    bool leader;           // a thin leader line is drawn in front of an indented row
   };
 
   int listCount() const override { return static_cast<int>(rows_.size()); }
@@ -44,7 +45,7 @@ class DictionaryDefinitionActivity final : public UiListActivity {
   void rowsFromPlainText(const std::string& text);
   void rowsFromXdxf(const std::string& source);
   void addParagraph(const std::string& text, bool heading, bool italic);
-  void wrapInto(const std::string& text, const std::string& mask, bool bold, bool italic, int indentPx);
+  void wrapInto(const std::string& text, const std::string& mask, bool bold, bool italic, int indentPx, bool leader = true);
   int measure(const std::string& text, bool bold, bool italic) const;
   int labelWidthPx() const;
   int pageRowsEstimate() const;
@@ -61,6 +62,7 @@ class DictionaryDefinitionActivity final : public UiListActivity {
   bool oxfordStyle_ = false;  // Oxford markup: examples come from <ex>, every "[...]" note is bold
   bool cambridgeStyle_ = false;  // Cambridge markup: guidewords and sub-labels are headings
   bool wordWebStyle_ = false;   // WordWeb markup: part-of-speech lines are restructured
+  int guideNumber_ = 0;         // Cambridge: number of the last guideword under the current part of speech
   std::string pendingNote_;   // a lone "[with obj]" waiting to open the next definition
   std::vector<Row> rows_;
   std::vector<freeink::ui::ListItem> items_;

@@ -55,6 +55,7 @@ class TxtReaderActivity final : public ReaderActivity {
   bool skipPages(int amount) override;
   bool isAtEndOfBook() const override;
   void onReturnFromEndOfBook() override;
+  void loop() override;
 
   ScreenshotInfo getScreenshotInfo() const override;
 };

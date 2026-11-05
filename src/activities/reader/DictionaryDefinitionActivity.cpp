@@ -1076,6 +1076,66 @@ int headingLevel(const std::string& text) {
   return isPosPhrase(words) ? 1 : 2;
 }
 
+// ---- Cambridge's first line: "taste UK US [teɪst] noun [tastes]" ----
+std::string collapseSpaces(const std::string& s) {
+  std::string o;
+  bool space = false;
+  for (const char ch : s) {
+    if (isBlankByte(ch)) {
+      space = !o.empty();
+      continue;
+    }
+    if (space) o += ' ';
+    space = false;
+    o += ch;
+  }
+  return o;
+}
+
+bool looksLikeCambridgeHeader(const std::string& text) {
+  if (text.size() > 220) return false;
+  const std::string t = collapseSpaces(text);
+  static constexpr const char* MARKS[] = {"UK [", "US [", "UK /", "US /", "UK[", "US["};
+  return std::any_of(std::begin(MARKS), std::end(MARKS), [&t](const char* m) { return t.find(m) != std::string::npos; });
+}
+
+// The part of speech named in that line ("Noun", "Adjective", "Modal verb"), outside the brackets; empty if none.
+// "adjective before noun" and "phrasal verb" are notes, not the part of speech.
+std::string leadingPartOfSpeech(const std::string& text, const std::string& headword) {
+  static constexpr const char* POS[] = {"noun",        "verb",       "adjective", "adverb",   "pronoun",
+                                        "preposition", "conjunction", "determiner", "exclamation", "interjection",
+                                        "number",      "prefix",     "suffix",    "abbreviation", "symbol"};
+  std::string t = collapseSpaces(text);
+  const std::string hw = lowerAscii(collapseSpaces(headword));
+  if (!hw.empty() && lowerAscii(t).compare(0, hw.size(), hw) == 0) t = t.substr(hw.size());
+  std::string prev;
+  int depth = 0;
+  size_t i = 0;
+  while (i < t.size()) {
+    const char ch = t[i];
+    if (ch == '[' || ch == '(') ++depth;
+    if (ch == ']' || ch == ')') depth = std::max(0, depth - 1);
+    if (depth == 0 && std::isalpha(static_cast<unsigned char>(ch))) {
+      size_t j = i;
+      while (j < t.size() && std::isalpha(static_cast<unsigned char>(t[j]))) ++j;
+      const std::string w = lowerAscii(t.substr(i, j - i));
+      i = j;
+      bool isPos = false;
+      for (const char* p : POS) {
+        if (w == p) isPos = true;
+      }
+      if (isPos && prev != "before" && prev != "after" && prev != "phrasal") {
+        if (w == "verb" && (prev == "modal" || prev == "auxiliary")) return upperFirst(prev) + " verb";
+        return upperFirst(w);
+      }
+      prev = w;
+      continue;
+    }
+    ++i;
+  }
+  return std::string();
+}
+
 // Marks every "[...]" in the text as bold. Empty when there is none.
 std::string bracketMask(const std::string& text) {
   std::string mask(text.size(), '0');
@@ -1136,6 +1196,7 @@ void DictionaryDefinitionActivity::buildRows() {
   rows_.clear();
   items_.clear();
   pendingNote_.clear();
+  guideNumber_ = 0;
 
   // Cambridge also uses <dtrn>; its colour markup and UK/US tags tell the two apart.
   const bool cambridge = !htmlDefinition && (definition.find("c=\"darkcyan\"") != std::string::npos ||
@@ -1180,7 +1241,7 @@ void DictionaryDefinitionActivity::buildRows() {
   // last screen simply ends early, with no row repeated.
   if (!rows_.empty()) {
     const int cap = pageRowsEstimate();
-    while (static_cast<int>(rows_.size()) % cap != 0) rows_.push_back({std::string(), std::string(), false, false, false, 0, false});
+    while (static_cast<int>(rows_.size()) % cap != 0) rows_.push_back({std::string(), std::string(), false, false, false, 0, false, false});
   }
 
 
@@ -1195,7 +1256,7 @@ void DictionaryDefinitionActivity::buildRows() {
     item.actionValue = static_cast<int16_t>(i);
     if (rows_[i].indent > 0) {
       item.labelXOffset = rows_[i].indent;
-      item.leaderLine = true;
+      item.leaderLine = rows_[i].leader;
     }
     items_.push_back(item);
   }
@@ -1585,6 +1646,12 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
       return;
     }
   }
+  // Cambridge's first line holds the pronunciation and the part of speech: keep the part of speech as a heading.
+  if (cambridgeStyle_ && looksLikeCambridgeHeader(text)) {
+    const std::string pos = leadingPartOfSpeech(text, headword);
+    if (!pos.empty()) addParagraph(pos, true, false);
+    return;
+  }
   if (isPronunciationLine(text)) return;
   text = stripUnsupportedGlyphs(text);  // scripts the UI font cannot draw would only fill the log with errors
   if (text.empty() || !hasLetterOrDigit(text)) return;
@@ -1648,7 +1715,16 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
   if (heading) {
     while (!text.empty() && text.back() == ':') text.pop_back();
     if (text.empty()) return;
-    if (cambridgeStyle_ && isAllCapsWord(text)) text = capitalizeWords(lowerAscii(text));
+    if (cambridgeStyle_ && isAllCapsWord(text)) {
+      // a guideword ("FLAVOUR"): numbered within its part of speech
+      text = std::to_string(++guideNumber_) + ") " + capitalizeWords(lowerAscii(text));
+    } else if (isPosPhrase(labelOf(text))) {
+      guideNumber_ = 0;  // a new part of speech starts the numbering again
+    }
+    if (!rows_.empty() && rows_.back().bold && rows_.back().indent == 0 && !rows_.back().cont &&
+        lowerAscii(rows_.back().text) == lowerAscii(text)) {
+      return;  // the same heading twice in a row
+    }
     pendingNote_.clear();
     wrapInto(text, std::string(), true, false, 0);
     return;
@@ -1657,9 +1733,15 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
   // Cambridge sub-labels ("Verbs", "Adjectives", "verb transitive"): bold, but indented like any other entry.
   {
     const std::string low = lowerAscii(text);
-    if (cambridgeStyle_ && (isSubLabel(low) || isPosPhrase(low))) {
+    if (cambridgeStyle_ && isPosPhrase(low)) {  // "verb transitive": a part-of-speech note, bold and one step in
       pendingNote_.clear();
-      wrapInto(upperFirst(text), std::string(), true, false, kSubIndent);
+      guideNumber_ = 0;
+      wrapInto(upperFirst(text), std::string(), true, false, kSubIndent, true);
+      return;
+    }
+    if (cambridgeStyle_ && isSubLabel(low)) {  // collocation groups: "+ Verbs", "+ Nouns", with no leader line
+      pendingNote_.clear();
+      wrapInto("+ " + upperFirst(text), std::string(), true, false, kSubIndent, false);
       return;
     }
   }
@@ -1687,7 +1769,7 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
 // Greedy word wrap at an exact pixel width. The first line of an entry is narrower (it is indented); every row
 // of a paragraph except the last is justified. The bold mask is cut together with the text.
 void DictionaryDefinitionActivity::wrapInto(const std::string& text, const std::string& mask, const bool bold,
-                                            const bool italic, const int indentPx) {
+                                            const bool italic, const int indentPx, const bool leader) {
   const int fullWidth = std::max(80, labelWidthPx() - kWrapSafety);
   const int firstWidth = indentPx > 0 ? std::max(80, fullWidth - indentPx) : fullWidth;
 
@@ -1753,7 +1835,7 @@ void DictionaryDefinitionActivity::wrapInto(const std::string& text, const std::
   for (size_t k = 0; k < lines.size(); ++k) {
     const bool last = k + 1 == lines.size();
     rows_.push_back({lines[k], masks[k].find('1') != std::string::npos ? masks[k] : std::string(), bold, italic,
-                     !bold && (kJustifyLastLine || !last), k == 0 ? indentPx : 0, k > 0});
+                     !bold && (kJustifyLastLine || !last), k == 0 ? indentPx : 0, k > 0, leader});
   }
 }
 

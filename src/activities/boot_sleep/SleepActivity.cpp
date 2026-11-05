@@ -12,7 +12,6 @@
 #include <Memory.h>
 #include <PNGdec.h>
 #include <Txt.h>
-#include <Xtc.h>
 
 #include <algorithm>
 #include <cmath>
@@ -833,39 +832,24 @@ void SleepActivity::renderCoverSleepScreen() const {
   std::string coverBmpPath;
   bool cropped = SETTINGS.sleepScreenCoverMode == CrossPointSettings::SLEEP_SCREEN_COVER_MODE::CROP;
 
-  // Check if the current book is XTC, TXT, or EPUB
-  if (FsHelpers::hasXtcExtension(APP_STATE.openEpubPath)) {
-    // Handle XTC file
-    Xtc lastXtc(APP_STATE.openEpubPath, "/.crosspoint");
-    if (!lastXtc.load()) {
-      LOG_ERR("SLP", "Failed to load last XTC");
+  // Check if the current book is Markdown or EPUB.
+  if (FsHelpers::hasMarkdownExtension(APP_STATE.openEpubPath)) {
+    // Markdown cover images are discovered in the same folder as the document.
+    Txt lastMarkdown(APP_STATE.openEpubPath, "/.crosspoint");
+    if (!lastMarkdown.load()) {
+      LOG_ERR("SLP", "Failed to load last Markdown document");
       return (this->*renderNoCoverSleepScreen)();
     }
 
-    if (!lastXtc.generateCoverBmp()) {
-      LOG_ERR("SLP", "Failed to generate XTC cover bmp");
+    if (!lastMarkdown.generateCoverBmp()) {
+      LOG_ERR("SLP", "No cover image found for Markdown document");
       return (this->*renderNoCoverSleepScreen)();
     }
 
-    coverBmpPath = lastXtc.getCoverBmpPath();
-  } else if (FsHelpers::hasTxtExtension(APP_STATE.openEpubPath)) {
-    // Handle TXT file - looks for cover image in the same folder
-    Txt lastTxt(APP_STATE.openEpubPath, "/.crosspoint");
-    if (!lastTxt.load()) {
-      LOG_ERR("SLP", "Failed to load last TXT");
-      return (this->*renderNoCoverSleepScreen)();
-    }
-
-    if (!lastTxt.generateCoverBmp()) {
-      LOG_ERR("SLP", "No cover image found for TXT file");
-      return (this->*renderNoCoverSleepScreen)();
-    }
-
-    coverBmpPath = lastTxt.getCoverBmpPath();
+    coverBmpPath = lastMarkdown.getCoverBmpPath();
   } else if (FsHelpers::hasEpubExtension(APP_STATE.openEpubPath)) {
-    // Handle EPUB file
+    // Load EPUB metadata and cover data without loading CSS.
     Epub lastEpub(APP_STATE.openEpubPath, "/.crosspoint");
-    // Skip loading css since we only need metadata here
     if (!lastEpub.load(true, true)) {
       LOG_ERR("SLP", "Failed to load last epub");
       return (this->*renderNoCoverSleepScreen)();
