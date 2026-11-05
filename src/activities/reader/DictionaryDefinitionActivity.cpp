@@ -802,6 +802,13 @@ bool isUsageTag(const std::string& raw, const bool first) {
 //     belongs to the part of speech that lists it in brackets, else to the one whose word it inflects;
 //  4. sections with nothing in them are dropped.
 void restructureWordWeb(std::vector<Para>& paras) {
+  const auto isPosLine = [](const std::string& t) {
+    std::string pos;
+    std::string base;
+    std::string extra;
+    std::vector<std::string> forms;
+    return splitPosLine(t, &pos, &base, &forms, &extra);
+  };
   // 1. plain-text labels become headings
   std::vector<Para> norm;
   for (const auto& p : paras) {
@@ -829,17 +836,21 @@ void restructureWordWeb(std::vector<Para>& paras) {
     }
     std::vector<std::string> tags;
     size_t j = i + 1;
-    while (j < norm.size() && !norm[j].heading && !norm[j].italic && tags.size() < 3 &&
-           isUsageTag(norm[j].text, tags.empty())) {
+    // The value of the label is the first row after it, whatever its shape ("UK", "Brit, Cdn (=neighborhood)");
+    // a few more short tag rows may follow. Everything after that belongs to the part of speech, not to "Usage".
+    if (j < norm.size() && !norm[j].heading && !norm[j].italic && !isPosLine(norm[j].text) &&
+        paragraphHasContent(norm[j].text) && trimmed(norm[j].text).size() <= 60) {
       tags.push_back(trimmed(norm[j].text));
       ++j;
+      while (j < norm.size() && !norm[j].heading && !norm[j].italic && tags.size() < 3 &&
+             isUsageTag(norm[j].text, false)) {
+        tags.push_back(trimmed(norm[j].text));
+        ++j;
+      }
     }
-    if (tags.empty()) {
-      folded.push_back(norm[i]);
-      continue;
-    }
+    if (tags.empty()) continue;  // "Usage" with no value: the label goes, the rows below stay where they are
     const std::string tag = "[" + joinList(tags, ", ") + "]";
-    if (j < norm.size() && !norm[j].heading && !norm[j].italic) {
+    if (j < norm.size() && !norm[j].heading && !norm[j].italic && !isPosLine(norm[j].text)) {
       folded.push_back({tag + " " + norm[j].text, false, false});
       i = j;
     } else {
@@ -847,6 +858,7 @@ void restructureWordWeb(std::vector<Para>& paras) {
       for (size_t k = folded.size(); k-- > 0;) {
         if (folded[k].heading) break;
         if (folded[k].italic) continue;
+        if (isPosLine(folded[k].text)) break;
         folded[k].text = tag + " " + folded[k].text;
         attached = true;
         break;
