@@ -83,8 +83,8 @@ void IRAM_ATTR __wrap_panic_print_backtrace(const void* frame, int core) {
 namespace HalSystem {
 
 void begin() {
-  // On a panic reboot, preserve diagnostics until checkPanic() has tried to write them to the SD card.
-  // Ordinary boots clear any stale retained diagnostics.
+  // Preserve diagnostics for CrashActivity after a panic reboot.
+  // Ordinary boots clear stale retained diagnostics.
   if (!isRebootFromPanic()) {
     clearPanic();
   } else {
@@ -99,23 +99,17 @@ void begin() {
 }
 
 void checkPanic() {
+  // Remove reports created by older firmware versions. Crash diagnostics are
+  // now shown directly by CrashActivity instead of being written to the SD.
+  if (Storage.exists("/crash_report.txt") &&
+      !Storage.remove("/crash_report.txt")) {
+    LOG_ERR("SYS", "Failed to remove obsolete crash_report.txt");
+  }
+
+  // Consume the watchdog capture marker without clearing the retained panic
+  // message, stack or logs. CrashActivity still needs those diagnostics.
   if (isRebootFromPanic()) {
-    auto panicInfo = getPanicInfo(true);
-    auto file = Storage.open("/crash_report.txt", O_WRITE | O_CREAT | O_TRUNC);
-    if (file) {
-      const size_t written = file.write(panicInfo.c_str(), panicInfo.size());
-      file.close();
-      if (written == panicInfo.size()) {
-        // Keep the crash data for CrashActivity, but mark it consumed so a
-        // later watchdog reset cannot be mistaken for this panic.
-        panicCaptureMarker = 0;
-        LOG_INF("SYS", "Dumped panic info to SD card");
-      } else {
-        LOG_ERR("SYS", "Failed to write complete crash report (%zu of %zu bytes)", written, panicInfo.size());
-      }
-    } else {
-      LOG_ERR("SYS", "Failed to open crash_report.txt for writing");
-    }
+    panicCaptureMarker = 0;
   }
 }
 
@@ -134,7 +128,7 @@ std::string getPanicInfo(bool full) {
   } else {
     std::string info;
 
-    info += "CrossPoint version: " CROSSPOINT_VERSION;
+    info += "Firmware version: " CROSSPOINT_VERSION;
     info += "\n\nPanic reason: " + std::string(panicMessage);
     info += "\n\nLast logs:\n" + getLastLogs();
     info += "\n\nStack memory:\n";

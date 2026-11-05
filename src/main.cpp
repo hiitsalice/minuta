@@ -331,8 +331,8 @@ void setup() {
 #endif
 
   HalSystem::begin();
-  // checkPanic() clears the watchdog capture marker after a successful SD
-  // dump, so retain the boot classification for the later activity route.
+  // Preserve the panic boot classification before checkPanic() consumes
+  // the watchdog capture marker.
   const bool rebootedFromPanic = HalSystem::isRebootFromPanic();
 
   // Read-and-clear so a panic later in setup() doesn't loop into silent reboot.
@@ -460,9 +460,13 @@ void setup() {
   // Keep the normal boot splash visible for 1.5 seconds after its
   // first render has physically completed. Special recovery/error routes
   // take priority and the silent reboot path intentionally skips the splash.
+#ifdef SIMULATOR
+  const bool showTimedBootSplash = false;
+#else
   const bool showTimedBootSplash =
       !recoveryFirmwareMode && !rebootedFromPanic &&
       powerManager.getBatteryPercentage() != 0 && resume != BootResume::Silent;
+#endif
   if (showTimedBootSplash) {
     activityManager.requestUpdateAndWait();
     delay(700);
