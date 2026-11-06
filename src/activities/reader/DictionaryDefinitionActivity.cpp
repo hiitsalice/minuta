@@ -238,7 +238,7 @@ bool isSectionLabel(const std::string& lowHead) {
       "hypernym", "hyponym", "member of", "members", "has members", "substance of", "substances",
       "has substances", "has types", "category", "categories", "usage", "domain", "verb group", "entails",
       "cause", "causes", "pertains to", "related", "related words", "phrases", "phrase", "attributes",
-      "wikipedia", "example", "examples", "collocations", "word family", "idioms", "phrasal verbs", "compare",
+      "wikipedia", "example", "examples", "collocations", "word family", "idioms", "idiom", "phrasal verbs", "phrasal verb", "proverb", "proverbs", "compare",
       "opposite", "origin", "etymology", "derivatives", "also"};
   return std::any_of(std::begin(LABELS), std::end(LABELS), [&lowHead](const char* l) { return lowHead == l; });
 }
@@ -1141,7 +1141,8 @@ std::string leadingPartOfSpeech(const std::string& text, const std::string& head
 // ---- Cambridge sections ----
 // Blocks of word patterns: bold phrases inside them are entries, not senses.
 bool isCambridgeBlockLabel(const std::string& low) {
-  return low == "collocations" || low == "idioms" || low == "phrasal verbs" || low == "common errors" ||
+  return low == "collocations" || low == "idioms" || low == "idiom" || low == "phrasal verbs" || low == "phrasal verb" ||
+         low == "proverb" || low == "proverbs" || low == "common errors" ||
          low == "phrases" || low == "phrase" || low == "word family" || low == "language note";
 }
 
@@ -1149,6 +1150,27 @@ bool isCambridgeBlockLabel(const std::string& low) {
 bool isCambridgeLabel(const std::string& low) {
   return isCambridgeBlockLabel(low) || low == "thesaurus+" || low == "thesaurus" || low == "see also" ||
          isSectionLabel(low) || isSubLabel(low) || isKnownHeading(low);
+}
+
+// Cambridge part-of-speech lines: "verb transitive" -> "Transitive verb", "verb intransitive" -> "Intransitive verb";
+// anything else ("modal verb", "exclamation") is just capitalised.
+std::string normalizePosName(const std::string& raw) {
+  const std::string low = lowerAscii(collapseSpaces(raw));
+  if (low.compare(0, 5, "verb ") == 0) {
+    const std::string rest = low.substr(5);
+    bool onlyTransitivity = !rest.empty();
+    size_t i = 0;
+    while (i < rest.size() && onlyTransitivity) {
+      while (i < rest.size() && (rest[i] == ' ' || rest[i] == ',' || rest[i] == '/')) ++i;
+      const size_t start = i;
+      while (i < rest.size() && rest[i] != ' ' && rest[i] != ',' && rest[i] != '/') ++i;
+      if (i == start) break;
+      const std::string w = rest.substr(start, i - start);
+      if (w != "transitive" && w != "intransitive" && w != "and" && w != "or") onlyTransitivity = false;
+    }
+    if (onlyTransitivity) return upperFirst(rest) + " verb";
+  }
+  return upperFirst(low);
 }
 
 // Marks every "[...]" in the text as bold. Empty when there is none.
@@ -1757,6 +1779,12 @@ void DictionaryDefinitionActivity::addParagraph(const std::string& raw, bool hea
       if (!rest.empty()) addParagraph(rest, false, false);
       return;
     }
+  }
+  // Cambridge: a line that is only a part of speech ("verb transitive", "modal verb", "exclamation") is a section
+  // heading at the margin, like "Adverb". Only the "+ Verbs" groups under Collocations are indented.
+  if (cambridgeStyle_ && !heading && isPosPhrase(lowerAscii(collapseSpaces(text)))) {
+    text = normalizePosName(text);
+    heading = true;
   }
   if (!heading && isTruePos(text)) {  // a line that is only a part of speech
     text = capitalizeWords(lowerAscii(text));
