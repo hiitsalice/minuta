@@ -249,10 +249,10 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
     }
     lastRenderedPercent = pct;
 
-    // Keep the progress bar at its existing position.
-    const int barY = top + lineHeight + textGap;
+    // Fixed progress layout: bar top Y=401, centre Y=407.
+    const int barY = 401;
 
-    // Percentage: 10 pt, 12 px above the bar.
+    // Percentage: centred at Y=380, 6 px above the bar.
     const int percentHeight = renderer.getLineHeight(UI_10_FONT_ID);
     const int percentY = barY - percentHeight - 6;
 
@@ -262,7 +262,7 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
              12},
         static_cast<int>(pct), 100, UI_10_FONT_ID, percentY);
 
-    // Secondary status: centred below the progress bar in 10 pt italic.
+    // Secondary status: centred at Y=425 below the progress bar in 10 pt italic.
     const int statusY = barY + 12 + 12;
     const std::string secondaryText =
         withoutEllipsis(tr(STR_FIRMWARE_UPDATE_DO_NOT_POWER_OFF));
