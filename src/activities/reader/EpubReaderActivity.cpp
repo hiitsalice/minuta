@@ -302,6 +302,10 @@ void EpubReaderActivity::openDictionaryWordSelect() {
   auto page = section->loadPage(section->currentPage);
   if (!page) return;
 
+  // The reader menu stays upright, so restore reader orientation before
+  // calculating margins for the word-selection screen.
+  ReaderUtils::applyOrientation(renderer, SETTINGS.orientation);
+
   int orientedMarginTop, orientedMarginRight, orientedMarginBottom, orientedMarginLeft;
   renderer.getOrientedViewableTRBL(&orientedMarginTop, &orientedMarginRight, &orientedMarginBottom,
                                    &orientedMarginLeft);
@@ -321,6 +325,10 @@ void EpubReaderActivity::openHighlightWordSelect() {
   }
   auto page = section->loadPage(section->currentPage);
   if (!page) return;
+
+  // The reader menu stays upright, so restore reader orientation before
+  // calculating margins for the word-selection screen.
+  ReaderUtils::applyOrientation(renderer, SETTINGS.orientation);
 
   int orientedMarginTop, orientedMarginRight, orientedMarginBottom, orientedMarginLeft;
   renderer.getOrientedViewableTRBL(&orientedMarginTop, &orientedMarginRight, &orientedMarginBottom,
