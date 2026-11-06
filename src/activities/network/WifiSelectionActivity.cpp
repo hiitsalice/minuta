@@ -639,6 +639,18 @@ void WifiSelectionActivity::loop() {
 
   // Handle network list state
   if (state == WifiSelectionState::NETWORK_LIST) {
+    if (realNetworkCount == 0) {
+      if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+        onComplete(false);
+        return;
+      }
+      if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+        startWifiScan();
+        return;
+      }
+      return;
+    }
+
     if (manualNetworkListRequested) {
       if (!mappedInput.isPressed(MappedInputManager::Button::Confirm)) {
         manualNetworkListRequested = false;
@@ -646,15 +658,15 @@ void WifiSelectionActivity::loop() {
       return;
     }
 
-    // Check for Back button to exit (cancel). Disabled on the empty
-    // "No networks found" screen per audit: only Retry (button 4) is live.
+    // Check for Back button to exit (cancel).
+    // The empty state handles Back separately above.
     if (!networks.empty() && mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       onComplete(false);
       return;
     }
 
-    // Check for Confirm button to select network. Disabled on the empty
-    // "No networks found" screen per audit: only Retry (button 4) is live.
+    // Check for Confirm button to select a network.
+    // The empty state uses Confirm to retry the scan above.
     if (!networks.empty() && mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
       selectNetwork(selectedNetworkIndex);
       return;
@@ -808,10 +820,9 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
       static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height)),
       static_cast<int16_t>(safe.x)});
 
-  if (networks.empty()) {
-    // renderNetworkList() now draws the full "No networks found" screen
-    // (header, hint, Retry button) for non-touch boards, so skip the
-    // framework's own text here to avoid duplicate rendering.
+  if (realNetworkCount == 0) {
+    // The hidden-network placeholder is not a discovered network. Keep the
+    // empty-state screen clear instead of rendering that placeholder row.
     return;
   }
 
@@ -841,14 +852,13 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
 
 void WifiSelectionActivity::renderNetworkList(const Rect* screen, const ThemeMetrics* metrics) {
   renderUi();
-  if (networks.empty()) {
-    // "No networks found" screen: bold header at Y=386, retry hint at Y=414.
-    // Buttons 1-3 are inert here, so only the Retry (button 4) label is shown
-    // and the encrypted/saved legend is omitted.
+  if (realNetworkCount == 0) {
+    // No discovered networks: Back is button 1 and Retry is button 2.
+    // The hidden-network placeholder is intentionally not shown here.
     UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 386, tr(STR_NO_NETWORKS), true, EpdFontFamily::BOLD);
-    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 414, tr(STR_PRESS_OK_SCAN));
+    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 414, "Press RETRY to scan again");
 
-    const auto labels = mappedInput.mapLabels("", "", "", tr(STR_RETRY));
+    const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_RETRY), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     return;
   }

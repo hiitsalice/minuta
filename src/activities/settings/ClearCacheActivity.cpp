@@ -53,7 +53,7 @@ void ClearCacheActivity::render(RenderLock&&) {
     }
     renderer.drawCenteredText(UI_10_FONT_ID, 414, resultText.c_str());
 
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+    const auto labels = mappedInput.mapLabels("", tr(STR_DONE), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
     return;
@@ -107,9 +107,14 @@ void ClearCacheActivity::loop() {
     return;
   }
 
-  if (state == SUCCESS || state == FAILED) {
-    int x = 0;
-    int y = 0;
+  if (state == SUCCESS) {
+    if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+      goBack();
+    }
+    return;
+  }
+
+  if (state == FAILED) {
     if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       goBack();
     }

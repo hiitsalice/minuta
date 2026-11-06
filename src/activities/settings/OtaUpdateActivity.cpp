@@ -154,9 +154,8 @@ void OtaUpdateActivity::render(RenderLock&&) {
     // Fixed progress layout: bar top Y=394, centre Y=400.
     const int barY = 394;
 
-    // Percentage text top Y=382, 12 px above the bar.
-    const int percentHeight = renderer.getLineHeight(UI_10_FONT_ID);
-    const int percentY = barY - percentHeight + 3;
+    // Percentage text top Y=367.
+    constexpr int percentY = 367;
 
     GUI.drawProgressBar(
         renderer,
