@@ -811,16 +811,19 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
       break;
     }
     case EpubReaderMenuActivity::MenuAction::DICTIONARY: {
+      requestUpdateAndWait();  // finish the reader render (after any orientation change) before the action reads the page
         resetReaderMenuState();
       openDictionaryWordSelect();
       break;
     }
     case EpubReaderMenuActivity::MenuAction::HIGHLIGHT: {
+      requestUpdateAndWait();  // finish the reader render (after any orientation change) before the action reads the page
         resetReaderMenuState();
       openHighlightWordSelect();
       break;
     }
     case EpubReaderMenuActivity::MenuAction::DISPLAY_QR: {
+      requestUpdateAndWait();  // finish the reader render (after any orientation change) before the action reads the page
       // Read the page text under the render lock: right after the menu closes the render task
       // is re-reading the same section file, and an unlocked read could come back empty.
       std::string fullText;
