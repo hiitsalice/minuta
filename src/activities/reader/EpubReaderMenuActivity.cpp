@@ -180,11 +180,9 @@ void EpubReaderMenuActivity::activateIndex(const int index) {
 
   if (selectedAction == MenuAction::ROTATE_SCREEN) {
     pendingOrientation = (pendingOrientation + 1) % static_cast<int>(orientationLabels.size());
-    // Rotate the menu immediately. Only the renderer turns;
-    // SETTINGS.orientation stays unchanged so the reader's
-    // result handler still detects the change and reflows.
-    ReaderUtils::applyOrientation(renderer, pendingOrientation);
-    app.setDevice(uiTarget.deviceContext());
+    // Keep the menu upright. The reader applies the pending orientation
+    // after this menu closes.
+
     nav.followOnBuild = true;
     requestUpdate(true);
     return;

@@ -22,6 +22,7 @@
 #include "network/CrossPointWebServerActivity.h"
 #include "network/UsbDriveActivity.h"
 #include "reader/ReaderActivity.h"
+#include "reader/ReaderUtils.h"
 #include "settings/OpdsServerListActivity.h"
 #include "settings/SettingsActivity.h"
 #include "util/BmpViewerActivity.h"
@@ -61,6 +62,14 @@ void ActivityManager::renderTaskLoop() {
       HalPowerManager::Lock powerLock;  // Ensure we don't go into low-power mode while rendering
       // Minuta always uses the X4's normal display polarity.
       display.setInverted(false);
+
+      // Only the reader and its word-selection overlays use reader orientation.
+      if (currentActivity->usesReaderOrientation()) {
+        ReaderUtils::applyOrientation(renderer, SETTINGS.orientation);
+      } else {
+        renderer.setOrientation(GfxRenderer::Orientation::Portrait);
+      }
+
       currentActivity->render(std::move(lock));
     }
     // Notify any task blocked in requestUpdateAndWait() that the render is done.

@@ -23,6 +23,7 @@ class HighlightWordSelectActivity final : public Activity {
   void onEnter() override;
   void loop() override;
   void render(RenderLock&&) override;
+  bool usesReaderOrientation() const final { return true; }
 
  private:
   struct WordBox {

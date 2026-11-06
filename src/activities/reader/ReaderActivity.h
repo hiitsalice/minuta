@@ -54,5 +54,6 @@ class ReaderActivity : public Activity {
   void render(RenderLock&& lock) override;
 
   bool isReaderActivity() const final { return true; }
+  bool usesReaderOrientation() const final { return true; }
   bool handleForcedRefresh() final;
 };

@@ -362,7 +362,6 @@ void KOReaderSyncActivity::performUpload() {
 
 void KOReaderSyncActivity::onEnter() {
   Activity::onEnter();
-  ReaderUtils::applyOrientation(renderer, SETTINGS.orientation);
 
   resetUi();
   app.on(ACTION_ROW, &KOReaderSyncActivity::onResultRow, this);
