@@ -829,6 +829,7 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
         break;
       }
       LOG_ERR("ERS", "QR: no text for current page (section %s)", section ? "present" : "missing");
+      resetReaderMenuState();
       requestUpdate();
       break;
     }

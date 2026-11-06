@@ -31,7 +31,7 @@ void QrDisplayActivity::render(RenderLock&&) {
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight},
                  tr(STR_DISPLAY_QR), nullptr, false, false);
 
-  constexpr int QR_CODE_SIZE = 200;
+  constexpr int QR_CODE_SIZE = 240;
   const int qrX = (pageWidth - QR_CODE_SIZE) / 2;
   const int qrY = (pageHeight - QR_CODE_SIZE) / 2;
   const Rect qrBounds(qrX, qrY, QR_CODE_SIZE, QR_CODE_SIZE);
