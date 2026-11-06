@@ -24,7 +24,7 @@ void UnsupportedFileFormatActivity::render(RenderLock&&) {
 
   renderer.drawCenteredText(UI_10_FONT_ID, 386, "Unsupported file format", true,
                             EpdFontFamily::BOLD);
-  renderer.drawCenteredText(UI_10_FONT_ID, 414, "Minuta only supports EPUB books.", true,
+  renderer.drawCenteredText(UI_10_FONT_ID, 414, "Minuta only supports EPUB books", true,
                             EpdFontFamily::REGULAR);
 
   // Show the normal button-hint row, with only Back assigned.
