@@ -225,7 +225,6 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
   GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight}, headerText);
 
   const auto lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
-  constexpr int textGap = 6;
   const auto top = (pageHeight - lineHeight) / 2;
 
   const auto withoutEllipsis = [](const char* value) {
@@ -237,9 +236,9 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
   };
 
   if (state == State::VALIDATING) {
-    // Fixed layout per audit: Y=420, keep the "..." (no stripping).
+    // Fixed layout per audit: Y=400, keep the "..." (no stripping).
     // Live-verified: input inert, layout correct (confirmed via static test build).
-    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_VALIDATING_FIRMWARE));
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_VALIDATING_FIRMWARE));
   } else if (state == State::UPDATING) {
     // Throttle redraws to once per percent.
     const unsigned int pct =
@@ -249,12 +248,11 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
     }
     lastRenderedPercent = pct;
 
-    // Keep the progress bar at its existing position.
-    const int barY = top + lineHeight + textGap;
+    // Fixed progress layout: bar top Y=394, centre Y=400.
+    const int barY = 394;
 
-    // Percentage: 10 pt, 12 px above the bar.
-    const int percentHeight = renderer.getLineHeight(UI_10_FONT_ID);
-    const int percentY = barY - percentHeight - 6;
+    // Percentage text top Y=367.
+    constexpr int percentY = 367;
 
     GUI.drawProgressBar(
         renderer,
@@ -262,7 +260,7 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
              12},
         static_cast<int>(pct), 100, UI_10_FONT_ID, percentY);
 
-    // Secondary status: centred below the progress bar in 10 pt italic.
+    // Secondary status text top Y=418 below the progress bar in 10 pt italic.
     const int statusY = barY + 12 + 12;
     const std::string secondaryText =
         withoutEllipsis(tr(STR_FIRMWARE_UPDATE_DO_NOT_POWER_OFF));
@@ -271,35 +269,35 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
         UI_10_FONT_ID, statusY, secondaryText.c_str(),
         true, EpdFontFamily::ITALIC);
   } else if (state == State::SUCCESS) {
-    // Fixed layout per audit: header at Y=390, hint split into two lines at
-    // Y=418 and Y=442 (STR_RESTARTING_HINT is one sentence; the audit wants
+    // Fixed layout per audit: header at Y=371, hint split into two lines at
+    // Y=399 and Y=423 (STR_RESTARTING_HINT is one sentence; the audit wants
     // it broken at the comma into two fixed-position lines).
-    renderer.drawCenteredText(UI_10_FONT_ID, 390, tr(STR_UPDATE_COMPLETE), true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 418, "Restarting... If device does not restart,");
-    renderer.drawCenteredText(UI_10_FONT_ID, 442, "hold the power button for a few seconds");
+    renderer.drawCenteredText(UI_10_FONT_ID, 371, tr(STR_UPDATE_COMPLETE), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 399, "Restarting... If device does not restart,");
+    renderer.drawCenteredText(UI_10_FONT_ID, 423, "hold the power button for a few seconds");
   } else if (state == State::FAILED) {
-    // Fixed layout per audit: header bold at Y=404, reason at Y=432.
-    renderer.drawCenteredText(UI_10_FONT_ID, 404, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
+    // Fixed layout per audit: header bold at Y=386, reason at Y=414.
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
     if (!errorMessage.empty()) {
-      renderer.drawCenteredText(UI_10_FONT_ID, 432, withoutEllipsis(errorMessage.c_str()).c_str());
+      renderer.drawCenteredText(UI_10_FONT_ID, 414, withoutEllipsis(errorMessage.c_str()).c_str());
     }
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == State::CONFIRMING) {
-    // Fixed layout per audit: header bold at Y=404, firmware name at Y=432.
+    // Fixed layout per audit: header bold at Y=386, firmware name at Y=414.
     std::string firmwareName = firmwarePath;
     const auto pos = firmwareName.find_last_of('/');
     if (pos != std::string::npos) firmwareName = firmwareName.substr(pos + 1);
 
-    renderer.drawCenteredText(UI_10_FONT_ID, 404, "Update firmware?", true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 432, firmwareName.c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, "Update firmware?", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 414, firmwareName.c_str());
 
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Update", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else {
     // PICKING: a sub-activity is on top, nothing to draw.
     if (recoveryMode) {
-      renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_RECOVERY_MODE_HINT)).c_str());
+      renderer.drawCenteredText(UI_10_FONT_ID, 400, withoutEllipsis(tr(STR_RECOVERY_MODE_HINT)).c_str());
     }
   }
 

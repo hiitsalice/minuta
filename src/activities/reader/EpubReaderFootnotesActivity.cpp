@@ -70,7 +70,7 @@ void EpubReaderFootnotesActivity::buildScreen(UiScreen& screen) {
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   if (footnotes.empty()) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_NO_FOOTNOTES));
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_FOOTNOTES));
     return;
   }
 

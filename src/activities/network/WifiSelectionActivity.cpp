@@ -639,6 +639,18 @@ void WifiSelectionActivity::loop() {
 
   // Handle network list state
   if (state == WifiSelectionState::NETWORK_LIST) {
+    if (realNetworkCount == 0) {
+      if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+        onComplete(false);
+        return;
+      }
+      if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+        startWifiScan();
+        return;
+      }
+      return;
+    }
+
     if (manualNetworkListRequested) {
       if (!mappedInput.isPressed(MappedInputManager::Button::Confirm)) {
         manualNetworkListRequested = false;
@@ -646,15 +658,15 @@ void WifiSelectionActivity::loop() {
       return;
     }
 
-    // Check for Back button to exit (cancel). Disabled on the empty
-    // "No networks found" screen per audit: only Retry (button 4) is live.
+    // Check for Back button to exit (cancel).
+    // The empty state handles Back separately above.
     if (!networks.empty() && mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       onComplete(false);
       return;
     }
 
-    // Check for Confirm button to select network. Disabled on the empty
-    // "No networks found" screen per audit: only Retry (button 4) is live.
+    // Check for Confirm button to select a network.
+    // The empty state uses Confirm to retry the scan above.
     if (!networks.empty() && mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
       selectNetwork(selectedNetworkIndex);
       return;
@@ -808,10 +820,9 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
       static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height)),
       static_cast<int16_t>(safe.x)});
 
-  if (networks.empty()) {
-    // renderNetworkList() now draws the full "No networks found" screen
-    // (header, hint, Retry button) for non-touch boards, so skip the
-    // framework's own text here to avoid duplicate rendering.
+  if (realNetworkCount == 0) {
+    // The hidden-network placeholder is not a discovered network. Keep the
+    // empty-state screen clear instead of rendering that placeholder row.
     return;
   }
 
@@ -841,14 +852,13 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
 
 void WifiSelectionActivity::renderNetworkList(const Rect* screen, const ThemeMetrics* metrics) {
   renderUi();
-  if (networks.empty()) {
-    // "No networks found" screen: bold header at Y=404, retry hint at Y=432.
-    // Buttons 1-3 are inert here, so only the Retry (button 4) label is shown
-    // and the encrypted/saved legend is omitted.
-    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 404, tr(STR_NO_NETWORKS), true, EpdFontFamily::BOLD);
-    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 432, tr(STR_PRESS_OK_SCAN));
+  if (realNetworkCount == 0) {
+    // No discovered networks: Back is button 1 and Retry is button 2.
+    // The hidden-network placeholder is intentionally not shown here.
+    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 386, tr(STR_NO_NETWORKS), true, EpdFontFamily::BOLD);
+    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 414, "Press RETRY to scan again");
 
-    const auto labels = mappedInput.mapLabels("", "", "", tr(STR_RETRY));
+    const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_RETRY), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     return;
   }
@@ -868,7 +878,7 @@ void WifiSelectionActivity::renderConnecting(const Rect* screen, const ThemeMetr
   if (state == WifiSelectionState::SCANNING) {
     const char* statusText = autoConnecting ? tr(STR_FINDING_SAVED_WIFI) : tr(STR_SCANNING);
     const Rect statusBounds{screen->x + metrics->contentSidePadding,
-                            420,
+                            400,
                             screen->width - metrics->contentSidePadding * 2,
                             screen->height};
     UITheme::drawCenteredWrappedText(renderer, statusBounds, UI_10_FONT_ID, statusText, MAX_STATUS_LINES,
@@ -881,13 +891,13 @@ void WifiSelectionActivity::renderConnecting(const Rect* screen, const ThemeMetr
       ssidInfo.replace(22, ssidInfo.length() - 22, "...");
     }
 
-    // Fixed layout per audit: header bold at Y=404, network name at Y=432.
+    // Fixed layout per audit: header bold at Y=386, network name at Y=414.
     // No button hints for either Connecting or Connecting-to-saved states.
     UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                              404, statusText, true, EpdFontFamily::BOLD);
+                              386, statusText, true, EpdFontFamily::BOLD);
 
     UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                              432, ssidInfo.c_str());
+                              414, ssidInfo.c_str());
   }
 }
 
@@ -896,39 +906,39 @@ void WifiSelectionActivity::renderConnected(const Rect* screen, const ThemeMetri
   const int lineGap = metrics->verticalSpacing;
 
   const int groupHeight = height * 3 + lineGap * 2;
-  // Fixed layout per audit: Connected! at Y=388, network name at Y=416, IP at Y=444.
+  // Fixed layout per audit: Connected! at Y=372, network name at Y=400, IP at Y=428.
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            388, tr(STR_CONNECTED), true, EpdFontFamily::BOLD);
+                            372, tr(STR_CONNECTED), true, EpdFontFamily::BOLD);
 
   std::string ssidInfo = std::string(tr(STR_NETWORK_PREFIX)) + selectedSSID;
   if (ssidInfo.length() > 28) {
     ssidInfo.replace(25, ssidInfo.length() - 25, "...");
   }
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            416, ssidInfo.c_str());
+                            400, ssidInfo.c_str());
 
   const std::string ipInfo = std::string(tr(STR_IP_ADDRESS_PREFIX)) + connectedIP;
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            444, ipInfo.c_str());
+                            428, ipInfo.c_str());
 
   const auto labels = mappedInput.mapLabels("", tr(STR_DONE), "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
 void WifiSelectionActivity::renderConnectionFailed(const Rect* screen, const ThemeMetrics* metrics) const {
-  // Fixed layout per audit: header bold at Y=404, reason at Y=432.
+  // Fixed layout per audit: header bold at Y=386, reason at Y=414.
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            404, tr(STR_CONNECTION_FAILED), true, EpdFontFamily::BOLD);
+                            386, tr(STR_CONNECTION_FAILED), true, EpdFontFamily::BOLD);
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            432, connectionError.c_str());
+                            414, connectionError.c_str());
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
 void WifiSelectionActivity::renderSavePrompt(const Rect* screen, const ThemeMetrics* metrics) const {
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 404, selectedSSID.c_str());
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 432, "Connected! Save password?", true,
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 386, selectedSSID.c_str());
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 414, "Connected! Save password?", true,
                             EpdFontFamily::BOLD);
 
   const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Save", "", "");
@@ -936,8 +946,8 @@ void WifiSelectionActivity::renderSavePrompt(const Rect* screen, const ThemeMetr
 }
 
 void WifiSelectionActivity::renderForgetPrompt(const Rect* screen, const ThemeMetrics* metrics) const {
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 404, selectedSSID.c_str());
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 432, "Forget and remove password?", true,
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 386, selectedSSID.c_str());
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 414, "Forget and remove password?", true,
                             EpdFontFamily::BOLD);
 
   const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), tr(STR_FORGET_BUTTON), "", "");

@@ -115,7 +115,7 @@ bool EpubReaderChapterSelectionActivity::handleButtons() {
     return true;
   }
 
-  if (!epub) {
+  if (!epub || listCount() == 0) {
     return true;
   }
 
@@ -144,7 +144,7 @@ void EpubReaderChapterSelectionActivity::buildScreen(UiScreen& screen) {
     return;
   }
   if (listCount() == 0) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_NO_CHAPTERS), true);
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_CHAPTERS), true);
     return;
   }
 
@@ -172,4 +172,13 @@ void EpubReaderChapterSelectionActivity::drawChrome() {
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
   GUI.drawHeader(renderer, Rect{safe.x, safe.y + metrics.topPadding - 6, safe.width, metrics.headerHeight},
                  tr(STR_SELECT_CHAPTER), nullptr, false, false);
+}
+
+void EpubReaderChapterSelectionActivity::drawFooter() {
+  if (listCount() == 0) {
+    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    return;
+  }
+  UiListActivity::drawFooter();
 }

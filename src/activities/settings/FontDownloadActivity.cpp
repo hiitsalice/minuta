@@ -767,16 +767,8 @@ bool FontDownloadActivity::handleCustomInput() {
   }
 
   if (state_ == COMPLETE) {
-    int x = 0;
-    int y = 0;
-    if (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
-        mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
-      if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
-        mappedInput.suppressRelease(MappedInputManager::Button::Back);
-      }
-      if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
-        mappedInput.suppressRelease(MappedInputManager::Button::Confirm);
-      }
+    if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+      mappedInput.suppressRelease(MappedInputManager::Button::Confirm);
       {
         RenderLock lock(*this);
         state_ = FAMILY_LIST;
@@ -841,8 +833,8 @@ void FontDownloadActivity::render(RenderLock&&) {
   const auto centerY = (pageHeight - lineHeight) / 2;
 
   if (state_ == LOADING_MANIFEST) {
-    // Fixed layout per audit: Y=420.
-    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_LOADING_FONT_LIST));
+    // Fixed layout per audit: Y=400.
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_LOADING_FONT_LIST));
   } else if (state_ == GROUP_LIST) {
     renderUi();
     const auto labels = mappedInput.mapLabels("Menu", tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
@@ -859,15 +851,15 @@ void FontDownloadActivity::render(RenderLock&&) {
                                               hasVisibleFamilies ? tr(STR_DIR_DOWN) : "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea());
   } else if (state_ == DOWNLOADING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 420, "Installing...", true, EpdFontFamily::REGULAR);
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, "Installing...", true, EpdFontFamily::REGULAR);
   } else if (state_ == COMPLETE) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_FONT_INSTALLED), true, EpdFontFamily::REGULAR);
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_FONT_INSTALLED), true, EpdFontFamily::REGULAR);
+    const auto labels = mappedInput.mapLabels("", tr(STR_DONE), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state_ == ERROR) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 404, tr(STR_FONT_INSTALL_FAILED), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, tr(STR_FONT_INSTALL_FAILED), true, EpdFontFamily::BOLD);
     if (!errorMessage_.empty()) {
-      renderer.drawCenteredText(UI_10_FONT_ID, 432, errorMessage_.c_str());
+      renderer.drawCenteredText(UI_10_FONT_ID, 414, errorMessage_.c_str());
     }
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_RETRY), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);

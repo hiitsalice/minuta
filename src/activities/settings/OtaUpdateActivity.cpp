@@ -111,16 +111,10 @@ void OtaUpdateActivity::onExit() {
 void OtaUpdateActivity::render(RenderLock&&) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const auto pageWidth = renderer.getScreenWidth();
-  const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
 
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_UPDATE));
-  // Matches SD firmware update's progress screen Y positions (both use
-  // UI_10_FONT_ID's line height for this calculation).
-  const auto height = renderer.getLineHeight(UI_10_FONT_ID);
-  constexpr int textGap = 6;
-  const auto top = (pageHeight - height) / 2;
 
   const auto withoutEllipsis = [](const char* value) {
     std::string text = value ? value : "";
@@ -142,27 +136,26 @@ void OtaUpdateActivity::render(RenderLock&&) {
   }
 
   if (state == CHECKING_FOR_UPDATE) {
-    // Fixed layout per audit: 10pt, Y=420, keep the "..." (no stripping).
+    // Fixed layout per audit: 10pt, Y=400, keep the "..." (no stripping).
     // Live-verified: input inert, layout correct (confirmed via static test build).
-    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_CHECKING_UPDATE));
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_CHECKING_UPDATE));
   } else if (state == WAITING_CONFIRMATION) {
-    // Fixed layout per audit: header bold at Y=390, current version at
-    // Y=418, new version at Y=442.
-    renderer.drawCenteredText(UI_10_FONT_ID, 390, "Update available!", true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 418,
+    // Fixed layout per audit: header bold at Y=374, current version at
+    // Y=402, new version at Y=426.
+    renderer.drawCenteredText(UI_10_FONT_ID, 374, "Update available!", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 402,
                               (std::string("Current: ") + CROSSPOINT_VERSION).c_str());
-    renderer.drawCenteredText(UI_10_FONT_ID, 442,
+    renderer.drawCenteredText(UI_10_FONT_ID, 426,
                               (std::string("New: ") + updater.getLatestVersion()).c_str());
 
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Update", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == UPDATE_IN_PROGRESS) {
-    // Keep the progress bar at its existing position.
-    const int barY = top + height + textGap;
+    // Fixed progress layout: bar top Y=394, centre Y=400.
+    const int barY = 394;
 
-    // Percentage: 10 pt, 12 px above the bar.
-    const int percentHeight = renderer.getLineHeight(UI_10_FONT_ID);
-    const int percentY = barY - percentHeight - 6;
+    // Percentage text top Y=367.
+    constexpr int percentY = 367;
 
     GUI.drawProgressBar(
         renderer,
@@ -170,7 +163,7 @@ void OtaUpdateActivity::render(RenderLock&&) {
              12},
         static_cast<int>(updaterProgress * 100), 100, UI_10_FONT_ID, percentY);
 
-    // Secondary status: centred below the progress bar in 10 pt italic,
+    // Secondary status text top Y=418 below the progress bar in 10 pt italic.
     // matching the SD firmware update progress screen.
     const int statusY = barY + 12 + 12;
     const std::string secondaryText = withoutEllipsis(tr(STR_FIRMWARE_UPDATE_DO_NOT_POWER_OFF));
@@ -179,22 +172,22 @@ void OtaUpdateActivity::render(RenderLock&&) {
         UI_10_FONT_ID, statusY, secondaryText.c_str(),
         true, EpdFontFamily::ITALIC);
   } else if (state == NO_UPDATE) {
-    // Fixed layout per audit: Y=420.
-    renderer.drawCenteredText(UI_10_FONT_ID, 420, withoutEllipsis(tr(STR_NO_UPDATE)).c_str());
+    // Fixed layout per audit: Y=400.
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, withoutEllipsis(tr(STR_NO_UPDATE)).c_str());
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == FAILED) {
-    // Fixed layout per audit: header bold at Y=404, reason at Y=432.
-    renderer.drawCenteredText(UI_10_FONT_ID, 404, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
+    // Fixed layout per audit: header bold at Y=386, reason at Y=414.
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
     if (failedDetail != nullptr) {
-      renderer.drawCenteredText(UI_10_FONT_ID, 432, withoutEllipsis(failedDetail).c_str());
+      renderer.drawCenteredText(UI_10_FONT_ID, 414, withoutEllipsis(failedDetail).c_str());
     }
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == FINISHED) {
-    // Fixed layout per audit: header bold at Y=404, hint at Y=432.
-    renderer.drawCenteredText(UI_10_FONT_ID, 404, withoutEllipsis(tr(STR_UPDATE_COMPLETE)).c_str(), true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 432, withoutEllipsis(tr(STR_POWER_ON_HINT)).c_str());
+    // Fixed layout per audit: header bold at Y=386, hint at Y=414.
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, withoutEllipsis(tr(STR_UPDATE_COMPLETE)).c_str(), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 414, withoutEllipsis(tr(STR_POWER_ON_HINT)).c_str());
   }
 
   renderer.displayBuffer();

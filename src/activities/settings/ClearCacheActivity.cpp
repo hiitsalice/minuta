@@ -29,8 +29,8 @@ void ClearCacheActivity::render(RenderLock&&) {
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_CLEAR_READING_CACHE));
 
   if (state == WARNING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 404, "Clear cache?", true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 432, "This will clear all reading caches");
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, "Clear cache?", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 414, "This will clear all reading caches");
 
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Clear", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -39,30 +39,30 @@ void ClearCacheActivity::render(RenderLock&&) {
   }
 
   if (state == CLEARING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, tr(STR_CLEARING_CACHE));
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_CLEARING_CACHE));
     renderer.displayBuffer();
     return;
   }
 
   if (state == SUCCESS) {
-    // Fixed layout per audit: header bold at Y=404, result at Y=432.
-    renderer.drawCenteredText(UI_10_FONT_ID, 404, tr(STR_CACHE_CLEARED), true, EpdFontFamily::BOLD);
+    // Fixed layout per audit: header bold at Y=386, result at Y=414.
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, tr(STR_CACHE_CLEARED), true, EpdFontFamily::BOLD);
     std::string resultText = std::to_string(clearedCount) + " " + std::string(tr(STR_ITEMS_REMOVED));
     if (failedCount > 0) {
       resultText += ", " + std::to_string(failedCount) + " " + std::string(tr(STR_FAILED_LOWER));
     }
-    renderer.drawCenteredText(UI_10_FONT_ID, 432, resultText.c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, 414, resultText.c_str());
 
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+    const auto labels = mappedInput.mapLabels("", tr(STR_DONE), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
     return;
   }
 
   if (state == FAILED) {
-    // Fixed layout per audit: header bold at Y=404, reason at Y=432.
-    renderer.drawCenteredText(UI_10_FONT_ID, 404, tr(STR_CLEAR_CACHE_FAILED), true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 432, tr(STR_CHECK_SERIAL_OUTPUT));
+    // Fixed layout per audit: header bold at Y=386, reason at Y=414.
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, tr(STR_CLEAR_CACHE_FAILED), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 414, tr(STR_CHECK_SERIAL_OUTPUT));
 
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -107,9 +107,14 @@ void ClearCacheActivity::loop() {
     return;
   }
 
-  if (state == SUCCESS || state == FAILED) {
-    int x = 0;
-    int y = 0;
+  if (state == SUCCESS) {
+    if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+      goBack();
+    }
+    return;
+  }
+
+  if (state == FAILED) {
     if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       goBack();
     }
