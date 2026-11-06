@@ -153,11 +153,11 @@ void EpubReaderPercentSelectionActivity::buildPercentScreen(UiScreen& screen) {
   spec.okAction = ACTION_OK;
   spec.hintLine1 = hint1;
   spec.hintLine2 = hint2;
-  spec.readoutY = 349;
-  spec.sliderY = 383;
+  spec.readoutY = 357;
+  spec.sliderY = 391;
   spec.readoutFontId = SMALL_FONT_ID;
-  spec.hintLine1Y = 409;
-  spec.hintLine2Y = 437;
+  spec.hintLine1Y = 417;
+  spec.hintLine2Y = 445;
   buildSliderDialogScreen(screen, renderer, mappedInput, spec);
 }
 

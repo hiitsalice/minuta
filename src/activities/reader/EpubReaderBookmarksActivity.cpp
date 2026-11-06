@@ -268,7 +268,7 @@ void EpubReaderBookmarksActivity::buildScreen(UiScreen& screen) {
                                       static_cast<int16_t>(safe.x)});
 
   if (savedRows.empty()) {
-    UITheme::drawCenteredText(renderer, safe, UI_10_FONT_ID, 379,
+    UITheme::drawCenteredText(renderer, safe, UI_10_FONT_ID, 387,
                               tr(STR_NO_SAVED));
     return;
   }
