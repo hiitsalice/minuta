@@ -460,12 +460,12 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
     if (mode == Mode::PickFirmware) {
       renderer.drawCenteredText(
           UI_10_FONT_ID,
-          401,
+          400,
           tr(STR_NO_BIN_FILES));
     } else {
       renderer.drawCenteredText(
           UI_10_FONT_ID,
-          401,
+          400,
           tr(STR_NO_FILES_FOUND));
     }
     return;
