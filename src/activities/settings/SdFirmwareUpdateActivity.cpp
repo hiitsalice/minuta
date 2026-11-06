@@ -298,7 +298,7 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
   } else {
     // PICKING: a sub-activity is on top, nothing to draw.
     if (recoveryMode) {
-      renderer.drawCenteredText(UI_10_FONT_ID, top, withoutEllipsis(tr(STR_RECOVERY_MODE_HINT)).c_str());
+      renderer.drawCenteredText(UI_10_FONT_ID, 400, withoutEllipsis(tr(STR_RECOVERY_MODE_HINT)).c_str());
     }
   }
 
