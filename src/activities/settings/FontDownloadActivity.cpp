@@ -841,8 +841,8 @@ void FontDownloadActivity::render(RenderLock&&) {
   const auto centerY = (pageHeight - lineHeight) / 2;
 
   if (state_ == LOADING_MANIFEST) {
-    // Fixed layout per audit: Y=408.
-    renderer.drawCenteredText(UI_10_FONT_ID, 408, tr(STR_LOADING_FONT_LIST));
+    // Fixed layout per audit: Y=393.
+    renderer.drawCenteredText(UI_10_FONT_ID, 393, tr(STR_LOADING_FONT_LIST));
   } else if (state_ == GROUP_LIST) {
     renderUi();
     const auto labels = mappedInput.mapLabels("Menu", tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
@@ -859,15 +859,15 @@ void FontDownloadActivity::render(RenderLock&&) {
                                               hasVisibleFamilies ? tr(STR_DIR_DOWN) : "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea());
   } else if (state_ == DOWNLOADING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 408, "Installing...", true, EpdFontFamily::REGULAR);
+    renderer.drawCenteredText(UI_10_FONT_ID, 393, "Installing...", true, EpdFontFamily::REGULAR);
   } else if (state_ == COMPLETE) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 408, tr(STR_FONT_INSTALLED), true, EpdFontFamily::REGULAR);
+    renderer.drawCenteredText(UI_10_FONT_ID, 393, tr(STR_FONT_INSTALLED), true, EpdFontFamily::REGULAR);
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state_ == ERROR) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 394, tr(STR_FONT_INSTALL_FAILED), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 379, tr(STR_FONT_INSTALL_FAILED), true, EpdFontFamily::BOLD);
     if (!errorMessage_.empty()) {
-      renderer.drawCenteredText(UI_10_FONT_ID, 422, errorMessage_.c_str());
+      renderer.drawCenteredText(UI_10_FONT_ID, 407, errorMessage_.c_str());
     }
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_RETRY), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);

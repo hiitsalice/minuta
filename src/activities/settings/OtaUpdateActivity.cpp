@@ -136,23 +136,23 @@ void OtaUpdateActivity::render(RenderLock&&) {
   }
 
   if (state == CHECKING_FOR_UPDATE) {
-    // Fixed layout per audit: 10pt, Y=408, keep the "..." (no stripping).
+    // Fixed layout per audit: 10pt, Y=393, keep the "..." (no stripping).
     // Live-verified: input inert, layout correct (confirmed via static test build).
-    renderer.drawCenteredText(UI_10_FONT_ID, 408, tr(STR_CHECKING_UPDATE));
+    renderer.drawCenteredText(UI_10_FONT_ID, 393, tr(STR_CHECKING_UPDATE));
   } else if (state == WAITING_CONFIRMATION) {
-    // Fixed layout per audit: header bold at Y=378, current version at
-    // Y=406, new version at Y=430.
-    renderer.drawCenteredText(UI_10_FONT_ID, 378, "Update available!", true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 406,
+    // Fixed layout per audit: header bold at Y=363, current version at
+    // Y=391, new version at Y=415.
+    renderer.drawCenteredText(UI_10_FONT_ID, 363, "Update available!", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 391,
                               (std::string("Current: ") + CROSSPOINT_VERSION).c_str());
-    renderer.drawCenteredText(UI_10_FONT_ID, 430,
+    renderer.drawCenteredText(UI_10_FONT_ID, 415,
                               (std::string("New: ") + updater.getLatestVersion()).c_str());
 
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Update", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == UPDATE_IN_PROGRESS) {
-    // Fixed progress layout: bar top Y=401, centre Y=407.
-    const int barY = 401;
+    // Fixed progress layout: bar top Y=386, centre Y=407.
+    const int barY = 386;
 
     // Percentage: centred at Y=380, 6 px above the bar.
     const int percentHeight = renderer.getLineHeight(UI_10_FONT_ID);
@@ -173,22 +173,22 @@ void OtaUpdateActivity::render(RenderLock&&) {
         UI_10_FONT_ID, statusY, secondaryText.c_str(),
         true, EpdFontFamily::ITALIC);
   } else if (state == NO_UPDATE) {
-    // Fixed layout per audit: Y=408.
-    renderer.drawCenteredText(UI_10_FONT_ID, 408, withoutEllipsis(tr(STR_NO_UPDATE)).c_str());
+    // Fixed layout per audit: Y=393.
+    renderer.drawCenteredText(UI_10_FONT_ID, 393, withoutEllipsis(tr(STR_NO_UPDATE)).c_str());
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == FAILED) {
-    // Fixed layout per audit: header bold at Y=394, reason at Y=422.
-    renderer.drawCenteredText(UI_10_FONT_ID, 394, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
+    // Fixed layout per audit: header bold at Y=379, reason at Y=407.
+    renderer.drawCenteredText(UI_10_FONT_ID, 379, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
     if (failedDetail != nullptr) {
-      renderer.drawCenteredText(UI_10_FONT_ID, 422, withoutEllipsis(failedDetail).c_str());
+      renderer.drawCenteredText(UI_10_FONT_ID, 407, withoutEllipsis(failedDetail).c_str());
     }
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == FINISHED) {
-    // Fixed layout per audit: header bold at Y=394, hint at Y=422.
-    renderer.drawCenteredText(UI_10_FONT_ID, 394, withoutEllipsis(tr(STR_UPDATE_COMPLETE)).c_str(), true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 422, withoutEllipsis(tr(STR_POWER_ON_HINT)).c_str());
+    // Fixed layout per audit: header bold at Y=379, hint at Y=407.
+    renderer.drawCenteredText(UI_10_FONT_ID, 379, withoutEllipsis(tr(STR_UPDATE_COMPLETE)).c_str(), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 407, withoutEllipsis(tr(STR_POWER_ON_HINT)).c_str());
   }
 
   renderer.displayBuffer();

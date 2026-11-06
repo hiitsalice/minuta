@@ -842,11 +842,11 @@ void WifiSelectionActivity::buildListScreen(UiScreen& screen) {
 void WifiSelectionActivity::renderNetworkList(const Rect* screen, const ThemeMetrics* metrics) {
   renderUi();
   if (networks.empty()) {
-    // "No networks found" screen: bold header at Y=394, retry hint at Y=422.
+    // "No networks found" screen: bold header at Y=379, retry hint at Y=407.
     // Buttons 1-3 are inert here, so only the Retry (button 4) label is shown
     // and the encrypted/saved legend is omitted.
-    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 394, tr(STR_NO_NETWORKS), true, EpdFontFamily::BOLD);
-    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 422, tr(STR_PRESS_OK_SCAN));
+    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 379, tr(STR_NO_NETWORKS), true, EpdFontFamily::BOLD);
+    UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 407, tr(STR_PRESS_OK_SCAN));
 
     const auto labels = mappedInput.mapLabels("", "", "", tr(STR_RETRY));
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -881,13 +881,13 @@ void WifiSelectionActivity::renderConnecting(const Rect* screen, const ThemeMetr
       ssidInfo.replace(22, ssidInfo.length() - 22, "...");
     }
 
-    // Fixed layout per audit: header bold at Y=394, network name at Y=422.
+    // Fixed layout per audit: header bold at Y=379, network name at Y=407.
     // No button hints for either Connecting or Connecting-to-saved states.
     UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                              394, statusText, true, EpdFontFamily::BOLD);
+                              379, statusText, true, EpdFontFamily::BOLD);
 
     UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                              422, ssidInfo.c_str());
+                              407, ssidInfo.c_str());
   }
 }
 
@@ -896,39 +896,39 @@ void WifiSelectionActivity::renderConnected(const Rect* screen, const ThemeMetri
   const int lineGap = metrics->verticalSpacing;
 
   const int groupHeight = height * 3 + lineGap * 2;
-  // Fixed layout per audit: Connected! at Y=376, network name at Y=404, IP at Y=432.
+  // Fixed layout per audit: Connected! at Y=361, network name at Y=389, IP at Y=417.
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            376, tr(STR_CONNECTED), true, EpdFontFamily::BOLD);
+                            361, tr(STR_CONNECTED), true, EpdFontFamily::BOLD);
 
   std::string ssidInfo = std::string(tr(STR_NETWORK_PREFIX)) + selectedSSID;
   if (ssidInfo.length() > 28) {
     ssidInfo.replace(25, ssidInfo.length() - 25, "...");
   }
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            404, ssidInfo.c_str());
+                            389, ssidInfo.c_str());
 
   const std::string ipInfo = std::string(tr(STR_IP_ADDRESS_PREFIX)) + connectedIP;
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            432, ipInfo.c_str());
+                            417, ipInfo.c_str());
 
   const auto labels = mappedInput.mapLabels("", tr(STR_DONE), "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
 void WifiSelectionActivity::renderConnectionFailed(const Rect* screen, const ThemeMetrics* metrics) const {
-  // Fixed layout per audit: header bold at Y=394, reason at Y=422.
+  // Fixed layout per audit: header bold at Y=379, reason at Y=407.
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            394, tr(STR_CONNECTION_FAILED), true, EpdFontFamily::BOLD);
+                            379, tr(STR_CONNECTION_FAILED), true, EpdFontFamily::BOLD);
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
-                            422, connectionError.c_str());
+                            407, connectionError.c_str());
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
 void WifiSelectionActivity::renderSavePrompt(const Rect* screen, const ThemeMetrics* metrics) const {
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 394, selectedSSID.c_str());
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 422, "Connected! Save password?", true,
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 379, selectedSSID.c_str());
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 407, "Connected! Save password?", true,
                             EpdFontFamily::BOLD);
 
   const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Save", "", "");
@@ -936,8 +936,8 @@ void WifiSelectionActivity::renderSavePrompt(const Rect* screen, const ThemeMetr
 }
 
 void WifiSelectionActivity::renderForgetPrompt(const Rect* screen, const ThemeMetrics* metrics) const {
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 394, selectedSSID.c_str());
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 422, "Forget and remove password?", true,
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 379, selectedSSID.c_str());
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 407, "Forget and remove password?", true,
                             EpdFontFamily::BOLD);
 
   const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), tr(STR_FORGET_BUTTON), "", "");
