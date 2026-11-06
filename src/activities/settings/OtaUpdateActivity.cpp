@@ -111,16 +111,10 @@ void OtaUpdateActivity::onExit() {
 void OtaUpdateActivity::render(RenderLock&&) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const auto pageWidth = renderer.getScreenWidth();
-  const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
 
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_UPDATE));
-  // Matches SD firmware update's progress screen Y positions (both use
-  // UI_10_FONT_ID's line height for this calculation).
-  const auto height = renderer.getLineHeight(UI_10_FONT_ID);
-  constexpr int textGap = 6;
-  const auto top = (pageHeight - height) / 2;
 
   const auto withoutEllipsis = [](const char* value) {
     std::string text = value ? value : "";
