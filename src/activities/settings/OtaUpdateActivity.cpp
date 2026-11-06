@@ -151,10 +151,10 @@ void OtaUpdateActivity::render(RenderLock&&) {
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Update", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == UPDATE_IN_PROGRESS) {
-    // Fixed progress layout: bar top Y=394, centre Y=392.
+    // Fixed progress layout: bar top Y=394, centre Y=400.
     const int barY = 394;
 
-    // Percentage text top Y=365, 6 px above the bar.
+    // Percentage text top Y=373, 6 px above the bar.
     const int percentHeight = renderer.getLineHeight(UI_10_FONT_ID);
     const int percentY = barY - percentHeight - 6;
 
@@ -164,7 +164,7 @@ void OtaUpdateActivity::render(RenderLock&&) {
              12},
         static_cast<int>(updaterProgress * 100), 100, UI_10_FONT_ID, percentY);
 
-    // Secondary status text top Y=410 below the progress bar in 10 pt italic.
+    // Secondary status text top Y=418 below the progress bar in 10 pt italic.
     // matching the SD firmware update progress screen.
     const int statusY = barY + 12 + 12;
     const std::string secondaryText = withoutEllipsis(tr(STR_FIRMWARE_UPDATE_DO_NOT_POWER_OFF));
