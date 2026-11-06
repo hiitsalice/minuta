@@ -6,9 +6,9 @@ void LowBatteryWarningActivity::onEnter() {
   Activity::onEnter();
 
   renderer.clearScreen();
-  renderer.drawCenteredText(UI_10_FONT_ID, 404, "Your battery is very low!!!",
+  renderer.drawCenteredText(UI_10_FONT_ID, 394, "Your battery is very low!!!",
                             true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(UI_10_FONT_ID, 432,
+  renderer.drawCenteredText(UI_10_FONT_ID, 422,
                             "Please charge your device and have a rest :)",
                             true, EpdFontFamily::REGULAR);
   renderer.displayBuffer(HalDisplay::HALF_REFRESH);
