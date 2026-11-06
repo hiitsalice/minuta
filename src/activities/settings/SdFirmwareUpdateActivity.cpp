@@ -236,9 +236,9 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
   };
 
   if (state == State::VALIDATING) {
-    // Fixed layout per audit: Y=401, keep the "..." (no stripping).
+    // Fixed layout per audit: Y=400, keep the "..." (no stripping).
     // Live-verified: input inert, layout correct (confirmed via static test build).
-    renderer.drawCenteredText(UI_10_FONT_ID, 401, tr(STR_VALIDATING_FIRMWARE));
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_VALIDATING_FIRMWARE));
   } else if (state == State::UPDATING) {
     // Throttle redraws to once per percent.
     const unsigned int pct =
@@ -251,9 +251,9 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
     // Fixed progress layout: bar top Y=394, centre Y=400.
     const int barY = 394;
 
-    // Percentage text top Y=373, 6 px above the bar.
+    // Percentage text top Y=382, 12 px above the bar.
     const int percentHeight = renderer.getLineHeight(UI_10_FONT_ID);
-    const int percentY = barY - percentHeight - 6;
+    const int percentY = barY - percentHeight + 3;
 
     GUI.drawProgressBar(
         renderer,
@@ -277,21 +277,21 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
     renderer.drawCenteredText(UI_10_FONT_ID, 399, "Restarting... If device does not restart,");
     renderer.drawCenteredText(UI_10_FONT_ID, 423, "hold the power button for a few seconds");
   } else if (state == State::FAILED) {
-    // Fixed layout per audit: header bold at Y=387, reason at Y=415.
-    renderer.drawCenteredText(UI_10_FONT_ID, 387, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
+    // Fixed layout per audit: header bold at Y=386, reason at Y=414.
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
     if (!errorMessage.empty()) {
-      renderer.drawCenteredText(UI_10_FONT_ID, 415, withoutEllipsis(errorMessage.c_str()).c_str());
+      renderer.drawCenteredText(UI_10_FONT_ID, 414, withoutEllipsis(errorMessage.c_str()).c_str());
     }
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == State::CONFIRMING) {
-    // Fixed layout per audit: header bold at Y=387, firmware name at Y=415.
+    // Fixed layout per audit: header bold at Y=386, firmware name at Y=414.
     std::string firmwareName = firmwarePath;
     const auto pos = firmwareName.find_last_of('/');
     if (pos != std::string::npos) firmwareName = firmwareName.substr(pos + 1);
 
-    renderer.drawCenteredText(UI_10_FONT_ID, 387, "Update firmware?", true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 415, firmwareName.c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, "Update firmware?", true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 414, firmwareName.c_str());
 
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Update", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
