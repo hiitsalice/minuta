@@ -40,10 +40,7 @@ void HighlightWordSelectActivity::onEnter() {
   extractWords();
 
   if (!words.empty()) {
-    const int initial = closestInRow(rowCount / 2, renderer.getScreenWidth() / 2);
-    if (initial >= 0) {
-      selected = initial;
-    }
+    selected = 0;
   }
 
   requestUpdate();
@@ -216,15 +213,45 @@ int HighlightWordSelectActivity::closestInRow(const uint16_t row, const int cent
   return best;
 }
 
+void HighlightWordSelectActivity::moveHorizontal(const int direction) {
+  if (words.empty()) return;
+
+  const int total = static_cast<int>(words.size());
+  const int next = direction < 0
+                       ? ButtonNavigator::previousIndex(selected, total)
+                       : ButtonNavigator::nextIndex(selected, total);
+
+  if (next != selected) {
+    selected = next;
+    requestUpdate();
+  }
+}
+
 void HighlightWordSelectActivity::moveVertical(const int direction) {
+  if (words.empty() || rowCount == 0) return;
+
+  const int lastWord = static_cast<int>(words.size()) - 1;
   const WordBox& current = words[selected];
   const int targetRow = static_cast<int>(current.row) + direction;
+  const int centerX = current.x + current.width / 2;
 
-  if (targetRow < 0 || targetRow >= static_cast<int>(rowCount)) return;
+  int best = -1;
 
-  const int best =
-      closestInRow(static_cast<uint16_t>(targetRow),
-                   current.x + current.width / 2);
+  if (targetRow < 0) {
+    // Moving above the first row wraps to the bottom.
+    // The very first word wraps directly to the very last word.
+    best = (selected == 0)
+               ? lastWord
+               : closestInRow(static_cast<uint16_t>(rowCount - 1), centerX);
+  } else if (targetRow >= static_cast<int>(rowCount)) {
+    // Moving below the last row wraps to the top.
+    // The very last word wraps directly to the very first word.
+    best = (selected == lastWord)
+               ? 0
+               : closestInRow(0, centerX);
+  } else {
+    best = closestInRow(static_cast<uint16_t>(targetRow), centerX);
+  }
 
   if (best >= 0 && best != selected) {
     selected = best;
@@ -259,19 +286,21 @@ void HighlightWordSelectActivity::loop() {
 
   if (words.empty()) return;
 
-  const bool hasNextWord = selected + 1 < static_cast<int>(words.size());
+  buttonNavigator.onPressAndContinuous(
+      {MappedInputManager::Button::ScreenLeft},
+      [this] { moveHorizontal(-1); });
 
-  if (mappedInput.wasPressed(MappedInputManager::Button::ScreenLeft) && selected > 0) {
-    selected--;
-    requestUpdate();
-  } else if (mappedInput.wasPressed(MappedInputManager::Button::ScreenRight) && hasNextWord) {
-    selected++;
-    requestUpdate();
-  } else if (mappedInput.wasPressed(MappedInputManager::Button::ScreenUp)) {
-    moveVertical(-1);
-  } else if (mappedInput.wasPressed(MappedInputManager::Button::ScreenDown)) {
-    moveVertical(1);
-  }
+  buttonNavigator.onPressAndContinuous(
+      {MappedInputManager::Button::ScreenRight},
+      [this] { moveHorizontal(1); });
+
+  buttonNavigator.onPressAndContinuous(
+      {MappedInputManager::Button::ScreenUp},
+      [this] { moveVertical(-1); });
+
+  buttonNavigator.onPressAndContinuous(
+      {MappedInputManager::Button::ScreenDown},
+      [this] { moveVertical(1); });
 }
 
 

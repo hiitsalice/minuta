@@ -9,6 +9,7 @@
 
 #include "activities/Activity.h"
 #include "util/Dictionary.h"
+#include "util/ButtonNavigator.h"
 
 // Word selection over the current reader page: Left/Right step through words
 // in reading order, Up/Down jump rows, Confirm looks the word up and opens
@@ -49,6 +50,7 @@ class DictionaryWordSelectActivity final : public Activity {
 
   void extractWords();
   int closestInRow(uint16_t row, int centerX) const;
+  void moveHorizontal(int direction);
   void moveVertical(int direction);
   void performLookup();
   bool drawHighlightWithSnapshot();
@@ -61,6 +63,7 @@ class DictionaryWordSelectActivity final : public Activity {
   int lineHeight = 0;
 
   std::vector<WordBox> words;
+  ButtonNavigator buttonNavigator;
   int selected = 0;
   uint16_t rowCount = 0;
 

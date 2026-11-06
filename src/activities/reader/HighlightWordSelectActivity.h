@@ -8,6 +8,7 @@
 
 #include "activities/Activity.h"
 #include "HighlightEntry.h"
+#include "util/ButtonNavigator.h"
 
 class HighlightWordSelectActivity final : public Activity {
  public:
@@ -42,6 +43,7 @@ class HighlightWordSelectActivity final : public Activity {
 
   void extractWords();
   int closestInRow(uint16_t row, int centerX) const;
+  void moveHorizontal(int direction);
   void moveVertical(int direction);
   void confirmSelection();
   bool drawSelection();
@@ -57,6 +59,7 @@ class HighlightWordSelectActivity final : public Activity {
   int lineHeight = 0;
 
   std::vector<WordBox> words;
+  ButtonNavigator buttonNavigator;
   int selected = 0;
   uint16_t rowCount = 0;
 

@@ -204,12 +204,46 @@ int DictionaryWordSelectActivity::closestInRow(const uint16_t row, const int cen
   return best;
 }
 
+void DictionaryWordSelectActivity::moveHorizontal(const int direction) {
+  if (words.empty()) return;
+
+  const int total = static_cast<int>(words.size());
+  const int next = direction < 0
+                       ? ButtonNavigator::previousIndex(selected, total)
+                       : ButtonNavigator::nextIndex(selected, total);
+
+  if (next != selected) {
+    selected = next;
+    requestUpdate();
+  }
+}
+
 void DictionaryWordSelectActivity::moveVertical(const int direction) {
+  if (words.empty() || rowCount == 0) return;
+
+  const int lastWord = static_cast<int>(words.size()) - 1;
   const WordBox& current = words[selected];
   const int targetRow = static_cast<int>(current.row) + direction;
-  if (targetRow < 0 || targetRow >= static_cast<int>(rowCount)) return;
+  const int centerX = current.x + current.width / 2;
 
-  const int best = closestInRow(static_cast<uint16_t>(targetRow), current.x + current.width / 2);
+  int best = -1;
+
+  if (targetRow < 0) {
+    // Moving above the first row wraps to the bottom.
+    // The very first word wraps directly to the very last word.
+    best = (selected == 0)
+               ? lastWord
+               : closestInRow(static_cast<uint16_t>(rowCount - 1), centerX);
+  } else if (targetRow >= static_cast<int>(rowCount)) {
+    // Moving below the last row wraps to the top.
+    // The very last word wraps directly to the very first word.
+    best = (selected == lastWord)
+               ? 0
+               : closestInRow(0, centerX);
+  } else {
+    best = closestInRow(static_cast<uint16_t>(targetRow), centerX);
+  }
+
   if (best >= 0 && best != selected) {
     selected = best;
     requestUpdate();
@@ -310,6 +344,7 @@ void DictionaryWordSelectActivity::loop() {
     finish();
     return;
   }
+
   if (!words.empty() &&
       words[selected].compoundEnd > words[selected].compoundStart &&
       mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, 700)) {
@@ -319,14 +354,15 @@ void DictionaryWordSelectActivity::loop() {
     return;
   }
 
-  if (mappedInput.wasReleased(MappedInputManager::Button::Confirm) && !words.empty()) {
+  if (mappedInput.wasReleased(MappedInputManager::Button::Confirm) &&
+      !words.empty()) {
     performLookup();
     return;
   }
 
   if (words.empty()) return;
 
-  const bool wasExpanded = expanded;
+  // Moving away from an expanded compound restores ordinary word selection.
   if (expanded &&
       (mappedInput.wasPressed(MappedInputManager::Button::ScreenLeft) ||
        mappedInput.wasPressed(MappedInputManager::Button::ScreenRight) ||
@@ -337,24 +373,24 @@ void DictionaryWordSelectActivity::loop() {
     requestUpdate();
   }
 
-  const bool hasNextWord = selected + 1 < static_cast<int>(words.size());
-  if (mappedInput.wasPressed(MappedInputManager::Button::ScreenLeft) && selected > 0) {
-    selected--;
-    requestUpdate();
-  } else if (mappedInput.wasPressed(MappedInputManager::Button::ScreenRight) && hasNextWord) {
-    selected++;
-    requestUpdate();
-  } else if (mappedInput.wasPressed(MappedInputManager::Button::ScreenUp)) {
-    moveVertical(-1);
-  } else if (mappedInput.wasPressed(MappedInputManager::Button::ScreenDown)) {
-    moveVertical(1);
-  }
+  buttonNavigator.onPressAndContinuous(
+      {MappedInputManager::Button::ScreenLeft},
+      [this] { moveHorizontal(-1); });
+
+  buttonNavigator.onPressAndContinuous(
+      {MappedInputManager::Button::ScreenRight},
+      [this] { moveHorizontal(1); });
+
+  buttonNavigator.onPressAndContinuous(
+      {MappedInputManager::Button::ScreenUp},
+      [this] { moveVertical(-1); });
+
+  buttonNavigator.onPressAndContinuous(
+      {MappedInputManager::Button::ScreenDown},
+      [this] { moveVertical(1); });
 }
 
-// Saves the pixels under words[selected]'s highlight box, then draws the
-// highlight over them. Returns false when the pixels could not be saved
-// (no buffer / oversize box) — the highlight is drawn regardless, but the
-// next cursor move must do a full repaint.
+
 bool DictionaryWordSelectActivity::drawHighlightWithSnapshot() {
   const WordBox& word = words[selected];
   const bool showCompound =

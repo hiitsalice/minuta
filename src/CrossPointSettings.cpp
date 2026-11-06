@@ -89,6 +89,7 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   doc["frontButtonConfirm"] = frontButtonConfirm;
   doc["frontButtonLeft"] = frontButtonLeft;
   doc["frontButtonRight"] = frontButtonRight;
+  doc["longPressMenuFunction"] = longPressMenuFunction;
   // Font family and size — both use dynamic getter/setters in SettingsList (the
   // option lists depend on the SD font registry), so the generic loop skips them.
   doc["fontFamily"] = fontFamily;
@@ -246,13 +247,6 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
       needsResave = true;
     }
 
-    if (!doc["longPressMenuFunction"].isNull()) {
-      const uint8_t old = doc["longPressMenuFunction"] | (uint8_t)3;
-      // old: 0 kosync, 1 disabled, 2 bookmark, 3 dictionary, 4 reader menu
-      longPressMenuFunction =
-          (old == 0) ? (uint8_t)LP_MENU_DICTIONARY : (uint8_t)LP_MENU_DICTIONARY;
-    }
-
     if (!doc["sideButtonLayout"].isNull()) {
       const uint8_t old = doc["sideButtonLayout"] | (uint8_t)0;
       // old: 0 prev/next, 1 next/prev, 2 disabled
@@ -276,15 +270,25 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
           (old == 1) ? (uint8_t)FORCE_REFRESH : (uint8_t)SLEEP;
     }
 
-    if (!doc["longPressMenuFunction"].isNull()) {
-      const uint8_t old = doc["longPressMenuFunction"] | (uint8_t)0;
-      // v1: 0 kosync, 2 dictionary, 3 reader menu
-      // v2: 0 dictionary, 1 sync
-      longPressMenuFunction =
-          (old == 0) ? (uint8_t)LP_MENU_DICTIONARY : (uint8_t)LP_MENU_DICTIONARY;
-    }
-
     needsResave = true;
+  }
+
+  // The current controls layout stores Dictionary, Highlight and Screenshot as
+  // 0, 1 and 2. Older layouts used different meanings, so migrate those to the
+  // safe Dictionary default instead of interpreting their values directly.
+  const uint8_t storedControlsLayoutVersion =
+      doc["controlsLayoutVersion"] | (uint8_t)0;
+  if (storedControlsLayoutVersion >= 2) {
+    const uint8_t storedFunction =
+        doc["longPressMenuFunction"] | (uint8_t)LP_MENU_DICTIONARY;
+    s.longPressMenuFunction =
+        clamp(storedFunction, (uint8_t)LONG_PRESS_MENU_FUNCTION_COUNT,
+              (uint8_t)LP_MENU_DICTIONARY);
+    if (doc["longPressMenuFunction"].isNull()) {
+      needsResave = true;
+    }
+  } else {
+    s.longPressMenuFunction = (uint8_t)LP_MENU_DICTIONARY;
   }
 
   // Front button remap — managed by RemapFrontButtons sub-activity, not in SettingsList.
