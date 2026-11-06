@@ -225,7 +225,6 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
   GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight}, headerText);
 
   const auto lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
-  constexpr int textGap = 6;
   const auto top = (pageHeight - lineHeight) / 2;
 
   const auto withoutEllipsis = [](const char* value) {
