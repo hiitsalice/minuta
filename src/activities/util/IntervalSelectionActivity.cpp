@@ -170,11 +170,11 @@ void IntervalSelectionActivity::buildIntervalScreen(UiScreen& screen) {
   spec.okAction = ACTION_OK;
   spec.hintLine1 = hints[0];
   spec.hintLine2 = hints[1];
-  spec.readoutY = 357;
-  spec.sliderY = 391;
+  spec.readoutY = 360;
+  spec.sliderY = 394;
   spec.readoutFontId = SMALL_FONT_ID;
-  spec.hintLine1Y = 417;
-  spec.hintLine2Y = 445;
+  spec.hintLine1Y = 420;
+  spec.hintLine2Y = 448;
   buildSliderDialogScreen(screen, renderer, mappedInput, spec);
 }
 
