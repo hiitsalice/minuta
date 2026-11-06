@@ -896,7 +896,7 @@ void WifiSelectionActivity::renderConnected(const Rect* screen, const ThemeMetri
   const int lineGap = metrics->verticalSpacing;
 
   const int groupHeight = height * 3 + lineGap * 2;
-  // Fixed layout per audit: Connected! at Y=372, network name at Y=400, IP at Y=425.
+  // Fixed layout per audit: Connected! at Y=372, network name at Y=400, IP at Y=428.
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID,
                             372, tr(STR_CONNECTED), true, EpdFontFamily::BOLD);
 
