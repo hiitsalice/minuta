@@ -164,7 +164,6 @@ void EpubReaderBookmarksActivity::openSelectedItem() {
 }
 
 void EpubReaderBookmarksActivity::activateIndex(const int index) {
-  if (confirmPopup.isActive()) return;
   // The interaction table can deliver a row index captured before a delete
   // shrank the list; the next render re-registers the rows.
   if (index < 0 || index >= listCount()) return;
@@ -173,10 +172,6 @@ void EpubReaderBookmarksActivity::activateIndex(const int index) {
   app.clearTapFlash();
   nav.selected = index;
   openSelectedItem();
-}
-
-bool EpubReaderBookmarksActivity::handleCustomInput() {
-  return false;
 }
 
 bool EpubReaderBookmarksActivity::handleButtons() {
@@ -321,8 +316,6 @@ void EpubReaderBookmarksActivity::render(RenderLock&&) {
 
   renderUi();
   drawChrome();
-
-  if (confirmPopup.processRender(renderer, mappedInput)) return;
 
   const auto labels = savedRows.empty()
                           ? mappedInput.mapLabels(tr(STR_BACK), "", "", "")
