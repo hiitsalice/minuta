@@ -1,6 +1,8 @@
 #include "SimulatorPopupGalleryActivity.h"
 
 #include <GfxRenderer.h>
+
+#include <cstddef>
 #include <I18n.h>
 
 #include "components/UITheme.h"
