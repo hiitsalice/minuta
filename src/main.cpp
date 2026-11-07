@@ -484,8 +484,8 @@ void setup() {
     activityManager.goToCrashReport();
 #ifdef SIMULATOR
   } else {
-    // Simulator starts in the USB Drive state demo; no USB storage is handed off.
-    activityManager.goToUsbDriveDemo();
+    // Simulator opens the static popup-screen gallery; no real activity behaviour is run.
+    activityManager.goToPopupScreenGallery();
   }
 #else
   } else if (resume == BootResume::Silent && snapshotTarget == SILENT_REBOOT_TARGET_READER &&
