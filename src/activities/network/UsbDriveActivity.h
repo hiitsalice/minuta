@@ -6,26 +6,15 @@
 
 class UsbDriveActivity final : public Activity {
  public:
-#ifdef SIMULATOR
-  UsbDriveActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, bool simulatorDemo = false)
-      : Activity("UsbDrive", renderer, mappedInput), simulatorDemo(simulatorDemo) {}
-#else
   UsbDriveActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
       : Activity("UsbDrive", renderer, mappedInput) {}
-#endif
 
   void onEnter() override;
   void onExit() override;
   void loop() override;
   void render(RenderLock&&) override;
   bool preventAutoSleep() override { return state == State::Connected || (!startFailed && state == State::IoError); }
-  bool requiresExclusiveStorageLoop() const override {
-#ifdef SIMULATOR
-    return !simulatorDemo;
-#else
-    return true;
-#endif
-  }
+  bool requiresExclusiveStorageLoop() const override { return true; }
 
  private:
   using State = UsbDriveState;
@@ -44,8 +33,4 @@ class UsbDriveActivity final : public Activity {
   unsigned long hostWaitStartedAt = 0;
   unsigned long startFailureStartedAt = 0;
   unsigned long forcedDisconnectRequestedAt = 0;
-#ifdef SIMULATOR
-  bool simulatorDemo = false;
-  uint8_t simulatorDemoState = 0;
-#endif
 };
