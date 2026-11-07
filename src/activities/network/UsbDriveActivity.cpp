@@ -121,19 +121,8 @@ void UsbDriveActivity::render(RenderLock&&) {
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int pageWidth = renderer.getScreenWidth();
-#ifdef SIMULATOR
-  if (simulatorDemo) {
-    const Rect headerBounds{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight};
-    GUI.drawHeader(renderer, headerBounds, "");
-    const int headerLineHeight = renderer.getLineHeight(UI_12_FONT_ID);
-    UITheme::drawCenteredText(renderer, headerBounds, UI_12_FONT_ID,
-                              headerBounds.y + (headerBounds.height - headerLineHeight) / 2,
-                              tr(STR_USB_DRIVE), true, EpdFontFamily::BOLD);
-  } else
-#endif
-  {
-    GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight}, tr(STR_USB_DRIVE));
-  }
+  const Rect headerRect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight};
+  GUI.drawHeader(renderer, headerRect, tr(STR_USB_DRIVE), nullptr);
 
   const Rect textBounds{0, 0, pageWidth, renderer.getScreenHeight()};
   const int lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
