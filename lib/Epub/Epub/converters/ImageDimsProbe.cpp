@@ -18,6 +18,10 @@ bool ImageDimsProbe::feed(const uint8_t b) {
         state = State::JpegSoi;
       } else if (b == PNG_SIG[0]) {
         state = State::PngHeader;
+      } else if (b == 'G') {
+        gifHeader[0] = b;
+        gifFill = 1;
+        state = State::GifHeader;
       } else {
         state = State::Failed;
         return false;
@@ -48,6 +52,30 @@ bool ImageDimsProbe::feed(const uint8_t b) {
         }
       }
       pos++;
+      return true;
+
+    case State::GifHeader:
+      gifHeader[gifFill++] = b;
+      if (gifFill == 6) {
+        const bool gif87a = gifHeader[1] == 'I' && gifHeader[2] == 'F' &&
+                            gifHeader[3] == '8' && gifHeader[4] == '7' &&
+                            gifHeader[5] == 'a';
+        const bool gif89a = gifHeader[1] == 'I' && gifHeader[2] == 'F' &&
+                            gifHeader[3] == '8' && gifHeader[4] == '9' &&
+                            gifHeader[5] == 'a';
+        if (!gif87a && !gif89a) {
+          state = State::Failed;
+          return false;
+        }
+      }
+      if (gifFill == 10) {
+        width = static_cast<uint32_t>(gifHeader[6]) |
+                (static_cast<uint32_t>(gifHeader[7]) << 8);
+        height = static_cast<uint32_t>(gifHeader[8]) |
+                 (static_cast<uint32_t>(gifHeader[9]) << 8);
+        state = State::Done;
+        return false;
+      }
       return true;
 
     case State::JpegSoi:

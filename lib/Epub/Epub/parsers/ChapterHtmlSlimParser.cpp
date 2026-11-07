@@ -977,7 +977,11 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
           // Resolve the image path relative to the HTML file
           std::string resolvedPath = FsHelpers::normalisePath(FsHelpers::decodeUriEscapes(self->contentBase + src));
 
-          if (ImageDecoderFactory::isFormatSupported(resolvedPath)) {
+          const bool formatSupported = ImageDecoderFactory::isFormatSupported(resolvedPath);
+          LOG_DBG("EHP", "Image source: src=%s resolved=%s supported=%d alt=%s",
+                  src.c_str(), resolvedPath.c_str(), formatSupported, alt.c_str());
+
+          if (formatSupported) {
             // Create a unique filename for the cached image
             std::string ext;
             size_t extPos = resolvedPath.rfind('.');
@@ -994,8 +998,11 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
               // image-heavy chapter from stalling for seconds per image.
               ImageDimensions dims = {0, 0};
               ImageDimsProbe headerProbe;
-              self->epub->readItemContentsToStream(resolvedPath, headerProbe, 1024, /*allowEarlyStop=*/true);
+              const bool probeReadSuccess =
+                  self->epub->readItemContentsToStream(resolvedPath, headerProbe, 1024, /*allowEarlyStop=*/true);
               bool gotDimensions = headerProbe.getDimensions(dims);
+              LOG_DBG("EHP", "Image probe: path=%s read=%d dimensions=%d",
+                      resolvedPath.c_str(), probeReadSuccess, gotDimensions);
 
               if (!gotDimensions) {
                 // No header within the stream (rare) — fall back to extracting the
@@ -1007,11 +1014,14 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
                 }
                 HalFile cachedImageFile;
                 bool extractSuccess = false;
-                if (Storage.openFileForWrite("EHP", cachedImagePath, cachedImageFile)) {
+                const bool fileOpened = Storage.openFileForWrite("EHP", cachedImagePath, cachedImageFile);
+                if (fileOpened) {
                   extractSuccess = self->epub->readItemContentsToStream(resolvedPath, cachedImageFile, 4096);
                   cachedImageFile.flush();
                   cachedImageFile.close();
                 }
+                LOG_DBG("EHP", "Image fallback extraction: path=%s opened=%d extracted=%d",
+                        resolvedPath.c_str(), fileOpened, extractSuccess);
                 if (extractSuccess) {
                   // Retry to absorb SD-card sync latency on slow cards, and to close
                   // the silent-drop bug where a single getDimensions failure was fatal.
@@ -1229,16 +1239,22 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
                 self->depth += 1;
                 return;
               } else {
-                LOG_ERR("EHP", "Failed to get image dimensions");
+                LOG_ERR("EHP", "Failed to get image dimensions: src=%s path=%s",
+                        src.c_str(), resolvedPath.c_str());
                 Storage.remove(cachedImagePath.c_str());
               }
             }
+          } else {
+            LOG_DBG("EHP", "Unsupported image format: src=%s resolved=%s",
+                    src.c_str(), resolvedPath.c_str());
           }  // isFormatSupported
         }
       }
 
       // Fallback to alt text if image processing fails
       if (!alt.empty()) {
+        LOG_DBG("EHP", "Using image alt fallback: src=%s alt=%s",
+                src.c_str(), alt.c_str());
         alt = "[Image: " + alt + "]";
         self->startNewTextBlock(self->blockStyleStack.back()
                                     .getCombinedBlockStyle(centeredBlockStyle, BlockStyle::CombineAxis::Horizontal)

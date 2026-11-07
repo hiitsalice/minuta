@@ -45,7 +45,7 @@ namespace {
 //      flattened paragraphs with synthetic row/cell labels.
 // v43: Endnote labels ("Endnote N") and back-arrow glyph replaced.
 // v55: EPUB images wider than 400px are scaled down proportionally.
-constexpr uint8_t SECTION_FILE_VERSION = 55;
+constexpr uint8_t SECTION_FILE_VERSION = 56;
 // Written into the version field while a build is in progress; patched to
 // SECTION_FILE_VERSION only when the build is finalized. An abandoned /
 // crash-interrupted .bin therefore carries version 0, which loadSectionFile rejects

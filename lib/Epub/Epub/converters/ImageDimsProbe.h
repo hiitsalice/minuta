@@ -27,6 +27,7 @@ class ImageDimsProbe : public Print {
   enum class State : uint8_t {
     Sniff,       // first byte decides the format
     PngHeader,   // PNG signature + IHDR at fixed offsets
+    GifHeader,   // GIF87a/GIF89a logical screen descriptor
     JpegSoi,     // second SOI byte (0xD8)
     JpegFf,      // expect a 0xFF marker prefix
     JpegMarker,  // marker type byte (0xFF padding allowed)
@@ -43,6 +44,8 @@ class ImageDimsProbe : public Print {
   uint16_t segLen = 0;
   bool sofPending = false;  // current segment is a SOF frame header
   uint8_t sofBuf[5] = {0};
+  uint8_t gifHeader[10] = {0};
+  uint8_t gifFill = 0;
   uint8_t sofFill = 0;
   // 32-bit: PNG IHDR width/height are 4-byte fields. Accumulating them in a
   // uint16_t silently truncates an oversized image to a plausible small value
