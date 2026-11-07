@@ -6,19 +6,15 @@
 #include <GfxRenderer.h>
 #include <HalStorage.h>
 #include <I18n.h>
-#include <Memory.h>
 
 #include <algorithm>
 
-#include "CrossPointSettings.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 
 namespace {
-constexpr char CUSTOM_SLEEP_ROOT_BMP[] = "/sleep.bmp";
 constexpr char TRANSPARENT_SLEEP_ROOT_BMP[] = "/sleep-overlay.bmp";
 constexpr char TRANSPARENT_SLEEP_ROOT_PNG[] = "/sleep-overlay.png";
-constexpr size_t COPY_BUFFER_SIZE = 2048;
 }  // namespace
 
 BmpViewerActivity::BmpViewerActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, std::string path)
@@ -65,10 +61,6 @@ void BmpViewerActivity::loadSiblingImages() {
   }
 }
 
-bool BmpViewerActivity::canSetSleepCover() const {
-  return FsHelpers::hasBmpExtension(filePath);
-}
-
 bool BmpViewerActivity::renderPng() {
   ImageDimensions dimensions;
   if (!PngToFramebufferConverter::getDimensionsStatic(filePath, dimensions)) return false;
@@ -101,8 +93,8 @@ void BmpViewerActivity::onEnter() {
     const bool hasPrevious = siblingImages.size() > 1 && currentImageIndex > 0;
     const bool hasNext = siblingImages.size() > 1 && currentImageIndex != -1 &&
                          currentImageIndex < static_cast<int>(siblingImages.size()) - 1;
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), canSetSleepCover() ? tr(STR_SET_SLEEP_COVER) : "",
-                                              hasPrevious ? "<" : "", hasNext ? ">" : "");
+    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "",
+                                              hasPrevious ? "Prev" : "", hasNext ? "Next" : "");
     if (renderPng()) {
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
       renderer.displayBuffer(HalDisplay::FAST_REFRESH);
@@ -147,8 +139,8 @@ void BmpViewerActivity::onEnter() {
       bool hasNext = (siblingImages.size() > 1 && currentImageIndex != -1 &&
                       currentImageIndex < static_cast<int>(siblingImages.size()) - 1);
 
-      const auto labels = mappedInput.mapLabels(tr(STR_BACK), canSetSleepCover() ? tr(STR_SET_SLEEP_COVER) : "",
-                                                (hasPrevious ? "<" : ""), (hasNext ? ">" : ""));
+      const auto labels = mappedInput.mapLabels(tr(STR_BACK), "",
+                                                (hasPrevious ? "Prev" : ""), (hasNext ? "Next" : ""));
 
       GUI.fillPopupProgress(renderer, popupRect, 50);
 
@@ -189,47 +181,6 @@ void BmpViewerActivity::onExit() {
   renderer.displayBuffer(HalDisplay::HALF_REFRESH);
 }
 
-void BmpViewerActivity::doSetSleepCover() {
-  GUI.drawPopup(renderer, tr(STR_LOADING_POPUP));
-
-  if (!canSetSleepCover()) return;
-
-  const char* destination = CUSTOM_SLEEP_ROOT_BMP;
-  bool success = filePath == destination;
-
-  if (!success) {
-    auto buffer = makeUniqueNoThrow<uint8_t[]>(COPY_BUFFER_SIZE);
-    if (!buffer) {
-      LOG_ERR("BMP", "OOM: sleep cover copy buffer");
-    } else {
-      HalFile inFile, outFile;
-      if (Storage.openFileForRead("BMP", filePath, inFile) && Storage.openFileForWrite("BMP", destination, outFile)) {
-        int bytesRead;
-        success = true;
-        while ((bytesRead = inFile.read(buffer.get(), COPY_BUFFER_SIZE)) > 0) {
-          if (outFile.write(buffer.get(), static_cast<size_t>(bytesRead)) != static_cast<size_t>(bytesRead)) {
-            success = false;
-            break;
-          }
-        }
-        if (bytesRead < 0) success = false;
-        outFile.close();
-      }
-    }
-  }
-
-  if (success) {
-    SETTINGS.sleepScreen = CrossPointSettings::SLEEP_SCREEN_MODE::CUSTOM;
-    SETTINGS.saveToFile();
-    GUI.drawPopup(renderer, tr(STR_DONE));
-  } else {
-    GUI.drawPopup(renderer, tr(STR_BMP_FAILED));
-  }
-
-  delay(1000);
-  onEnter();
-}
-
 void BmpViewerActivity::loop() {
   // Keep CPU awake/polling so 1st click works
   Activity::loop();
@@ -252,11 +203,6 @@ void BmpViewerActivity::loop() {
 
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     activityManager.goToFileBrowser(filePath);
-    return;
-  }
-
-  if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
-    if (canSetSleepCover()) doSetSleepCover();
     return;
   }
 
