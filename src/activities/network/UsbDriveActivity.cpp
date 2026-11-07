@@ -9,7 +9,6 @@
 #include "components/UITheme.h"
 #include "fontIds.h"
 
-namespace fui = freeink::ui;
 
 void UsbDriveActivity::onEnter() {
   Activity::onEnter();
