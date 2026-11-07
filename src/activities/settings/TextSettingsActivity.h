@@ -8,7 +8,6 @@
 
 #include "TextSettingsPreview.h"
 #include "activities/UiListActivity.h"
-#include "components/OptionPopup.h"
 #include "components/themes/BaseTheme.h"
 
 // Reader text settings: one flat list (Font, Size, then the layout and style rows) with the live
