@@ -83,9 +83,6 @@ class ActivityManager {
   // goTo... functions are convenient wrapper for replaceActivity()
   void goToFileTransfer();
   void goToUsbDrive();
-#ifdef SIMULATOR
-  void goToUsbDriveDemo();
-#endif
   void goToSettings();
   void goToFileBrowser(std::string path = {});
   void goToBrowseMenu();

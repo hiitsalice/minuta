@@ -12,15 +12,6 @@
 
 void UsbDriveActivity::onEnter() {
   Activity::onEnter();
-#ifdef SIMULATOR
-  if (simulatorDemo) {
-    preparing = true;
-    state = State::WaitingForHost;
-    requestUpdate();
-    return;
-  }
-#endif
-
   // Show the safety instructions before giving the raw SD card to the USB host.
   requestUpdateAndWait();
   if (!Storage.beginUsbDrive()) {
@@ -40,35 +31,11 @@ void UsbDriveActivity::onEnter() {
 }
 
 void UsbDriveActivity::onExit() {
-#ifdef SIMULATOR
-  if (simulatorDemo) {
-    Activity::onExit();
-    return;
-  }
-#endif
   if (!restartRequested) Storage.endUsbDrive();
   Activity::onExit();
 }
 
 void UsbDriveActivity::loop() {
-#ifdef SIMULATOR
-  if (simulatorDemo) {
-    if (mappedInput.wasPressed(MappedInputManager::Button::Power) ||
-        (simulatorDemoState == 1 && mappedInput.wasPressed(MappedInputManager::Button::Back))) {
-      onGoHome();
-      return;
-    }
-    if (mappedInput.wasPressed(MappedInputManager::Button::Left)) {
-      simulatorDemoState = (simulatorDemoState + 3) % 4;
-      requestUpdate();
-    } else if (mappedInput.wasPressed(MappedInputManager::Button::Right)) {
-      simulatorDemoState = (simulatorDemoState + 1) % 4;
-      requestUpdate();
-    }
-    return;
-  }
-#endif
-
   if (!startFailed) {
     const State nextState = Storage.usbDriveState();
     if (nextState != state) {
@@ -132,29 +99,6 @@ void UsbDriveActivity::render(RenderLock&&) {
     }
   };
 
-#ifdef SIMULATOR
-  if (simulatorDemo) {
-    switch (simulatorDemoState) {
-      case 0:
-        drawLine(386, tr(STR_USB_DRIVE_PREPARING), EpdFontFamily::BOLD);
-        drawLine(414, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
-        break;
-      case 1:
-        drawLine(386, tr(STR_USB_DRIVE_WAITING), EpdFontFamily::BOLD);
-        drawLine(414, tr(STR_USB_DRIVE_WAITING_HINT), EpdFontFamily::REGULAR);
-        break;
-      case 2:
-        drawLine(372, tr(STR_USB_DRIVE_CONNECTED), EpdFontFamily::BOLD);
-        drawLine(400, tr(STR_USB_DRIVE_CONNECT_DELAY), EpdFontFamily::REGULAR);
-        drawLine(428, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
-        break;
-      case 3:
-        drawLine(386, tr(STR_USB_DRIVE_ERROR), EpdFontFamily::BOLD);
-        drawLine(414, tr(STR_USB_DRIVE_START_ERROR), EpdFontFamily::REGULAR);
-        break;
-    }
-  } else
-#endif
   if (preparing) {
     drawLine(386, tr(STR_USB_DRIVE_PREPARING), EpdFontFamily::BOLD);
     drawLine(414, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
@@ -180,12 +124,6 @@ void UsbDriveActivity::render(RenderLock&&) {
     }
   }
 
-#ifdef SIMULATOR
-  if (simulatorDemo && simulatorDemoState == 1) {
-    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "", "", "");
-    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
-  } else
-#endif
   if (!preparing && state == State::WaitingForHost && !startFailed) {
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);

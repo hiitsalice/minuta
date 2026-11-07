@@ -226,12 +226,6 @@ void ActivityManager::goToUsbDrive() {
 #endif
 }
 
-#ifdef SIMULATOR
-void ActivityManager::goToUsbDriveDemo() {
-  replaceActivity(std::make_unique<UsbDriveActivity>(renderer, mappedInput, true));
-}
-#endif
-
 void ActivityManager::goToSettings() { replaceActivity(std::make_unique<SettingsActivity>(renderer, mappedInput)); }
 
 void ActivityManager::goToFileBrowser(std::string path) {
