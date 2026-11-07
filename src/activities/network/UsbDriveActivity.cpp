@@ -58,6 +58,13 @@ void UsbDriveActivity::loop() {
       onGoHome();
       return;
     }
+    if (mappedInput.wasPressed(MappedInputManager::Button::Left)) {
+      simulatorDemoState = (simulatorDemoState + 3) % 4;
+      requestUpdate();
+    } else if (mappedInput.wasPressed(MappedInputManager::Button::Right)) {
+      simulatorDemoState = (simulatorDemoState + 1) % 4;
+      requestUpdate();
+    }
     return;
   }
 #endif
@@ -114,7 +121,19 @@ void UsbDriveActivity::render(RenderLock&&) {
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int pageWidth = renderer.getScreenWidth();
-  GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight}, tr(STR_USB_DRIVE));
+#ifdef SIMULATOR
+  if (simulatorDemo) {
+    const Rect headerBounds{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight};
+    GUI.drawHeader(renderer, headerBounds, "");
+    const int headerLineHeight = renderer.getLineHeight(UI_12_FONT_ID);
+    UITheme::drawCenteredText(renderer, headerBounds, UI_12_FONT_ID,
+                              headerBounds.y + (headerBounds.height - headerLineHeight) / 2,
+                              tr(STR_USB_DRIVE), true, EpdFontFamily::BOLD);
+  } else
+#endif
+  {
+    GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight}, tr(STR_USB_DRIVE));
+  }
 
   const Rect textBounds{0, 0, pageWidth, renderer.getScreenHeight()};
   const int lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
@@ -124,6 +143,29 @@ void UsbDriveActivity::render(RenderLock&&) {
     }
   };
 
+#ifdef SIMULATOR
+  if (simulatorDemo) {
+    switch (simulatorDemoState) {
+      case 0:
+        drawLine(386, tr(STR_USB_DRIVE_PREPARING), EpdFontFamily::BOLD);
+        drawLine(414, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
+        break;
+      case 1:
+        drawLine(386, tr(STR_USB_DRIVE_WAITING), EpdFontFamily::BOLD);
+        drawLine(414, tr(STR_USB_DRIVE_WAITING_HINT), EpdFontFamily::REGULAR);
+        break;
+      case 2:
+        drawLine(372, tr(STR_USB_DRIVE_CONNECTED), EpdFontFamily::BOLD);
+        drawLine(400, tr(STR_USB_DRIVE_CONNECT_DELAY), EpdFontFamily::REGULAR);
+        drawLine(428, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
+        break;
+      case 3:
+        drawLine(386, tr(STR_USB_DRIVE_ERROR), EpdFontFamily::BOLD);
+        drawLine(414, tr(STR_USB_DRIVE_START_ERROR), EpdFontFamily::REGULAR);
+        break;
+    }
+  } else
+#endif
   if (preparing) {
     drawLine(386, tr(STR_USB_DRIVE_PREPARING), EpdFontFamily::BOLD);
     drawLine(414, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
@@ -149,6 +191,12 @@ void UsbDriveActivity::render(RenderLock&&) {
     }
   }
 
+#ifdef SIMULATOR
+  if (simulatorDemo && simulatorDemoState == 1) {
+    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "", "", "");
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  } else
+#endif
   if (!preparing && state == State::WaitingForHost && !startFailed) {
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
