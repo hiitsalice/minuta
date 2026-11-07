@@ -53,8 +53,7 @@ void UsbDriveActivity::onExit() {
 void UsbDriveActivity::loop() {
 #ifdef SIMULATOR
   if (simulatorDemo) {
-    if (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
-        mappedInput.wasPressed(MappedInputManager::Button::Power)) {
+    if (simulatorDemoState == 1 && mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       onGoHome();
       return;
     }
@@ -124,9 +123,7 @@ void UsbDriveActivity::loop() {
     return;
   }
 
-  const bool canExitWithInput = state == State::WaitingForHost || startFailed;
-  if (canExitWithInput && (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
-                           mappedInput.wasPressed(MappedInputManager::Button::Power))) {
+  if (state == State::WaitingForHost && mappedInput.wasPressed(MappedInputManager::Button::Back)) {
     restartToHome();
     return;
   }
@@ -157,7 +154,8 @@ void UsbDriveActivity::render(RenderLock&&) {
   } else {
     switch (state) {
       case State::WaitingForHost:
-        drawLine(400, tr(STR_USB_DRIVE_WAITING), EpdFontFamily::REGULAR);
+        drawLine(386, tr(STR_USB_DRIVE_WAITING), EpdFontFamily::BOLD);
+        drawLine(414, tr(STR_USB_DRIVE_WAITING_HINT), EpdFontFamily::REGULAR);
         break;
       case State::Connected:
         drawLine(372, tr(STR_USB_DRIVE_CONNECTED), EpdFontFamily::BOLD);
@@ -175,7 +173,7 @@ void UsbDriveActivity::render(RenderLock&&) {
     }
   }
 
-  if (!preparing && (state == State::WaitingForHost || startFailed)) {
+  if (!preparing && state == State::WaitingForHost && !startFailed) {
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   }
