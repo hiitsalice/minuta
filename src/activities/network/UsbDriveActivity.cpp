@@ -7,13 +7,19 @@
 #include "MappedInputManager.h"
 #include "SilentRestart.h"
 #include "components/UITheme.h"
+#include "fontIds.h"
 
-namespace fui = freeink::ui;
 
 void UsbDriveActivity::onEnter() {
   Activity::onEnter();
-  resetUi();
-  app.setScreen(&UsbDriveActivity::driveScreen, this);
+#ifdef SIMULATOR
+  if (simulatorDemo) {
+    preparing = true;
+    state = State::WaitingForHost;
+    requestUpdate();
+    return;
+  }
+#endif
 
   // Show the safety instructions before giving the raw SD card to the USB host.
   requestUpdateAndWait();
@@ -34,11 +40,35 @@ void UsbDriveActivity::onEnter() {
 }
 
 void UsbDriveActivity::onExit() {
+#ifdef SIMULATOR
+  if (simulatorDemo) {
+    Activity::onExit();
+    return;
+  }
+#endif
   if (!restartRequested) Storage.endUsbDrive();
   Activity::onExit();
 }
 
 void UsbDriveActivity::loop() {
+#ifdef SIMULATOR
+  if (simulatorDemo) {
+    if (mappedInput.wasPressed(MappedInputManager::Button::Power) ||
+        (simulatorDemoState == 1 && mappedInput.wasPressed(MappedInputManager::Button::Back))) {
+      onGoHome();
+      return;
+    }
+    if (mappedInput.wasPressed(MappedInputManager::Button::Left)) {
+      simulatorDemoState = (simulatorDemoState + 3) % 4;
+      requestUpdate();
+    } else if (mappedInput.wasPressed(MappedInputManager::Button::Right)) {
+      simulatorDemoState = (simulatorDemoState + 1) % 4;
+      requestUpdate();
+    }
+    return;
+  }
+#endif
+
   if (!startFailed) {
     const State nextState = Storage.usbDriveState();
     if (nextState != state) {
@@ -74,9 +104,9 @@ void UsbDriveActivity::loop() {
     return;
   }
 
-  const bool canExitWithInput = state == State::WaitingForHost || startFailed;
-  if (canExitWithInput && (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
-                           mappedInput.wasPressed(MappedInputManager::Button::Power))) {
+  if ((state == State::WaitingForHost || startFailed) &&
+      (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
+       mappedInput.wasPressed(MappedInputManager::Button::Power))) {
     restartToHome();
     return;
   }
@@ -91,80 +121,76 @@ void UsbDriveActivity::render(RenderLock&&) {
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int pageWidth = renderer.getScreenWidth();
-  GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight}, tr(STR_USB_DRIVE));
+  const Rect headerRect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight};
+  GUI.drawHeader(renderer, headerRect, tr(STR_USB_DRIVE), nullptr);
 
-  renderUi();
+  const Rect textBounds{0, 0, pageWidth, renderer.getScreenHeight()};
+  const int lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
+  const auto drawLine = [&](int centreY, const char* text, EpdFontFamily::Style style) {
+    if (text && *text) {
+      UITheme::drawCenteredText(renderer, textBounds, UI_10_FONT_ID, centreY - lineHeight / 2, text, true, style);
+    }
+  };
 
-  if (state == State::WaitingForHost || startFailed) {
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
-    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
-  }
-  renderer.displayBuffer();
-}
-
-void UsbDriveActivity::driveScreen(UiScreen& screen, void* user) {
-  static_cast<UsbDriveActivity*>(user)->buildDriveScreen(screen);
-}
-
-void UsbDriveActivity::buildDriveScreen(UiScreen& screen) const {
-  const char* message = nullptr;
-  const char* detail = nullptr;
-  const char* secondaryDetail = nullptr;
+#ifdef SIMULATOR
+  if (simulatorDemo) {
+    switch (simulatorDemoState) {
+      case 0:
+        drawLine(386, tr(STR_USB_DRIVE_PREPARING), EpdFontFamily::BOLD);
+        drawLine(414, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
+        break;
+      case 1:
+        drawLine(386, tr(STR_USB_DRIVE_WAITING), EpdFontFamily::BOLD);
+        drawLine(414, tr(STR_USB_DRIVE_WAITING_HINT), EpdFontFamily::REGULAR);
+        break;
+      case 2:
+        drawLine(372, tr(STR_USB_DRIVE_CONNECTED), EpdFontFamily::BOLD);
+        drawLine(400, tr(STR_USB_DRIVE_CONNECT_DELAY), EpdFontFamily::REGULAR);
+        drawLine(428, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
+        break;
+      case 3:
+        drawLine(386, tr(STR_USB_DRIVE_ERROR), EpdFontFamily::BOLD);
+        drawLine(414, tr(STR_USB_DRIVE_START_ERROR), EpdFontFamily::REGULAR);
+        break;
+    }
+  } else
+#endif
   if (preparing) {
-    message = tr(STR_USB_DRIVE_PREPARING);
-    detail = tr(STR_USB_DRIVE_EJECT_HINT);
+    drawLine(386, tr(STR_USB_DRIVE_PREPARING), EpdFontFamily::BOLD);
+    drawLine(414, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
   } else {
     switch (state) {
       case State::WaitingForHost:
-        message = tr(STR_USB_DRIVE_WAITING);
+        drawLine(386, tr(STR_USB_DRIVE_WAITING), EpdFontFamily::BOLD);
+        drawLine(414, tr(STR_USB_DRIVE_WAITING_HINT), EpdFontFamily::REGULAR);
         break;
       case State::Connected:
-        message = tr(STR_USB_DRIVE_CONNECTED);
-        detail = tr(STR_USB_DRIVE_CONNECT_DELAY);
-        secondaryDetail = tr(STR_USB_DRIVE_EJECT_HINT);
+        drawLine(372, tr(STR_USB_DRIVE_CONNECTED), EpdFontFamily::BOLD);
+        drawLine(400, tr(STR_USB_DRIVE_CONNECT_DELAY), EpdFontFamily::REGULAR);
+        drawLine(428, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
         break;
       case State::IoError:
-        message = startFailed ? tr(STR_USB_DRIVE_START_ERROR) : tr(STR_USB_DRIVE_ERROR);
+        drawLine(386, tr(STR_USB_DRIVE_ERROR), EpdFontFamily::BOLD);
+        drawLine(414, tr(STR_USB_DRIVE_START_ERROR), EpdFontFamily::REGULAR);
         break;
       case State::Ejected:
       case State::Disconnected:
       case State::Unsupported:
-        return;
+        break;
     }
   }
 
-  const auto& metrics = UITheme::getInstance().getMetrics();
-  screen.setContentMargin(fui::Insets{
-      static_cast<int16_t>((metrics.topPadding - 6) + metrics.headerHeight), static_cast<int16_t>(metrics.contentSidePadding),
-      static_cast<int16_t>(metrics.buttonHintsHeight), static_cast<int16_t>(metrics.contentSidePadding)});
-
-  auto messageStyle = screen.theme().smallText;
-  messageStyle.align = fui::TextAlign::Center;
-  messageStyle.bold = true;
-  messageStyle.maxLines = 2;
-  auto detailStyle = screen.theme().smallText;
-  detailStyle.align = fui::TextAlign::Center;
-  detailStyle.maxLines = 3;
-
-  const fui::Rect body = screen.body();
-  const int16_t messageHeight = fui::measureWrappedText(screen.target(), message, messageStyle, body.width).height;
-  const int16_t detailHeight =
-      detail ? fui::measureWrappedText(screen.target(), detail, detailStyle, body.width).height : 0;
-  const int16_t secondaryDetailHeight =
-      secondaryDetail ? fui::measureWrappedText(screen.target(), secondaryDetail, detailStyle, body.width).height : 0;
-  const int16_t gap = detail ? screen.theme().spaceMd : 0;
-  const int16_t secondaryGap = secondaryDetail ? screen.theme().spaceMd : 0;
-  const int16_t totalHeight =
-      static_cast<int16_t>(messageHeight + gap + detailHeight + secondaryGap + secondaryDetailHeight);
-  if (body.height > totalHeight) screen.spacer(static_cast<int16_t>((body.height - totalHeight) / 2));
-
-  screen.target().text(screen.takeTop(messageHeight, gap), message, messageStyle);
-  if (detail) {
-    screen.target().text(screen.takeTop(detailHeight, secondaryGap), detail, detailStyle);
+#ifdef SIMULATOR
+  if (simulatorDemo && simulatorDemoState == 1) {
+    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "", "", "");
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  } else
+#endif
+  if (!preparing && state == State::WaitingForHost && !startFailed) {
+    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "", "", "");
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   }
-  if (secondaryDetail) {
-    screen.target().text(screen.takeTop(secondaryDetailHeight), secondaryDetail, detailStyle);
-  }
+  renderer.displayBuffer();
 }
 
 void UsbDriveActivity::restartToHome() {

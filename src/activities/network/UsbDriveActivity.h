@@ -3,19 +3,29 @@
 #include <HalStorage.h>
 
 #include "activities/Activity.h"
-#include "components/UiAppHost.h"
 
-class UsbDriveActivity final : public Activity, private UiAppHost {
+class UsbDriveActivity final : public Activity {
  public:
+#ifdef SIMULATOR
+  UsbDriveActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, bool simulatorDemo = false)
+      : Activity("UsbDrive", renderer, mappedInput), simulatorDemo(simulatorDemo) {}
+#else
   UsbDriveActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
-      : Activity("UsbDrive", renderer, mappedInput), UiAppHost(renderer) {}
+      : Activity("UsbDrive", renderer, mappedInput) {}
+#endif
 
   void onEnter() override;
   void onExit() override;
   void loop() override;
   void render(RenderLock&&) override;
   bool preventAutoSleep() override { return state == State::Connected || (!startFailed && state == State::IoError); }
-  bool requiresExclusiveStorageLoop() const override { return true; }
+  bool requiresExclusiveStorageLoop() const override {
+#ifdef SIMULATOR
+    return !simulatorDemo;
+#else
+    return true;
+#endif
+  }
 
  private:
   using State = UsbDriveState;
@@ -24,8 +34,6 @@ class UsbDriveActivity final : public Activity, private UiAppHost {
   static constexpr unsigned long START_FAILURE_TIMEOUT_MS = 30UL * 1000UL;
   static constexpr unsigned long FORCED_DISCONNECT_TIMEOUT_MS = 1000UL;
 
-  static void driveScreen(UiScreen& screen, void* user);
-  void buildDriveScreen(UiScreen& screen) const;
   void restartToHome();
 
   State state = State::Unsupported;
@@ -36,4 +44,8 @@ class UsbDriveActivity final : public Activity, private UiAppHost {
   unsigned long hostWaitStartedAt = 0;
   unsigned long startFailureStartedAt = 0;
   unsigned long forcedDisconnectRequestedAt = 0;
+#ifdef SIMULATOR
+  bool simulatorDemo = false;
+  uint8_t simulatorDemoState = 0;
+#endif
 };
