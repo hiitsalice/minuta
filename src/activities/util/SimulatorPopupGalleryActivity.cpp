@@ -4,6 +4,7 @@
 #include <I18n.h>
 
 #include <cstddef>
+#include <cstdint>
 
 #include "components/UITheme.h"
 #include "fontIds.h"
@@ -27,7 +28,7 @@ struct PopupScreen {
 // activities or touch storage, Wi-Fi, firmware, or reader state. Line centres
 // follow the fixed positions used by the corresponding Minuta screens.
 constexpr PopupScreen kScreens[] = {
-    {ScreenKind::SLIDER, {{{"30 sec", 360, false}, {"Front buttons: 1 sec", 420, false}, {"Side buttons: 10 sec", 448, false}}}, 50},
+    {ScreenKind::SLIDER, {{"30 sec", 360, false}, {"Front buttons: 1 sec", 420, false}, {"Side buttons: 10 sec", 448, false}}, 50},
     {ScreenKind::SLIDER, {{{"50%", 360, false}, {"Front buttons: 1%", 420, false}, {"Side buttons: 10%", 448, false}}}, 50},
     {ScreenKind::TEXT, {{{"No chapters", 400, false}, {nullptr, 0, false}, {nullptr, 0, false}}}, 0},
     {ScreenKind::TEXT, {{{"No endnotes on this page", 400, false}, {nullptr, 0, false}, {nullptr, 0, false}}}, 0},
@@ -88,12 +89,9 @@ void SimulatorPopupGalleryActivity::loop() {
 void SimulatorPopupGalleryActivity::render(RenderLock&&) {
   renderer.clearScreen();
   const PopupScreen& screen = kScreens[screenIndex];
-  const Rect bounds{0, 0, renderer.getScreenWidth(), renderer.getScreenHeight()};
-
   for (const PopupLine& line : screen.lines) {
     if (line.text) {
-      UITheme::drawCenteredText(renderer, bounds, UI_10_FONT_ID, line.centreY,
-                                line.text, true,
+      renderer.drawCenteredText(UI_10_FONT_ID, line.centreY, line.text, true,
                                 line.bold ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR);
     }
   }
@@ -101,7 +99,7 @@ void SimulatorPopupGalleryActivity::render(RenderLock&&) {
   if (screen.kind == ScreenKind::SLIDER || screen.kind == ScreenKind::PROGRESS) {
     const int left = 42;
     const int width = renderer.getScreenWidth() - left * 2;
-    const int top = 402;
+    const int top = screen.kind == ScreenKind::SLIDER ? 389 : 402;
     renderer.drawRect(left, top, width, 10, true);
     renderer.fillRect(left + 1, top + 1, (width - 2) * screen.progress / 100, 8, true);
   }
