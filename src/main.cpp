@@ -482,6 +482,12 @@ void setup() {
   } else if (rebootedFromPanic) {
     // If we rebooted from a panic, go to crash report screen to show the panic info
     activityManager.goToCrashReport();
+#ifdef SIMULATOR
+  } else {
+    // Simulator starts in the USB Drive state demo; no USB storage is handed off.
+    activityManager.goToUsbDriveDemo();
+  }
+#else
   } else if (resume == BootResume::Silent && snapshotTarget == SILENT_REBOOT_TARGET_READER &&
              !APP_STATE.openEpubPath.empty()) {
     activityManager.goToReader(APP_STATE.openEpubPath);
@@ -494,6 +500,7 @@ void setup() {
     // Minuta always opens Home after a normal boot or wake.
     activityManager.goHome(HomeMenuItem::NONE, needsWakeRefresh);
   }
+#endif
 
   if (resume == BootResume::Silent) {
     // Block until the first paint physically completes. refreshDisplay()
