@@ -153,11 +153,11 @@ void UsbDriveActivity::render(RenderLock&&) {
 
   if (preparing) {
     drawLine(386, tr(STR_USB_DRIVE_PREPARING), EpdFontFamily::BOLD);
-    drawLine(418, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
+    drawLine(414, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
   } else {
     switch (state) {
       case State::WaitingForHost:
-        drawLine(400, tr(STR_USB_DRIVE_WAITING), EpdFontFamily::BOLD);
+        drawLine(400, tr(STR_USB_DRIVE_WAITING), EpdFontFamily::REGULAR);
         break;
       case State::Connected:
         drawLine(372, tr(STR_USB_DRIVE_CONNECTED), EpdFontFamily::BOLD);
@@ -165,8 +165,8 @@ void UsbDriveActivity::render(RenderLock&&) {
         drawLine(428, tr(STR_USB_DRIVE_EJECT_HINT), EpdFontFamily::REGULAR);
         break;
       case State::IoError:
-        drawLine(400, startFailed ? tr(STR_USB_DRIVE_START_ERROR) : tr(STR_USB_DRIVE_ERROR),
-                 EpdFontFamily::BOLD);
+        drawLine(386, tr(STR_USB_DRIVE_ERROR), EpdFontFamily::BOLD);
+        drawLine(414, tr(STR_USB_DRIVE_START_ERROR), EpdFontFamily::REGULAR);
         break;
       case State::Ejected:
       case State::Disconnected:
