@@ -15,7 +15,6 @@
 #include "SdCardFontSystem.h"
 #include "SilentRestart.h"
 #include "activities/network/WifiSelectionActivity.h"
-#include "activities/util/ConfirmationActivity.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "network/HttpDownloader.h"
@@ -532,49 +531,6 @@ void FontDownloadActivity::downloadFamily(ManifestFamily& family) {
     RenderLock lock(*this);
     state_ = COMPLETE;
   }
-}
-
-void FontDownloadActivity::promptDeleteSelectedFamily() {
-  const int pendingDeleteFamilyIndex = familyIndexFromList(nav.selected);
-  if (pendingDeleteFamilyIndex < 0 || pendingDeleteFamilyIndex >= static_cast<int>(families_.size())) {
-    return;
-  }
-
-  std::string heading = tr(STR_DELETE);
-  const auto& family = families_[pendingDeleteFamilyIndex];
-  std::string body = family.name;
-  startActivityForResult(std::make_unique<ConfirmationActivity>(renderer, mappedInput, heading, body),
-                         [this](const ActivityResult& result) { onDeleteConfirmationResult(result); });
-}
-
-void FontDownloadActivity::onDeleteConfirmationResult(const ActivityResult& result) {
-  if (result.isCancelled) {
-    requestUpdate();
-    return;
-  }
-
-  const int familyIndex = familyIndexFromList(nav.selected);
-  if (familyIndex < 0) {
-    requestUpdate();
-    return;
-  }
-  auto& family = families_[familyIndex];
-
-  if (fontInstaller_.deleteFamily(family.name.c_str()) != FontInstaller::Error::OK) {
-    RenderLock lock(*this);
-    state_ = ERROR;
-    errorMessage_ = "Failed to delete font";
-  } else {
-    fontInstaller_.refreshRegistry();
-    family.installed = false;
-    family.hasUpdate = false;
-    // Unlike the other family_ mutations, this one stays in FAMILY_LIST (no
-    // state_ transition to hang the rebuild off), so it must set the flag
-    // directly.
-    rowsDirty_ = true;
-  }
-
-  requestUpdate();
 }
 
 bool FontDownloadActivity::isSelectedFamilyDeletable() const {
