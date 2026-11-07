@@ -55,9 +55,9 @@ class FileBrowserActivity final : public UiListActivity {
   // footer labels depend on path depth and picker mode.
   void drawChrome() override;
   void drawFooter() override;
-  // forceDelete routes the touch long-press to the delete branch; button
-  // navigation leaves it false and relies on getHeldTime() instead.
-  void activateSelected(bool forceDelete = false, bool immediateDelete = false);
+  // forceDelete routes touch long-press directly to deletion; button navigation
+  // uses getHeldTime() to detect the same gesture.
+  void activateSelected(bool forceDelete = false);
 
   // Data loading
   void loadFiles();
