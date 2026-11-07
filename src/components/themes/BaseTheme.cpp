@@ -706,7 +706,9 @@ Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message, cons
   const int w = textWidth + marginX * 2;
   const int h = textHeight + marginY * 2;
   const int x = (renderer.getScreenWidth() - w) / 2;
-  const int y = (renderer.getScreenHeight() - h) / 2;
+  // Anchor the popup text to the shared message baseline. The frame follows
+  // the text instead of independently centring itself on the display.
+  const int y = 400 - marginY - 2;
 
   const bool useRoundedPopup = metrics.popupCornerRadius > 0;
   if (useRoundedPopup) {
@@ -718,15 +720,12 @@ Rect BaseTheme::drawPopup(const GfxRenderer& renderer, const char* message, cons
     renderer.fillRect(x, y, w, h, false);
   }
 
-  // Minuta popup/status messages consistently use Steinem 12pt.
+  // All Minuta popup/status messages use Steinem 10pt at the fixed text top.
   (void)indexingStyle;
   const int drawFontId = UI_10_FONT_ID;
   const int drawTextWidth = renderer.getTextWidth(drawFontId, message, popupFontFamily);
-  const int drawLineHeight = renderer.getLineHeight(drawFontId);
   const int textX = x + (w - drawTextWidth) / 2;
-
-  // Centre the text exactly within the popup frame.
-  const int textY = y + (h - drawLineHeight) / 2 + 2;
+  constexpr int textY = 400;
   renderer.drawText(drawFontId, textX, textY, message, metrics.popupTextInverted, popupFontFamily);
   renderer.displayBuffer();
   return Rect{x, y, w, h};
