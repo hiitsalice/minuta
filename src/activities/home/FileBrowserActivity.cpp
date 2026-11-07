@@ -10,7 +10,6 @@
 
 #include "CrossPointSettings.h"
 #include "MappedInputManager.h"
-#include "activities/util/ConfirmationActivity.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 #include "fontIds.h"
@@ -259,7 +258,7 @@ void FileBrowserActivity::onRowLongPress(const int index) {
   activateSelected(/*forceDelete=*/true);
 }
 
-void FileBrowserActivity::activateSelected(const bool forceDelete, const bool immediateDelete) {
+void FileBrowserActivity::activateSelected(const bool forceDelete) {
   if (files.empty()) return;
   // A touch activation can carry a row index captured before a delete/reload
   // shrank the list; the next render re-registers the rows.
@@ -312,15 +311,9 @@ void FileBrowserActivity::activateSelected(const bool forceDelete, const bool im
       }
     };
 
-    if (immediateDelete) {
-      ActivityResult confirmed;
-      confirmed.isCancelled = false;
-      handler(confirmed);
-    } else {
-      std::string heading = tr(STR_DELETE) + std::string("? ");
-
-      startActivityForResult(std::make_unique<ConfirmationActivity>(renderer, mappedInput, heading, entry), handler);
-    }
+    ActivityResult confirmed;
+    confirmed.isCancelled = false;
+    handler(confirmed);
     return;
   } else {
     // --- SHORT PRESS ACTION: OPEN/NAVIGATE ---
@@ -380,7 +373,7 @@ bool FileBrowserActivity::handleCustomInput() {
 bool FileBrowserActivity::handleButtons() {
   if (mode == Mode::Books &&
       mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, DELETE_MS)) {
-    activateSelected(/*forceDelete=*/true, /*immediateDelete=*/true);
+    activateSelected(/*forceDelete=*/true);
     return true;
   }
 
@@ -485,7 +478,7 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   props.items = rowItems.data();
   props.count = static_cast<uint16_t>(rowItems.size());
   props.action = ACTION_ROW;
-  // Tap opens/navigates; long-press prompts delete (physical buttons stay in loop()).
+  // Tap opens/navigates; long-press deletes immediately (physical buttons stay in loop()).
   // File names in the small font, wrapping onto a second line inside the same
   // row height (rowHeight is derived from the small font itself: two of its
   // lines plus 8, so two small lines always fit), so long names show more

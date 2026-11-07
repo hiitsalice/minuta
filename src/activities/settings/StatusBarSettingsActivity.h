@@ -2,7 +2,6 @@
 #include <string>
 
 #include "activities/UiListActivity.h"
-#include "components/OptionPopup.h"
 
 // Reader status bar configuration activity
 class StatusBarSettingsActivity final : public UiListActivity {
@@ -16,12 +15,9 @@ class StatusBarSettingsActivity final : public UiListActivity {
   void render(RenderLock&&) override;
 
  private:
-  OptionPopup optionPopup;
-
   int listCount() const override { return MAX_STATUS_BAR_ITEMS; }
   void buildScreen(UiScreen& screen) override;
   void activateIndex(int index) override;
-  bool handleCustomInput() override;
 
   std::string rowValueText(int index);
 

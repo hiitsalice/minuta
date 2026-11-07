@@ -7,10 +7,9 @@
 void FullScreenMessageActivity::onEnter() {
   Activity::onEnter();
 
-  const auto height = renderer.getLineHeight(UI_10_FONT_ID);
-  const auto top = (renderer.getScreenHeight() - height) / 2;
+  constexpr int top = 400;
 
   renderer.clearScreen();
-  renderer.drawCenteredText(UI_10_FONT_ID, top, text.c_str(), true, style);
+  renderer.drawCenteredText(UI_10_FONT_ID, top, text.c_str(), true, EpdFontFamily::REGULAR);
   renderer.displayBuffer(refreshMode);
 }

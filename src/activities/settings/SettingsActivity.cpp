@@ -11,7 +11,6 @@
 
 #include "ButtonRemapActivity.h"
 #include "ButtonShortcutsActivity.h"
-#include "activities/util/ConfirmationActivity.h"
 #include "ClearCacheActivity.h"
 #include "CrossPointSettings.h"
 #include "FontDownloadActivity.h"
@@ -179,13 +178,11 @@ void SettingsActivity::rebuildRowItems() {
 }
 
 void SettingsActivity::onTabAction(const int index) {
-  if (optionPopup.isActive()) return;
   selectCategory(index);
   app.clearTapFlash();
 }
 
 void SettingsActivity::activateIndex(const int index) {
-  if (optionPopup.isActive()) return;
   if (index < 0 || static_cast<size_t>(index) >= visibleRows.size()) return;
 
   app.clearTapFlash();
@@ -278,7 +275,7 @@ void SettingsActivity::applyUiSettingChange(uint8_t CrossPointSettings::* valueP
 }
 
 bool SettingsActivity::handleCustomInput() {
-  return optionPopup.handleInput(mappedInput, [this] { requestUpdate(); });
+  return false;
 }
 
 bool SettingsActivity::handleButtons() {
@@ -310,8 +307,6 @@ void SettingsActivity::toggleCurrentSetting() {
   }
 
   const auto& setting = (*currentSettings)[row.settingIndex];
-  const bool sleepScreenChanged = setting.valuePtr == &CrossPointSettings::sleepScreen;
-  const bool quickResumeTimeoutChanged = setting.valuePtr == &CrossPointSettings::quickResumeSleepScreen;
 
   if (setting.nameId == StrId::STR_TIME_TO_SLEEP) {
     openSleepTimeoutPicker();
@@ -324,40 +319,12 @@ void SettingsActivity::toggleCurrentSetting() {
     SETTINGS.*(setting.valuePtr) = !currentValue;
   } else if (setting.type == SettingType::ENUM && setting.valuePtr != nullptr) {
     const uint8_t currentValue = SETTINGS.*(setting.valuePtr);
-    if (setting.enumValues.size() > 2 && !setting.noPopup) {
-      const auto valuePtr = setting.valuePtr;
-      optionPopup.show(setting.nameId, setting.enumValues.data(), static_cast<int>(setting.enumValues.size()),
-                       currentValue, [this, valuePtr, sleepScreenChanged, quickResumeTimeoutChanged](int idx) {
-                         SETTINGS.*valuePtr = idx;
-                         SETTINGS.saveToFile();
-                         rebuildSettingsLists();
-                         applyUiSettingChange(valuePtr);
-                       });
-      requestUpdate();
-      return;
-    }
     SETTINGS.*(setting.valuePtr) = (currentValue + 1) % static_cast<uint8_t>(setting.enumValues.size());
   } else if (setting.type == SettingType::ENUM && setting.valueGetter && setting.valueSetter) {
     const uint8_t totalValues = setting.enumStringValues.empty()
                                     ? static_cast<uint8_t>(setting.enumValues.size())
                                     : static_cast<uint8_t>(setting.enumStringValues.size());
     const uint8_t cur = setting.valueGetter();
-    if (totalValues > 2 && !setting.noPopup) {
-      const auto valueSetter = setting.valueSetter;
-      auto onSelect = [this, valueSetter, sleepScreenChanged, quickResumeTimeoutChanged](int idx) {
-        valueSetter(idx);
-        SETTINGS.saveToFile();
-        rebuildSettingsLists();
-      };
-      if (!setting.enumStringValues.empty()) {
-        optionPopup.show(setting.nameId, setting.enumStringValues, cur, std::move(onSelect));
-      } else {
-        optionPopup.show(setting.nameId, setting.enumValues.data(), static_cast<int>(setting.enumValues.size()), cur,
-                         std::move(onSelect));
-      }
-      requestUpdate();
-      return;
-    }
     setting.valueSetter((cur + 1) % totalValues);
   } else if (setting.type == SettingType::VALUE && setting.valuePtr != nullptr) {
     const int8_t currentValue = SETTINGS.*(setting.valuePtr);
@@ -538,7 +505,6 @@ void SettingsActivity::buildScreen(UiScreen& screen) {
 }
 
 void SettingsActivity::render(RenderLock&&) {
-  if (optionPopup.processRender(renderer, mappedInput)) return;
 
   renderer.clearScreen();
 

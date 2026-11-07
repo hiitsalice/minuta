@@ -154,7 +154,6 @@ bool EpubReaderMenuActivity::handleHomeGesture() {
 }
 
 void EpubReaderMenuActivity::activateIndex(const int index) {
-  if (optionPopup.isActive()) return;
   if (index < 0 || index >= static_cast<int>(visibleRows.size())) return;
 
   // The activated row leaves this screen (popup or finish), or changes the
@@ -234,10 +233,6 @@ void EpubReaderMenuActivity::activateIndex(const int index) {
   if (selectedRow) *selectedRow = nav.selected;
   setResult(MenuResult{static_cast<int>(selectedAction), pendingOrientation, selectedPageTurnOption});
   finish();
-}
-
-bool EpubReaderMenuActivity::handleCustomInput() {
-  return optionPopup.handleInput(mappedInput, [this] { requestUpdate(); });
 }
 
 void EpubReaderMenuActivity::navigateButtons() {
@@ -379,8 +374,6 @@ void EpubReaderMenuActivity::drawChrome() {
 }
 
 void EpubReaderMenuActivity::render(RenderLock&&) {
-  if (optionPopup.processRender(renderer, mappedInput)) return;
-
   renderer.clearScreen();
   drawChrome();
 

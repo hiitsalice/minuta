@@ -7,7 +7,6 @@
 
 #include "CrossPointSettings.h"
 #include "activities/UiTabListActivity.h"
-#include "components/OptionPopup.h"
 #include "util/ButtonNavigator.h"
 
 enum class SettingType { TOGGLE, ENUM, ACTION, VALUE, STRING };
@@ -189,7 +188,6 @@ class SettingsActivity final : public UiTabListActivity {
   // corresponding entry in currentSettings for normal rows.
   std::vector<VisibleRow> visibleRows;
 
-  OptionPopup optionPopup;
   ButtonNavigator settingsNavigator;  // tap = one row, hold (700ms) = jump to adjacent section
 
   // Row structure (label/actionValue) for the visible rows, rebuilt only when

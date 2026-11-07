@@ -363,7 +363,7 @@ void setup() {
   if (!Storage.begin()) {
     LOG_ERR("MAIN", "SD card initialization failed");
     setupDisplayAndFonts(isSilentReboot);
-    activityManager.goToFullScreenMessage("SD card error", EpdFontFamily::BOLD);
+    activityManager.goToFullScreenMessage("SD card error", EpdFontFamily::REGULAR);
     return;
   }
 

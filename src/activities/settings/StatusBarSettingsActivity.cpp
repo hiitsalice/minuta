@@ -75,12 +75,7 @@ void StatusBarSettingsActivity::onEnter() {
   }
 }
 
-bool StatusBarSettingsActivity::handleCustomInput() {
-  return optionPopup.handleInput(mappedInput, [this] { requestUpdate(); });
-}
-
 void StatusBarSettingsActivity::activateIndex(const int index) {
-  if (optionPopup.isActive()) return;
   nav.selected = index;
   // Activation opens a popup/sub-activity or repaints a new value; a lingering
   // flash would gray an unrelated row.
@@ -176,8 +171,6 @@ void StatusBarSettingsActivity::buildScreen(UiScreen& screen) {
 }
 
 void StatusBarSettingsActivity::render(RenderLock&&) {
-  if (optionPopup.processRender(renderer, mappedInput)) return;
-
   renderer.clearScreen();
 
   auto metrics = UITheme::getInstance().getMetrics();

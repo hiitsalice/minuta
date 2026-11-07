@@ -10,7 +10,6 @@
 
 #include "MappedInputManager.h"
 #include "RecentBooksStore.h"
-#include "activities/util/ConfirmationActivity.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 
