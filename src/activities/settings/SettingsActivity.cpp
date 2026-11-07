@@ -183,7 +183,6 @@ void SettingsActivity::onTabAction(const int index) {
 }
 
 void SettingsActivity::activateIndex(const int index) {
-  if (optionPopup.isActive()) return;
   if (index < 0 || static_cast<size_t>(index) >= visibleRows.size()) return;
 
   app.clearTapFlash();
@@ -308,8 +307,6 @@ void SettingsActivity::toggleCurrentSetting() {
   }
 
   const auto& setting = (*currentSettings)[row.settingIndex];
-  const bool sleepScreenChanged = setting.valuePtr == &CrossPointSettings::sleepScreen;
-  const bool quickResumeTimeoutChanged = setting.valuePtr == &CrossPointSettings::quickResumeSleepScreen;
 
   if (setting.nameId == StrId::STR_TIME_TO_SLEEP) {
     openSleepTimeoutPicker();
