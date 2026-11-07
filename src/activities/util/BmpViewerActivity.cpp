@@ -8,6 +8,7 @@
 #include <I18n.h>
 
 #include <algorithm>
+#include <cmath>
 
 #include "components/UITheme.h"
 #include "fontIds.h"
@@ -15,6 +16,30 @@
 namespace {
 constexpr char TRANSPARENT_SLEEP_ROOT_BMP[] = "/sleep-overlay.bmp";
 constexpr char TRANSPARENT_SLEEP_ROOT_PNG[] = "/sleep-overlay.png";
+constexpr int MAX_IMAGE_DISPLAY_WIDTH = 400;
+
+struct ImageFit {
+  int x;
+  int y;
+  int width;
+  int height;
+};
+
+ImageFit fitImageToScreen(const int sourceWidth, const int sourceHeight, const int screenWidth,
+                          const int screenHeight) {
+  if (sourceWidth <= 0 || sourceHeight <= 0 || screenWidth <= 0 || screenHeight <= 0) {
+    return {0, 0, 0, 0};
+  }
+
+  float scale = 1.0f;
+  scale = std::min(scale, static_cast<float>(MAX_IMAGE_DISPLAY_WIDTH) / sourceWidth);
+  scale = std::min(scale, static_cast<float>(screenHeight) / sourceHeight);
+
+  const int width = std::max(1, static_cast<int>(std::lround(sourceWidth * scale)));
+  const int height = std::max(1, static_cast<int>(std::lround(sourceHeight * scale)));
+
+  return {(screenWidth - width) / 2, (screenHeight - height) / 2, width, height};
+}
 }  // namespace
 
 BmpViewerActivity::BmpViewerActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, std::string path)
@@ -66,12 +91,11 @@ bool BmpViewerActivity::renderPng() {
   if (!PngToFramebufferConverter::getDimensionsStatic(filePath, dimensions)) return false;
   if (dimensions.width <= 0 || dimensions.height <= 0) return false;
 
-  const float scale = std::min(static_cast<float>(renderer.getScreenWidth()) / dimensions.width,
-                               static_cast<float>(renderer.getScreenHeight()) / dimensions.height);
-  const int width = std::min(renderer.getScreenWidth(), static_cast<int>(dimensions.width * std::min(scale, 1.0f)));
-  const int height = std::min(renderer.getScreenHeight(), static_cast<int>(dimensions.height * std::min(scale, 1.0f)));
-  RenderConfig config{(renderer.getScreenWidth() - width) / 2, (renderer.getScreenHeight() - height) / 2, width,
-                      height};
+  const ImageFit fit = fitImageToScreen(dimensions.width, dimensions.height, renderer.getScreenWidth(),
+                                        renderer.getScreenHeight());
+  if (fit.width <= 0 || fit.height <= 0) return false;
+
+  RenderConfig config{fit.x, fit.y, fit.width, fit.height};
 
   PngToFramebufferConverter converter;
   return converter.decodeToFramebuffer(filePath, renderer, config);
@@ -113,26 +137,11 @@ void BmpViewerActivity::onEnter() {
 
     // 2. Parse headers to get dimensions
     if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-      int x, y;
-
-      if (bitmap.getWidth() > pageWidth || bitmap.getHeight() > pageHeight) {
-        float ratio = static_cast<float>(bitmap.getWidth()) / static_cast<float>(bitmap.getHeight());
-        const float screenRatio = static_cast<float>(pageWidth) / static_cast<float>(pageHeight);
-
-        if (ratio > screenRatio) {
-          // Wider than screen
-          x = 0;
-          y = std::round((static_cast<float>(pageHeight) - static_cast<float>(pageWidth) / ratio) / 2);
-        } else {
-          // Taller than screen
-          x = std::round((static_cast<float>(pageWidth) - static_cast<float>(pageHeight) * ratio) / 2);
-          y = 0;
-        }
-      } else {
-        // Center small images
-        x = (pageWidth - bitmap.getWidth()) / 2;
-        y = (pageHeight - bitmap.getHeight()) / 2;
-      }
+      const ImageFit fit = fitImageToScreen(bitmap.getWidth(), bitmap.getHeight(), pageWidth, pageHeight);
+      const int x = fit.x;
+      const int y = fit.y;
+      const int displayWidth = fit.width;
+      const int displayHeight = fit.height;
 
       // 4. Prepare Rendering
       bool hasPrevious = (siblingImages.size() > 1 && currentImageIndex > 0);
@@ -147,7 +156,7 @@ void BmpViewerActivity::onEnter() {
       renderer.clearScreen();
       // Assuming drawBitmap defaults to 0,0 crop if omitted, or pass explicitly: drawBitmap(bitmap, x, y, pageWidth,
       // pageHeight, 0, 0)
-      renderer.drawBitmap(bitmap, x, y, pageWidth, pageHeight, 0, 0);
+      renderer.drawBitmap(bitmap, x, y, displayWidth, displayHeight, 0, 0);
 
       // Draw UI hints on the base layer
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);

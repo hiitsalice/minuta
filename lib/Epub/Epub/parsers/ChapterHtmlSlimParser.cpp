@@ -1124,6 +1124,17 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
                   LOG_DBG("EHP", "Display size: %dx%d (scale %.2f)", displayWidth, displayHeight, scale);
                 }
 
+                // Keep every displayed image at or below 400px wide, while
+                // respecting the available container width and preserving the
+                // dimensions' existing aspect ratio. Smaller images are not enlarged.
+                constexpr int MAX_IMAGE_DISPLAY_WIDTH = 400;
+                const int maxDisplayWidth = std::min(MAX_IMAGE_DISPLAY_WIDTH, containerWidth);
+                if (displayWidth > maxDisplayWidth) {
+                  const float scale = static_cast<float>(maxDisplayWidth) / displayWidth;
+                  displayWidth = maxDisplayWidth;
+                  displayHeight = std::max(1, static_cast<int>(displayHeight * scale + 0.5f));
+                }
+
                 // Flush any pending text block so it appears before the image
                 if (self->partWordBufferIndex > 0) {
                   self->flushPartWordBuffer();
