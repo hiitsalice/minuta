@@ -27,6 +27,9 @@
 #include "settings/SettingsActivity.h"
 #include "util/BmpViewerActivity.h"
 #include "util/FullScreenMessageActivity.h"
+#ifdef SIMULATOR
+#include "util/SimulatorPopupGalleryActivity.h"
+#endif
 #include "util/UnsupportedFileFormatActivity.h"
 
 static portMUX_TYPE activityManagerSpinlock = portMUX_INITIALIZER_UNLOCKED;
@@ -227,8 +230,8 @@ void ActivityManager::goToUsbDrive() {
 }
 
 #ifdef SIMULATOR
-void ActivityManager::goToUsbDriveDemo() {
-  replaceActivity(std::make_unique<UsbDriveActivity>(renderer, mappedInput, true));
+void ActivityManager::goToPopupScreenGallery() {
+  replaceActivity(std::make_unique<SimulatorPopupGalleryActivity>(renderer, mappedInput));
 }
 #endif
 
