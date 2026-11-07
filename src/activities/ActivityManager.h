@@ -84,7 +84,7 @@ class ActivityManager {
   void goToFileTransfer();
   void goToUsbDrive();
 #ifdef SIMULATOR
-  void goToUsbDriveDemo();
+  void goToPopupScreenGallery();
 #endif
   void goToSettings();
   void goToFileBrowser(std::string path = {});
