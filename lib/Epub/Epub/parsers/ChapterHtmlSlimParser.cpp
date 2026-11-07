@@ -1158,8 +1158,8 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
                 // Top margin lives on the empty text block (deposited via vertical merge
                 // in startNewTextBlock). Bottom margin was stripped by withoutBottom() for
                 // deferred application at element close, so read it from the stack.
-                int16_t imageMarginTop = 0;
-                int16_t imageMarginBottom = 0;
+                int imageMarginTop = 0;
+                int imageMarginBottom = 0;
                 if (self->currentTextBlock && self->currentTextBlock->isEmpty()) {
                   const auto& bs = self->currentTextBlock->getBlockStyle();
                   imageMarginTop = bs.topInset();
@@ -1167,6 +1167,13 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
                     imageMarginBottom = self->blockStyleStack.back().bottomInset();
                   }
                 }
+
+                // Give every image one active text line of breathing room above
+                // and below, in addition to any spacing specified by the EPUB.
+                const int imageLineSpacing =
+                    std::max(1, self->renderer.getLineHeight(self->fontId, self->lineCompression));
+                imageMarginTop += imageLineSpacing;
+                imageMarginBottom += imageLineSpacing;
 
                 // Create page for image - only break if image won't fit remaining space
                 if (self->currentPage && !self->currentPage->elements.empty() &&
@@ -1200,8 +1207,15 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
                 // ImageBlock::render's bounds check, dropping the image entirely.
                 if (self->currentPageNextY + imageMarginTop + displayHeight > self->viewportHeight) {
                   const int room = self->viewportHeight - displayHeight - self->currentPageNextY;
-                  imageMarginTop = static_cast<int16_t>(room > 0 ? room : 0);
+                  imageMarginTop = std::max(0, room);
                 }
+
+                // Keep the bottom spacing inside the page when a large image
+                // leaves less than one line of room beneath it.
+                const int bottomRoom =
+                    self->viewportHeight - self->currentPageNextY - imageMarginTop - displayHeight;
+                imageMarginBottom = std::max(0, std::min(imageMarginBottom, bottomRoom));
+
                 self->currentPageNextY += imageMarginTop;
 
                 // Create ImageBlock and add to page
