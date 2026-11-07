@@ -121,8 +121,6 @@ class FontDownloadActivity final : public UiListActivity {
   bool isDownloadAllRow(int index) const;
   bool isUpdateAllRow(int index) const;
   bool isSelectedFamilyDeletable() const;
-  void promptDeleteSelectedFamily();
-  void onDeleteConfirmationResult(const ActivityResult& result);
   int familyIndexFromList(int listIndex) const;
   int listItemCount() const;
   bool hasGroupScreen() const { return !scriptGroupLabels_.empty(); }
