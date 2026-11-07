@@ -53,36 +53,10 @@ void UsbDriveActivity::onExit() {
 void UsbDriveActivity::loop() {
 #ifdef SIMULATOR
   if (simulatorDemo) {
-    if (simulatorDemoState == 1 && mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+    if (mappedInput.wasPressed(MappedInputManager::Button::Power) ||
+        (simulatorDemoState == 1 && mappedInput.wasPressed(MappedInputManager::Button::Back))) {
       onGoHome();
       return;
-    }
-
-    bool changed = false;
-    if (mappedInput.wasPressed(MappedInputManager::Button::Right)) {
-      simulatorDemoState = static_cast<uint8_t>((simulatorDemoState + 1) % 4);
-      changed = true;
-    } else if (mappedInput.wasPressed(MappedInputManager::Button::Left)) {
-      simulatorDemoState = static_cast<uint8_t>((simulatorDemoState + 3) % 4);
-      changed = true;
-    }
-
-    if (changed) {
-      preparing = simulatorDemoState == 0;
-      startFailed = false;
-      switch (simulatorDemoState) {
-        case 0:
-        case 1:
-          state = State::WaitingForHost;
-          break;
-        case 2:
-          state = State::Connected;
-          break;
-        case 3:
-          state = State::IoError;
-          break;
-      }
-      requestUpdate();
     }
     return;
   }
@@ -123,7 +97,9 @@ void UsbDriveActivity::loop() {
     return;
   }
 
-  if (state == State::WaitingForHost && mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+  if (state == State::WaitingForHost &&
+      (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
+       mappedInput.wasPressed(MappedInputManager::Button::Power))) {
     restartToHome();
     return;
   }
@@ -174,7 +150,7 @@ void UsbDriveActivity::render(RenderLock&&) {
   }
 
   if (!preparing && state == State::WaitingForHost && !startFailed) {
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   }
   renderer.displayBuffer();
