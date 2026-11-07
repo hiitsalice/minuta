@@ -97,7 +97,7 @@ void UsbDriveActivity::loop() {
     return;
   }
 
-  if (state == State::WaitingForHost &&
+  if ((state == State::WaitingForHost || startFailed) &&
       (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
        mappedInput.wasPressed(MappedInputManager::Button::Power))) {
     restartToHome();
