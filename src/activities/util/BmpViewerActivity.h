@@ -16,8 +16,6 @@ class BmpViewerActivity final : public Activity {
 
  private:
   void loadSiblingImages();
-  void doSetSleepCover();
-  bool canSetSleepCover() const;
   bool renderPng();
 
   std::string filePath;
