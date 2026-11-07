@@ -105,10 +105,6 @@ void OpdsServerListActivity::rebuildRowItems() {
   }
 }
 
-bool OpdsServerListActivity::handleCustomInput() {
-  return optionPopup.handleInput(mappedInput, [this] { requestUpdate(); });
-}
-
 void OpdsServerListActivity::onBackButton() {
   if (pickerMode) {
     activityManager.goHome(HomeMenuItem::OPDS_BROWSER);
@@ -241,8 +237,6 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
 }
 
 void OpdsServerListActivity::render(RenderLock&& lock) {
-  if (optionPopup.processRender(renderer, mappedInput)) return;
-
   // Header via GUI.drawHeader (already FreeInkUI-themed) for the battery
   // indicator; the rest of the screen renders through the base skeleton.
   UiListActivity::render(std::move(lock));
