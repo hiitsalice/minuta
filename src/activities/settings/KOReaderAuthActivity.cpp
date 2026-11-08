@@ -110,7 +110,7 @@ void KOReaderAuthActivity::render(RenderLock&&) {
     switch (previewScreenIndex % 3) {
       case 0:
         screenState = AUTHENTICATING;
-        progressMessage = tr(signUp ? STR_CREATING_ACCOUNT : STR_AUTHENTICATING);
+        progressMessage = signUp ? tr(STR_CREATING_ACCOUNT) : tr(STR_AUTHENTICATING);
         break;
       case 1:
         screenState = SUCCESS;
