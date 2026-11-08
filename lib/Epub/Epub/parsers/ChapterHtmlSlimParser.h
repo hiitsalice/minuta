@@ -145,6 +145,7 @@ class ChapterHtmlSlimParser {
   bool footnoteLinkIsBacklink = false;    // open link is a back-link to the text
   bool insideEndnoteEntry = false;        // current link is inside an explicitly marked endnote entry
   bool insideSup = false;                  // current content is inside a <sup> element
+  int noLinkDepth = -1;  // >= 0 while inside a heading or contents block: links there stay plain text
   bool footnoteLinkTextReplaced = false;  // note-reference text already swapped for this link
   bool footnoteLinkInferred = false;      // link has no note labels; role guessed from its position
   int footnoteLinkStartWordIndex = -1;   // 1-based word position of the open link's first word

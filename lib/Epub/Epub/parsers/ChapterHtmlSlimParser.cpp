@@ -129,6 +129,40 @@ uint16_t parseTableSpan(const char* value) {
 // Block-level, sectioning, and structural elements are always considered navigable.
 bool isNonNavigableInlineElement(const char* name) { return strcmp(name, "span") == 0; }
 
+// Case-insensitive search for needle that must start a word (not preceded by a letter),
+// so "toc" matches "004_TOC.html" and "tocEntry" but not "stockholm".
+bool containsWordStartNoCase(const char* s, size_t len, const char* needle) {
+  if (!s) return false;
+  const size_t n = strlen(needle);
+  for (size_t i = 0; i + n <= len; i++) {
+    if (i > 0) {
+      const char c = s[i - 1];
+      if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) continue;
+    }
+    size_t k = 0;
+    while (k < n) {
+      char c = s[i + k];
+      if (c >= 'A' && c <= 'Z') c = static_cast<char>(c + 32);
+      if (c != needle[k]) break;
+      k++;
+    }
+    if (k == n) return true;
+  }
+  return false;
+}
+
+bool containsWordStartNoCase(const char* s, const char* needle) {
+  return s && containsWordStartNoCase(s, strlen(s), needle);
+}
+
+// True when a link points at a contents page (e.g. "004_TOC.html#chapter_02").
+bool isContentsPageHref(const char* href) {
+  if (!href) return false;
+  size_t len = 0;
+  while (href[len] && href[len] != '#' && href[len] != '?') len++;
+  return containsWordStartNoCase(href, len, "toc") || containsWordStartNoCase(href, len, "contents");
+}
+
 bool isInternalEpubLink(const char* href) {
   if (!href || href[0] == '\0') return false;
   if (strncmp(href, "http://", 7) == 0 || strncmp(href, "https://", 8) == 0) return false;
@@ -1335,13 +1369,29 @@ void XMLCALL ChapterHtmlSlimParser::startElement(void* userData, const XML_Char*
     }
   }
 
+  // Links inside chapter headings and contents pages are never note links: chapter select
+  // already covers them, so they are left as plain text.
+  if (self->noLinkDepth >= 0 && self->depth <= self->noLinkDepth) self->noLinkDepth = -1;
+  if (self->noLinkDepth < 0) {
+    const char* navClass = getAttribute(atts, "class");
+    const char* navId = getAttribute(atts, "id");
+    const char* navType = getAttribute(atts, "epub:type");
+    const char* navRole = getAttribute(atts, "role");
+    if (matches(name, HEADER_TAGS, std::size(HEADER_TAGS)) || strcmp(name, "nav") == 0 ||
+        containsWordStartNoCase(navClass, "toc") || containsWordStartNoCase(navId, "toc") ||
+        containsWordStartNoCase(navId, "contents") || containsWordStartNoCase(navType, "toc") ||
+        containsWordStartNoCase(navRole, "doc-toc")) {
+      self->noLinkDepth = self->depth;
+    }
+  }
+
   // Detect internal <a href="..."> links (footnotes, cross-references)
   // Note: <aside epub:type="footnote"> elements are rendered as normal content
   // without special handling. Links pointing to them are collected as footnotes.
   if (strcmp(name, "a") == 0) {
     const char* href = getAttribute(atts, "href");
 
-    bool isInternalLink = isInternalEpubLink(href);
+    bool isInternalLink = isInternalEpubLink(href) && self->noLinkDepth < 0 && !isContentsPageHref(href);
 
     // Special case: javascript:void(0) links with data attributes
     // Example: <a href="javascript:void(0)"
