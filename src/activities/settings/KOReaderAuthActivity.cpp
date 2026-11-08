@@ -152,7 +152,11 @@ void KOReaderAuthActivity::render(RenderLock&&) {
 void KOReaderAuthActivity::loop() {
 #if defined(SIMULATOR)
   if (mode == Mode::PREVIEW) {
-    if (mappedInput.wasPressed(MappedInputManager::Button::Left)) {
+    // Back is a preview-only escape hatch; the real status screens keep their
+    // state-specific Back/Done behaviour below.
+    if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+      finish();
+    } else if (mappedInput.wasPressed(MappedInputManager::Button::Left)) {
       previewScreenIndex = (previewScreenIndex + PREVIEW_SCREEN_COUNT - 1) % PREVIEW_SCREEN_COUNT;
       requestUpdate();
     } else if (mappedInput.wasPressed(MappedInputManager::Button::Right)) {
