@@ -12,11 +12,7 @@ class KOReaderSettingsActivity final : public UiListActivity {
  public:
   explicit KOReaderSettingsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);
 
-#if defined(SIMULATOR)
-  static constexpr int MENU_ITEMS = 9;
-#else
   static constexpr int MENU_ITEMS = 8;
-#endif
 
  private:
   int listCount() const override;
