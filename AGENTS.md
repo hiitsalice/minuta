@@ -1028,3 +1028,9 @@ struct PageLine {
 ---
 
 Philosophy: We are building a dedicated e-reader, not a Swiss Army knife. If a feature adds RAM pressure without significantly improving the reading experience, it is Out of Scope.
+
+## EPUB links rule (do not remove)
+Links inside chapter headings, contents (TOC) pages, `<nav>` blocks, or pointing at a contents page must stay plain text, never note/endnote links. The guard lives in `ChapterHtmlSlimParser.cpp` (`noLinkDepth`, `isContentsPageHref`). Before any parser change run `./scripts/check_nav_link_guard.sh`; test book: `scripts/generate_toc_links_test_epub.py`.
+
+## EPUB links rule (do not remove)
+Links inside chapter headings, contents (TOC) pages, `<nav>` blocks, or pointing at a contents page must stay plain text, never note/endnote links. The guard lives in `ChapterHtmlSlimParser.cpp` (`noLinkDepth`, `isContentsPageHref`). Before any parser change run `./scripts/check_nav_link_guard.sh`; test book: `scripts/generate_toc_links_test_epub.py`.
