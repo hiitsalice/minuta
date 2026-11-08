@@ -239,10 +239,14 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
     // Fixed layout per audit: Y=400, keep the "..." (no stripping).
     // Live-verified: input inert, layout correct (confirmed via static test build).
     renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_VALIDATING_FIRMWARE));
+    // No actions here: keep the (empty) button hint strip visible.
+    {
+      const auto labels = mappedInput.mapLabels("", "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
   } else if (state == State::UPDATING) {
     // Throttle redraws to once per percent.
-    const unsigned int pct =
-        firmwareSize > 0 ? static_cast<unsigned int>((writtenBytes * 100) / firmwareSize) : 0;
+    const unsigned int pct = firmwareSize > 0 ? static_cast<unsigned int>((writtenBytes * 100) / firmwareSize) : 0;
     if (pct == lastRenderedPercent) {
       return;
     }
@@ -254,30 +258,37 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
     // Percentage text top Y=367.
     constexpr int percentY = 367;
 
-    GUI.drawProgressBar(
-        renderer,
-        Rect{metrics.contentSidePadding, barY, pageWidth - metrics.contentSidePadding * 2,
-             12},
-        static_cast<int>(pct), 100, UI_10_FONT_ID, percentY);
+    GUI.drawProgressBar(renderer,
+                        Rect{metrics.contentSidePadding, barY, pageWidth - metrics.contentSidePadding * 2, 12},
+                        static_cast<int>(pct), 100, UI_10_FONT_ID, percentY);
 
     // Secondary status text top Y=418 below the progress bar in 10 pt italic.
     const int statusY = barY + 12 + 12;
-    const std::string secondaryText =
-        withoutEllipsis(tr(STR_FIRMWARE_UPDATE_DO_NOT_POWER_OFF));
+    const std::string secondaryText = withoutEllipsis(tr(STR_FIRMWARE_UPDATE_DO_NOT_POWER_OFF));
 
-    renderer.drawCenteredText(
-        UI_10_FONT_ID, statusY, secondaryText.c_str(),
-        true, EpdFontFamily::ITALIC);
+    renderer.drawCenteredText(UI_10_FONT_ID, statusY, secondaryText.c_str(), true, EpdFontFamily::ITALIC);
+
+    // No actions here: keep the (empty) button hint strip visible.
+    {
+      const auto labels = mappedInput.mapLabels("", "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
   } else if (state == State::SUCCESS) {
-    // Fixed layout per audit: header at Y=371, hint split into two lines at
-    // Y=399 and Y=423 (STR_RESTARTING_HINT is one sentence; the audit wants
+    // Fixed layout per audit: header at Y=374, hint split into two lines at
+    // Y=402 and Y=426 (STR_RESTARTING_HINT is one sentence; the audit wants
     // it broken at the comma into two fixed-position lines).
-    renderer.drawCenteredText(UI_10_FONT_ID, 371, tr(STR_UPDATE_COMPLETE), true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 399, "Restarting... If device does not restart,");
-    renderer.drawCenteredText(UI_10_FONT_ID, 423, "hold the power button for a few seconds");
+    renderer.drawCenteredText(UI_10_FONT_ID, 374, tr(STR_UPDATE_COMPLETE), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 402, "Restarting... If device does not restart,");
+    renderer.drawCenteredText(UI_10_FONT_ID, 426, "hold the power button for a few seconds");
+    // No actions here: keep the (empty) button hint strip visible.
+    {
+      const auto labels = mappedInput.mapLabels("", "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
   } else if (state == State::FAILED) {
     // Fixed layout per audit: header bold at Y=386, reason at Y=414.
-    renderer.drawCenteredText(UI_10_FONT_ID, 386, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true,
+                              EpdFontFamily::BOLD);
     if (!errorMessage.empty()) {
       renderer.drawCenteredText(UI_10_FONT_ID, 414, withoutEllipsis(errorMessage.c_str()).c_str());
     }
@@ -298,6 +309,11 @@ void SdFirmwareUpdateActivity::render(RenderLock&&) {
     // PICKING: a sub-activity is on top, nothing to draw.
     if (recoveryMode) {
       renderer.drawCenteredText(UI_10_FONT_ID, 400, withoutEllipsis(tr(STR_RECOVERY_MODE_HINT)).c_str());
+      // No actions here: keep the (empty) button hint strip visible.
+      {
+        const auto labels = mappedInput.mapLabels("", "", "", "");
+        GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+      }
     }
   }
 

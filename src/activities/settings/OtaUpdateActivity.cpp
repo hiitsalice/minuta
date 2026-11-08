@@ -139,14 +139,17 @@ void OtaUpdateActivity::render(RenderLock&&) {
     // Fixed layout per audit: 10pt, Y=400, keep the "..." (no stripping).
     // Live-verified: input inert, layout correct (confirmed via static test build).
     renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_CHECKING_UPDATE));
+    // No actions here: keep the (empty) button hint strip visible.
+    {
+      const auto labels = mappedInput.mapLabels("", "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
   } else if (state == WAITING_CONFIRMATION) {
     // Fixed layout per audit: header bold at Y=374, current version at
     // Y=402, new version at Y=426.
     renderer.drawCenteredText(UI_10_FONT_ID, 374, "Update available!", true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 402,
-                              (std::string("Current: ") + CROSSPOINT_VERSION).c_str());
-    renderer.drawCenteredText(UI_10_FONT_ID, 426,
-                              (std::string("New: ") + updater.getLatestVersion()).c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, 402, (std::string("Current: ") + CROSSPOINT_VERSION).c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, 426, (std::string("New: ") + updater.getLatestVersion()).c_str());
 
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "Update", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -157,20 +160,22 @@ void OtaUpdateActivity::render(RenderLock&&) {
     // Percentage text top Y=367.
     constexpr int percentY = 367;
 
-    GUI.drawProgressBar(
-        renderer,
-        Rect{metrics.contentSidePadding, barY, pageWidth - metrics.contentSidePadding * 2,
-             12},
-        static_cast<int>(updaterProgress * 100), 100, UI_10_FONT_ID, percentY);
+    GUI.drawProgressBar(renderer,
+                        Rect{metrics.contentSidePadding, barY, pageWidth - metrics.contentSidePadding * 2, 12},
+                        static_cast<int>(updaterProgress * 100), 100, UI_10_FONT_ID, percentY);
 
     // Secondary status text top Y=418 below the progress bar in 10 pt italic.
     // matching the SD firmware update progress screen.
     const int statusY = barY + 12 + 12;
     const std::string secondaryText = withoutEllipsis(tr(STR_FIRMWARE_UPDATE_DO_NOT_POWER_OFF));
 
-    renderer.drawCenteredText(
-        UI_10_FONT_ID, statusY, secondaryText.c_str(),
-        true, EpdFontFamily::ITALIC);
+    renderer.drawCenteredText(UI_10_FONT_ID, statusY, secondaryText.c_str(), true, EpdFontFamily::ITALIC);
+
+    // No actions here: keep the (empty) button hint strip visible.
+    {
+      const auto labels = mappedInput.mapLabels("", "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
   } else if (state == NO_UPDATE) {
     // Fixed layout per audit: Y=400.
     renderer.drawCenteredText(UI_10_FONT_ID, 400, withoutEllipsis(tr(STR_NO_UPDATE)).c_str());
@@ -178,7 +183,8 @@ void OtaUpdateActivity::render(RenderLock&&) {
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == FAILED) {
     // Fixed layout per audit: header bold at Y=386, reason at Y=414.
-    renderer.drawCenteredText(UI_10_FONT_ID, 386, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, withoutEllipsis(tr(STR_UPDATE_FAILED)).c_str(), true,
+                              EpdFontFamily::BOLD);
     if (failedDetail != nullptr) {
       renderer.drawCenteredText(UI_10_FONT_ID, 414, withoutEllipsis(failedDetail).c_str());
     }
@@ -186,8 +192,14 @@ void OtaUpdateActivity::render(RenderLock&&) {
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state == FINISHED) {
     // Fixed layout per audit: header bold at Y=386, hint at Y=414.
-    renderer.drawCenteredText(UI_10_FONT_ID, 386, withoutEllipsis(tr(STR_UPDATE_COMPLETE)).c_str(), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, withoutEllipsis(tr(STR_UPDATE_COMPLETE)).c_str(), true,
+                              EpdFontFamily::BOLD);
     renderer.drawCenteredText(UI_10_FONT_ID, 414, withoutEllipsis(tr(STR_POWER_ON_HINT)).c_str());
+    // No actions here: keep the (empty) button hint strip visible.
+    {
+      const auto labels = mappedInput.mapLabels("", "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
   }
 
   renderer.displayBuffer();

@@ -26,7 +26,8 @@ void ClearCacheActivity::render(RenderLock&&) {
 
   renderer.clearScreen();
 
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_CLEAR_READING_CACHE));
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight},
+                 tr(STR_CLEAR_READING_CACHE));
 
   if (state == WARNING) {
     renderer.drawCenteredText(UI_10_FONT_ID, 386, "Clear cache?", true, EpdFontFamily::BOLD);
@@ -40,6 +41,11 @@ void ClearCacheActivity::render(RenderLock&&) {
 
   if (state == CLEARING) {
     renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_CLEARING_CACHE));
+    // No actions here: keep the (empty) button hint strip visible.
+    {
+      const auto labels = mappedInput.mapLabels("", "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
     renderer.displayBuffer();
     return;
   }

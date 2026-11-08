@@ -15,9 +15,11 @@ bool EndOfBookOptions::menuActive() const { return false; }
 
 void EndOfBookOptions::render(GfxRenderer& renderer, const MappedInputManager& input) {
   const auto& safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  GUI.drawHeader(renderer, Rect{safe.x, safe.y + metrics.topPadding - 6, safe.width, metrics.headerHeight},
+                 "End Of Book");
 
-  UITheme::drawCenteredText(renderer, safe, UI_10_FONT_ID, 386, tr(STR_END_OF_BOOK), true,
-                            EpdFontFamily::BOLD);
+  UITheme::drawCenteredText(renderer, safe, UI_10_FONT_ID, 386, "Congratulations!", true, EpdFontFamily::BOLD);
   UITheme::drawCenteredText(renderer, safe, UI_10_FONT_ID, 414, tr(STR_EOB_FINISHED));
 
   GUI.drawButtonHints(renderer, "", tr(STR_HOME), "Prev", "");

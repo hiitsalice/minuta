@@ -91,8 +91,8 @@ bool BmpViewerActivity::renderPng() {
   if (!PngToFramebufferConverter::getDimensionsStatic(filePath, dimensions)) return false;
   if (dimensions.width <= 0 || dimensions.height <= 0) return false;
 
-  const ImageFit fit = fitImageToScreen(dimensions.width, dimensions.height, renderer.getScreenWidth(),
-                                        renderer.getScreenHeight());
+  const ImageFit fit =
+      fitImageToScreen(dimensions.width, dimensions.height, renderer.getScreenWidth(), renderer.getScreenHeight());
   if (fit.width <= 0 || fit.height <= 0) return false;
 
   RenderConfig config{fit.x, fit.y, fit.width, fit.height};
@@ -100,6 +100,22 @@ bool BmpViewerActivity::renderPng() {
   PngToFramebufferConverter converter;
   return converter.decodeToFramebuffer(filePath, renderer, config);
 }
+
+namespace {
+// File name without folder or extension, shown as the header on the image screen.
+std::string imageHeaderTitle(const std::string& path) {
+  const size_t slash = path.find_last_of('/');
+  std::string name = slash == std::string::npos ? path : path.substr(slash + 1);
+  const size_t dot = name.find_last_of('.');
+  if (dot != std::string::npos && dot > 0) name.erase(dot);
+  return name;
+}
+
+void drawImageHeader(GfxRenderer& renderer, const char* title) {
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, renderer.getScreenWidth(), metrics.headerHeight}, title);
+}
+}  // namespace
 
 void BmpViewerActivity::onEnter() {
   Activity::onEnter();
@@ -110,6 +126,10 @@ void BmpViewerActivity::onEnter() {
 
   const auto pageWidth = renderer.getScreenWidth();
   const auto pageHeight = renderer.getScreenHeight();
+  // Prev / Next availability for the error screens (same rule as the image screens).
+  const bool canPrev = siblingImages.size() > 1 && currentImageIndex > 0;
+  const bool canNext = siblingImages.size() > 1 && currentImageIndex != -1 &&
+                       currentImageIndex < static_cast<int>(siblingImages.size()) - 1;
   Rect popupRect = GUI.drawPopup(renderer, tr(STR_LOADING_POPUP));
   GUI.fillPopupProgress(renderer, popupRect, 20);  // Initial 20% progress
   if (FsHelpers::hasPngExtension(filePath)) {
@@ -117,14 +137,15 @@ void BmpViewerActivity::onEnter() {
     const bool hasPrevious = siblingImages.size() > 1 && currentImageIndex > 0;
     const bool hasNext = siblingImages.size() > 1 && currentImageIndex != -1 &&
                          currentImageIndex < static_cast<int>(siblingImages.size()) - 1;
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "",
-                                              hasPrevious ? "Prev" : "", hasNext ? "Next" : "");
+    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", hasPrevious ? "Prev" : "", hasNext ? "Next" : "");
     if (renderPng()) {
+      drawImageHeader(renderer, imageHeaderTitle(filePath).c_str());
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
       renderer.displayBuffer(HalDisplay::FAST_REFRESH);
     } else {
+      drawImageHeader(renderer, "Image Viewer");
       renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, tr(STR_FILE_OPEN_FAILED));
-      GUI.drawButtonHints(renderer, labels.btn1, "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
       renderer.displayBuffer(HalDisplay::HALF_REFRESH);
     }
     return;
@@ -148,8 +169,7 @@ void BmpViewerActivity::onEnter() {
       bool hasNext = (siblingImages.size() > 1 && currentImageIndex != -1 &&
                       currentImageIndex < static_cast<int>(siblingImages.size()) - 1);
 
-      const auto labels = mappedInput.mapLabels(tr(STR_BACK), "",
-                                                (hasPrevious ? "Prev" : ""), (hasNext ? "Next" : ""));
+      const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", (hasPrevious ? "Prev" : ""), (hasNext ? "Next" : ""));
 
       GUI.fillPopupProgress(renderer, popupRect, 50);
 
@@ -158,6 +178,7 @@ void BmpViewerActivity::onEnter() {
       // pageHeight, 0, 0)
       renderer.drawBitmap(bitmap, x, y, displayWidth, displayHeight, 0, 0);
 
+      drawImageHeader(renderer, imageHeaderTitle(filePath).c_str());
       // Draw UI hints on the base layer
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
       // Single pass for non-grayscale images
@@ -167,8 +188,9 @@ void BmpViewerActivity::onEnter() {
     } else {
       // Handle file parsing error
       renderer.clearScreen();
+      drawImageHeader(renderer, "Image Viewer");
       renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, tr(STR_INVALID_BMP_FILE));
-      const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+      const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", canPrev ? "Prev" : "", canNext ? "Next" : "");
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
       renderer.displayBuffer(HalDisplay::HALF_REFRESH);
     }
@@ -177,8 +199,9 @@ void BmpViewerActivity::onEnter() {
   } else {
     // Handle file open error
     renderer.clearScreen();
+    drawImageHeader(renderer, "Image Viewer");
     renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2, tr(STR_FILE_OPEN_FAILED));
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", canPrev ? "Prev" : "", canNext ? "Next" : "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer(HalDisplay::HALF_REFRESH);
   }

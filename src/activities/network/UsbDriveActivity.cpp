@@ -9,7 +9,6 @@
 #include "components/UITheme.h"
 #include "fontIds.h"
 
-
 void UsbDriveActivity::onEnter() {
   Activity::onEnter();
   // Show the safety instructions before giving the raw SD card to the USB host.
@@ -71,9 +70,11 @@ void UsbDriveActivity::loop() {
     return;
   }
 
-  if ((state == State::WaitingForHost || startFailed) &&
-      (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
-       mappedInput.wasPressed(MappedInputManager::Button::Power))) {
+  // Back (Cancel) is only live while waiting for the host; on the start-error screen only Power exits.
+  const bool backLive = state == State::WaitingForHost && !startFailed;
+  const bool powerLive = state == State::WaitingForHost || startFailed;
+  if ((backLive && mappedInput.wasPressed(MappedInputManager::Button::Back)) ||
+      (powerLive && mappedInput.wasPressed(MappedInputManager::Button::Power))) {
     restartToHome();
     return;
   }
@@ -126,6 +127,10 @@ void UsbDriveActivity::render(RenderLock&&) {
 
   if (!preparing && state == State::WaitingForHost && !startFailed) {
     const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "", "", "");
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  } else {
+    // Preparing / connected / error: no actions, keep the (empty) hint strip visible.
+    const auto labels = mappedInput.mapLabels("", "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   }
   renderer.displayBuffer();

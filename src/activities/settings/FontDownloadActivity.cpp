@@ -14,13 +14,12 @@
 #include "MappedInputManager.h"
 #include "SdCardFontSystem.h"
 #include "SilentRestart.h"
+#include "activities/ActivityManager.h"
 #include "activities/network/WifiSelectionActivity.h"
 #include "components/UITheme.h"
+#include "components/UiAppHelpers.h"
 #include "fontIds.h"
 #include "network/HttpDownloader.h"
-#include "activities/ActivityManager.h"
-#include "components/UiAppHelpers.h"
-
 
 namespace fui = freeink::ui;
 
@@ -619,7 +618,7 @@ void FontDownloadActivity::buildScreen(UiScreen& screen) {
   props.action = ACTION_ROW;
   if (state_ == FAMILY_LIST) props.sidePadding = 12;
   if (state_ == FAMILY_LIST) props.rowInset = 18;
-  props.valueInset = static_cast<int16_t>(state_ == GROUP_LIST ? 3 : 0);               // air between the status and the row edge
+  props.valueInset = static_cast<int16_t>(state_ == GROUP_LIST ? 3 : 0);  // air between the status and the row edge
   // Font name at 10pt, description at 8pt (smaller than the theme's default
   // 12pt menu rows), with a matching shorter row height so unused vertical
   // space doesn't accumulate at the bottom of the list.
@@ -640,9 +639,8 @@ void FontDownloadActivity::buildScreen(UiScreen& screen) {
   props.subtitleGap = 6;  // air between the font name and its description (includes 1px lower shift)
   const int16_t lineHeight = screen.target().lineHeight(fui::GfxRendererTarget::FONT_BODY);
   (void)lineHeight;
-  props.rowHeight = state_ == FAMILY_LIST
-      ? static_cast<int16_t>(metrics.listWithSubtitleRowHeight + 2)
-      : static_cast<int16_t>(metrics.listRowHeight);
+  props.rowHeight = state_ == FAMILY_LIST ? static_cast<int16_t>(metrics.listWithSubtitleRowHeight + 2)
+                                          : static_cast<int16_t>(metrics.listRowHeight);
   props.rowGap = 0;
   syncListViewport(screen, props, /*hasSubtitle=*/state_ == FAMILY_LIST);
   screen.list(props);
@@ -791,6 +789,11 @@ void FontDownloadActivity::render(RenderLock&&) {
   if (state_ == LOADING_MANIFEST) {
     // Fixed layout per audit: Y=400.
     renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_LOADING_FONT_LIST));
+    // No actions here: keep the (empty) button hint strip visible.
+    {
+      const auto labels = mappedInput.mapLabels("", "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
   } else if (state_ == GROUP_LIST) {
     renderUi();
     const auto labels = mappedInput.mapLabels("Menu", tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
@@ -803,11 +806,17 @@ void FontDownloadActivity::render(RenderLock&&) {
                                : isSelectedFamilyDeletable()  ? tr(STR_DELETE)
                                : isUpdateAllRow(nav.selected) ? tr(STR_UPDATE)
                                                               : "Install";
-    const auto labels = mappedInput.mapLabels(hasGroupScreen() ? tr(STR_BACK) : "Menu", confirmLabel, hasVisibleFamilies ? tr(STR_DIR_UP) : "",
-                                              hasVisibleFamilies ? tr(STR_DIR_DOWN) : "");
+    const auto labels =
+        mappedInput.mapLabels(hasGroupScreen() ? tr(STR_BACK) : "Menu", confirmLabel,
+                              hasVisibleFamilies ? tr(STR_DIR_UP) : "", hasVisibleFamilies ? tr(STR_DIR_DOWN) : "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea());
   } else if (state_ == DOWNLOADING) {
     renderer.drawCenteredText(UI_10_FONT_ID, 400, "Installing...", true, EpdFontFamily::REGULAR);
+    // No actions here: keep the (empty) button hint strip visible.
+    {
+      const auto labels = mappedInput.mapLabels("", "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
   } else if (state_ == COMPLETE) {
     renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_FONT_INSTALLED), true, EpdFontFamily::REGULAR);
     const auto labels = mappedInput.mapLabels("", tr(STR_DONE), "", "");

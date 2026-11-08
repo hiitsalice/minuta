@@ -83,38 +83,35 @@ void KOReaderAuthActivity::render(RenderLock&&) {
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   const auto pageWidth = renderer.getScreenWidth();
-  const auto pageHeight = renderer.getScreenHeight();
 
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight},
                  mode == Mode::SIGN_UP ? tr(STR_SIGN_UP) : tr(STR_KOREADER_AUTH));
-  const auto height = renderer.getLineHeight(UI_10_FONT_ID);
-  const auto top = (pageHeight - height) / 2;
 
   if (state == AUTHENTICATING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, statusMessage.c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, statusMessage.c_str());
   } else if (state == SUCCESS) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top,
+    renderer.drawCenteredText(UI_10_FONT_ID, 386,
                               mode == Mode::SIGN_UP ? tr(STR_ACCOUNT_CREATED) : tr(STR_AUTH_SUCCESS), true,
                               EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, top + height + 10, tr(STR_SYNC_READY));
+    renderer.drawCenteredText(UI_10_FONT_ID, 414, tr(STR_SYNC_READY));
   } else if (state == FAILED) {
-    renderer.drawCenteredText(UI_10_FONT_ID, top, mode == Mode::SIGN_UP ? tr(STR_SIGNUP_FAILED) : tr(STR_AUTH_FAILED),
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, mode == Mode::SIGN_UP ? tr(STR_SIGNUP_FAILED) : tr(STR_AUTH_FAILED),
                               true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, top + height + 10, errorMessage.c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, 414, errorMessage.c_str());
   }
 
-  const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+  // Hint strip per state: none while working, Done on success, Back on failure.
+  const auto labels = state == SUCCESS  ? mappedInput.mapLabels("", tr(STR_DONE), "", "")
+                      : state == FAILED ? mappedInput.mapLabels(tr(STR_BACK), "", "", "")
+                                        : mappedInput.mapLabels("", "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   renderer.displayBuffer();
 }
 
 void KOReaderAuthActivity::loop() {
-  if (state == SUCCESS || state == FAILED) {
-    int x = 0;
-    int y = 0;
-    if (mappedInput.wasPressed(MappedInputManager::Button::Back) ||
-        mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
-      finish();
-    }
+  // Done (Confirm) on success, Back on failure; the other button is disabled and ignored.
+  if ((state == SUCCESS && mappedInput.wasPressed(MappedInputManager::Button::Confirm)) ||
+      (state == FAILED && mappedInput.wasPressed(MappedInputManager::Button::Back))) {
+    finish();
   }
 }

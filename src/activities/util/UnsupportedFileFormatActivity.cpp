@@ -1,10 +1,10 @@
 #include "UnsupportedFileFormatActivity.h"
 
-#include "components/UITheme.h"
 #include <GfxRenderer.h>
 #include <HalDisplay.h>
 #include <I18n.h>
 
+#include "components/UITheme.h"
 #include "fontIds.h"
 
 void UnsupportedFileFormatActivity::onEnter() {
@@ -22,10 +22,10 @@ void UnsupportedFileFormatActivity::loop() {
 void UnsupportedFileFormatActivity::render(RenderLock&&) {
   renderer.clearScreen();
 
-  renderer.drawCenteredText(UI_10_FONT_ID, 386, "Unsupported file format", true,
-                            EpdFontFamily::BOLD);
-  renderer.drawCenteredText(UI_10_FONT_ID, 414, "Minuta only supports EPUB books", true,
-                            EpdFontFamily::REGULAR);
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, renderer.getScreenWidth(), metrics.headerHeight},
+                 "Unsupported Book Format");
+  renderer.drawCenteredText(UI_10_FONT_ID, 400, "Minuta only supports EPUB books :(", true, EpdFontFamily::REGULAR);
 
   // Show the normal button-hint row, with only Back assigned.
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
