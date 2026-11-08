@@ -616,12 +616,8 @@ void KOReaderSyncActivity::render(RenderLock&&) {
   }
 
   if (state == UPLOAD_COMPLETE || state == SYNC_COMPLETE) {
-    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, successY,
-                              state == UPLOAD_COMPLETE ? tr(STR_UPLOAD_SUCCESS) : tr(STR_ALREADY_SYNCED), true,
-                              EpdFontFamily::BOLD);
-
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_DONE), "", "");
-    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY,
+                              state == UPLOAD_COMPLETE ? tr(STR_UPLOAD_SUCCESS) : tr(STR_ALREADY_SYNCED));
     renderer.displayBuffer();
     return;
   }
@@ -639,7 +635,14 @@ void KOReaderSyncActivity::render(RenderLock&&) {
 }
 
 void KOReaderSyncActivity::loop() {
-  if (state == NO_CREDENTIALS || state == SYNC_FAILED || state == UPLOAD_COMPLETE || state == SYNC_COMPLETE) {
+  if (state == UPLOAD_COMPLETE || state == SYNC_COMPLETE) {
+    if (autoReturnAt != 0 && millis() >= autoReturnAt) {
+      returnToReader();
+    }
+    return;
+  }
+
+  if (state == NO_CREDENTIALS || state == SYNC_FAILED) {
     if (autoReturnAt != 0 && millis() >= autoReturnAt) {
       returnToReader();
       return;
