@@ -17,7 +17,7 @@ namespace {
 constexpr char TRANSPARENT_SLEEP_ROOT_BMP[] = "/sleep-overlay.bmp";
 constexpr char TRANSPARENT_SLEEP_ROOT_PNG[] = "/sleep-overlay.png";
 constexpr int MAX_IMAGE_DISPLAY_WIDTH = 400;
-constexpr int MAX_IMAGE_DISPLAY_HEIGHT = 720;
+constexpr int MAX_IMAGE_DISPLAY_HEIGHT = 640;
 
 struct ImageFit {
   int x;
