@@ -580,7 +580,7 @@ void KOReaderSyncActivity::render(RenderLock&&) {
   if (state == NO_CREDENTIALS) {
     UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY - 14, tr(STR_NO_CREDENTIALS_MSG), true,
                               EpdFontFamily::BOLD);
-    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY + 18, tr(STR_KOREADER_SETUP_HINT));
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY + 14, tr(STR_KOREADER_SETUP_HINT));
 
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -629,7 +629,7 @@ void KOReaderSyncActivity::render(RenderLock&&) {
   if (state == SYNC_FAILED) {
     UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY - 14, tr(STR_SYNC_FAILED_MSG), true,
                               EpdFontFamily::BOLD);
-    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY + 18, statusMessage.c_str());
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY + 14, statusMessage.c_str());
 
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
