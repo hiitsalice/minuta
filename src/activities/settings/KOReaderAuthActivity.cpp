@@ -83,35 +83,40 @@ void KOReaderAuthActivity::render(RenderLock&&) {
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   const auto pageWidth = renderer.getScreenWidth();
+  const auto pageHeight = renderer.getScreenHeight();
+  const bool signUp = mode == Mode::SIGN_UP;
 
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight},
-                 mode == Mode::SIGN_UP ? tr(STR_SIGN_UP) : tr(STR_KOREADER_AUTH));
+                 signUp ? tr(STR_SIGN_UP) : tr(STR_KOREADER_AUTH));
 
+  // Keep the requested screen positions exact on the X4's 800px portrait canvas.
+  const int centreY = static_cast<int>(pageHeight / 2);
   if (state == AUTHENTICATING) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 400, statusMessage.c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, centreY, statusMessage.c_str());
   } else if (state == SUCCESS) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 386,
-                              mode == Mode::SIGN_UP ? tr(STR_ACCOUNT_CREATED) : tr(STR_AUTH_SUCCESS), true,
-                              EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 414, tr(STR_SYNC_READY));
-  } else if (state == FAILED) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 386, mode == Mode::SIGN_UP ? tr(STR_SIGNUP_FAILED) : tr(STR_AUTH_FAILED),
+    renderer.drawCenteredText(UI_10_FONT_ID, centreY - 14, signUp ? tr(STR_ACCOUNT_CREATED) : tr(STR_AUTH_SUCCESS),
                               true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(UI_10_FONT_ID, 414, errorMessage.c_str());
+    renderer.drawCenteredText(UI_10_FONT_ID, centreY + 14, tr(STR_SYNC_READY));
+  } else if (state == FAILED) {
+    renderer.drawCenteredText(UI_10_FONT_ID, centreY - 14, signUp ? tr(STR_SIGNUP_FAILED) : tr(STR_AUTH_FAILED), true,
+                              EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, centreY + 14, errorMessage.c_str());
   }
 
-  // Hint strip per state: none while working, Done on success, Back on failure.
-  const auto labels = state == SUCCESS  ? mappedInput.mapLabels("", tr(STR_DONE), "", "")
-                      : state == FAILED ? mappedInput.mapLabels(tr(STR_BACK), "", "", "")
-                                        : mappedInput.mapLabels("", "", "", "");
+  // Keep the hint strip visible even when every button is disabled.
+  // Empty labels intentionally leave only the small hint-panel edge peeking in.
+  const auto labels =
+      mappedInput.mapLabels(state == FAILED ? tr(STR_BACK) : "", state == SUCCESS ? tr(STR_DONE) : "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   renderer.displayBuffer();
 }
 
 void KOReaderAuthActivity::loop() {
-  // Done (Confirm) on success, Back on failure; the other button is disabled and ignored.
-  if ((state == SUCCESS && mappedInput.wasPressed(MappedInputManager::Button::Confirm)) ||
-      (state == FAILED && mappedInput.wasPressed(MappedInputManager::Button::Back))) {
+  // Authentication is deliberately non-interactive while in progress.
+  // Success accepts only Confirm/Done; failure accepts only Back.
+  if (state == SUCCESS && mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+    finish();
+  } else if (state == FAILED && mappedInput.wasPressed(MappedInputManager::Button::Back)) {
     finish();
   }
 }

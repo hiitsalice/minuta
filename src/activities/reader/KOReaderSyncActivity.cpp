@@ -519,7 +519,7 @@ void KOReaderSyncActivity::buildResultScreen(UiScreen& screen) {
     actionProps.count = 2;
     actionProps.selectedIndex = static_cast<int16_t>(selectedOption);
     actionProps.action = ACTION_ROW;
-    actionProps.scrollIndicator = false;      // never scrolls; no indicator needed
+    actionProps.scrollIndicator = false;  // never scrolls; no indicator needed
     // Non-touch hardware (X3/X4) keeps the original, denser row height instead
     // of FreeInkUI's touch-target-sized default (see
     // UiListActivity::syncListViewport); actionsBand must use the same value
@@ -575,12 +575,12 @@ void KOReaderSyncActivity::render(RenderLock&&) {
   GUI.drawHeader(renderer, Rect{screen.x, screen.y + metrics.topPadding - 6, screen.width, metrics.headerHeight},
                  state == SHOWING_RESULT ? tr(STR_PROGRESS_FOUND) : tr(STR_KOREADER_SYNC));
 
-  int top = screen.y + screen.height / 2 - 40;
+  const int centreY = renderer.getScreenHeight() / 2;
+  const int successY = screen.y + screen.height / 2 - 40;
   if (state == NO_CREDENTIALS) {
-    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, top, tr(STR_NO_CREDENTIALS_MSG), true,
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY - 14, tr(STR_NO_CREDENTIALS_MSG), true,
                               EpdFontFamily::BOLD);
-    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, top + 40, tr(STR_KOREADER_SETUP_HINT), true,
-                              EpdFontFamily::BOLD);
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY + 14, tr(STR_KOREADER_SETUP_HINT));
 
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -589,7 +589,7 @@ void KOReaderSyncActivity::render(RenderLock&&) {
   }
 
   if (state == SYNCING || state == UPLOADING) {
-    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, top, statusMessage.c_str(), true, EpdFontFamily::BOLD);
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY, statusMessage.c_str());
     renderer.displayBuffer();
     return;
   }
@@ -616,19 +616,16 @@ void KOReaderSyncActivity::render(RenderLock&&) {
   }
 
   if (state == UPLOAD_COMPLETE || state == SYNC_COMPLETE) {
-    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, top,
-                              state == UPLOAD_COMPLETE ? tr(STR_UPLOAD_SUCCESS) : tr(STR_ALREADY_SYNCED), true,
-                              EpdFontFamily::BOLD);
-
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_DONE), "", "");
-    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY,
+                              state == UPLOAD_COMPLETE ? tr(STR_UPLOAD_SUCCESS) : tr(STR_ALREADY_SYNCED));
     renderer.displayBuffer();
     return;
   }
 
   if (state == SYNC_FAILED) {
-    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, top, tr(STR_SYNC_FAILED_MSG), true, EpdFontFamily::BOLD);
-    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, top + 40, statusMessage.c_str());
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY - 14, tr(STR_SYNC_FAILED_MSG), true,
+                              EpdFontFamily::BOLD);
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY + 14, statusMessage.c_str());
 
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -638,7 +635,14 @@ void KOReaderSyncActivity::render(RenderLock&&) {
 }
 
 void KOReaderSyncActivity::loop() {
-  if (state == NO_CREDENTIALS || state == SYNC_FAILED || state == UPLOAD_COMPLETE || state == SYNC_COMPLETE) {
+  if (state == UPLOAD_COMPLETE || state == SYNC_COMPLETE) {
+    if (autoReturnAt != 0 && millis() >= autoReturnAt) {
+      returnToReader();
+    }
+    return;
+  }
+
+  if (state == NO_CREDENTIALS || state == SYNC_FAILED) {
     if (autoReturnAt != 0 && millis() >= autoReturnAt) {
       returnToReader();
       return;
