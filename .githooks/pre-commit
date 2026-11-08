@@ -7,21 +7,27 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "${REPO_ROOT}"
 
-# Capture the files already staged for commit so we only re-stage those
-# paths after formatting.
+# Files staged for this commit (added/copied/modified/renamed). NUL-separated,
+# so names with spaces or other odd characters are handled safely.
 staged_files=()
 while IFS= read -r -d '' file; do
   staged_files+=("${file}")
 done < <(git diff --cached --name-only -z --diff-filter=ACMR)
 
-# Intentionally format all currently modified tracked C/C++ files.
-# The helper handles no-op cases and exits 0 when nothing matches.
-echo "Running clang-format fix before commit..."
-./bin/clang-format-fix
+# Format only staged files that have no unstaged edits. A partially staged file
+# is skipped: re-staging it after formatting would pull its unstaged hunks into
+# the commit.
+to_format=()
+for file in "${staged_files[@]+"${staged_files[@]}"}"; do
+  if git diff --quiet -- "${file}"; then
+    to_format+=("${file}")
+  else
+    echo "pre-commit: not formatting partially staged file: ${file}" >&2
+  fi
+done
 
-# Ensure formatting changes are included in the pending commit without
-# staging unrelated tracked modifications from other files in the
-# working tree.
-if ((${#staged_files[@]})); then
-  git add -- "${staged_files[@]}"
+echo "Running clang-format fix before commit..."
+if ((${#to_format[@]})); then
+  ./bin/clang-format-fix "${to_format[@]}"
+  git add -- "${to_format[@]}"
 fi

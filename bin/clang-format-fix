@@ -30,6 +30,27 @@ if [[ -z "${CLANG_FORMAT_MAJOR}" || "${CLANG_FORMAT_MAJOR}" -lt 21 ]]; then
   exit 1
 fi
 
+# Explicit file arguments: format exactly those files and nothing else.
+# Used by .githooks/pre-commit so only files staged for the commit are touched.
+# The same generated/third-party exclusions as below apply.
+if [[ $# -gt 0 && "$1" != "-g" ]]; then
+  targets=()
+  for f in "$@"; do
+    case "$f" in
+      *.c | *.cpp | *.h | *.hpp) ;;
+      *) continue ;;
+    esac
+    case "$f" in
+      lib/EpdFont/builtinFonts/* | lib/Epub/Epub/hyphenation/generated/* | lib/uzlib/* | lib/miniz/third_party/*) continue ;;
+    esac
+    targets+=("$f")
+  done
+  if ((${#targets[@]})); then
+    "${CLANG_FORMAT_BIN}" -style=file -i -- "${targets[@]}"
+  fi
+  exit 0
+fi
+
 # --- Main Logic ---
 
 # Format all files (or only modified files if -g is passed)
