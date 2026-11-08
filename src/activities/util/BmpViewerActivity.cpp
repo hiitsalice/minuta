@@ -17,6 +17,7 @@ namespace {
 constexpr char TRANSPARENT_SLEEP_ROOT_BMP[] = "/sleep-overlay.bmp";
 constexpr char TRANSPARENT_SLEEP_ROOT_PNG[] = "/sleep-overlay.png";
 constexpr int MAX_IMAGE_DISPLAY_WIDTH = 400;
+constexpr int MAX_IMAGE_DISPLAY_HEIGHT = 720;
 
 struct ImageFit {
   int x;
@@ -33,7 +34,7 @@ ImageFit fitImageToScreen(const int sourceWidth, const int sourceHeight, const i
 
   float scale = 1.0f;
   scale = std::min(scale, static_cast<float>(MAX_IMAGE_DISPLAY_WIDTH) / sourceWidth);
-  scale = std::min(scale, static_cast<float>(screenHeight) / sourceHeight);
+  scale = std::min(scale, static_cast<float>(MAX_IMAGE_DISPLAY_HEIGHT) / sourceHeight);
 
   const int width = std::max(1, static_cast<int>(std::lround(sourceWidth * scale)));
   const int height = std::max(1, static_cast<int>(std::lround(sourceHeight * scale)));
