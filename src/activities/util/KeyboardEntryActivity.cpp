@@ -867,9 +867,9 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   } else if (inputType == InputType::Url && cursorMode) {
 
-    drawTip(tr(STR_KB_TIPS), 324);
-    drawTip("Press DOWN to return to keyboard", 352);
-    drawTip("Press LEFT or RIGHT to move cursor", 380);
+    drawTip(tr(STR_KB_TIPS), 296);
+    drawTip("Press DOWN to return to keyboard", 324);
+    drawTip("Press LEFT or RIGHT to move cursor", 352);
 
   } else if (cursorMode) {
     // Cursor-mode hints use their own fixed three-line layout.
