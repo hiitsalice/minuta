@@ -764,9 +764,12 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   if (cursorMode) {
 
-    drawTip(tr(STR_KB_HINT_MOVE_CURSOR), y);
-    y += tipsLh + tipGap;
     drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), y);
+    y += tipsLh + tipGap;
+
+    if (!text.empty()) {
+      drawTip(tr(STR_KB_HINT_MOVE_CURSOR), y);
+    }
 
   } else if (urlPanel) {
 
