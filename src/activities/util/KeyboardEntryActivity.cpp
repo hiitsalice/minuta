@@ -747,15 +747,11 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   // The letter layout has Shift and Del on the same row. The symbol layout
   // places Shift on the bottom row and Del on the row above, so find both
   // markers across the whole layout and size the frame to the widest row.
-  bool hasShift = false;
-  bool hasDelete = false;
   for (uint8_t row = 0; row < frameLayout.rowCount; ++row) {
     const fui::KeyboardRow& frameRow = frameLayout.rows[row];
     int rowWidth = 0;
     for (uint8_t col = 0; col < frameRow.count; ++col) {
       const fui::KeyboardKey& key = frameRow.keys[col];
-      if (key.kind == fui::KeyKind::Shift) hasShift = true;
-      if (key.kind == fui::KeyKind::Delete) hasDelete = true;
       if (inputType == InputType::Url && urlPanel) {
         rowWidth += 120;
         continue;
@@ -782,7 +778,6 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   }
   // URL snippets have no Shift key, so size every layer from its actual
   // widest row rather than requiring the Shift/Del pair.
-  if (frameKeyWidth == 0) frameKeyWidth = 0;
   const int frameWidth = frameKeyWidth + 24;
   const int frameX = (pageWidth - frameWidth) / 2;
   renderer.drawRoundedRect(frameX, kbRect.y - 12, frameWidth, kbRect.height + 24, 1, 8, true);
