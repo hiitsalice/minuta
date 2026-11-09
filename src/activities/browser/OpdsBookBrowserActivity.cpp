@@ -34,9 +34,24 @@ constexpr int DOWNLOAD_PROGRESS_STEP_PERCENT = 5;
 constexpr unsigned long DOWNLOAD_PROGRESS_MIN_UPDATE_MS = 5000;
 
 void drawEmptyButtonHints(GfxRenderer& renderer) {
-  constexpr const char* EMPTY_HINT = " ";
-  GUI.drawButtonHints(renderer, EMPTY_HINT, EMPTY_HINT, EMPTY_HINT, EMPTY_HINT);
-  GUI.drawSideButtonHints(renderer, EMPTY_HINT, EMPTY_HINT);
+  // Informational screens only let the top edge of the hint strip peek into view.
+  const auto orientation = renderer.getOrientation();
+  renderer.setOrientation(GfxRenderer::Orientation::Portrait);
+  const int screenWidth = renderer.getScreenWidth();
+  const int screenHeight = renderer.getScreenHeight();
+  constexpr int buttonWidth = 106;
+  constexpr int buttonHeight = BaseMetrics::values.buttonHintsHeight;
+  constexpr int buttonPositions[] = {25, 130, 240, 345};
+  const int* positions = screenWidth >= 528 ? (const int[]){38, 154, 268, 384} : buttonPositions;
+  const int peekHeight = 4;
+  const int top = screenHeight - buttonHeight;
+  for (int i = 0; i < 4; ++i) {
+    const int x = positions[i];
+    renderer.drawLine(x, top, x + buttonWidth - 1, top);
+    renderer.drawLine(x, top, x, top + peekHeight - 1);
+    renderer.drawLine(x + buttonWidth - 1, top, x + buttonWidth - 1, top + peekHeight - 1);
+  }
+  renderer.setOrientation(orientation);
 }
 
 }  // namespace
@@ -157,9 +172,9 @@ void OpdsBookBrowserActivity::loop() {
     } else if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       navigateBack();
     } else if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
-      if (!searchTemplate.empty() && selectorIndex == 0) {
+      if (!searchTemplate.empty()) {
         launchSearch();
-        return;  // Do not also treat the Search button as previous-row navigation.
+        return;
       }
     }
 
@@ -225,11 +240,14 @@ void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
   props.labelText = screen.theme().bodyText;
   props.labelText.font = fui::GfxRendererTarget::FONT_BODY;
   props.labelText.bold = true;
+  props.labelText.align = fui::TextAlign::Center;
   props.labelText.maxLines = 1;
   props.labelText.lineGap = 1;
   props.subtitleText = screen.theme().smallText;
   props.subtitleText.font = fui::GfxRendererTarget::FONT_BODY;
   props.subtitleText.bold = false;
+  props.subtitleText.align = fui::TextAlign::Center;
+  props.subtitleText.italic = true;
   props.subtitleText.maxLines = 1;
   props.subtitleText.lineGap = 1;
   props.subtitleGap = 6;
@@ -272,11 +290,10 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
            entries[selectorIndex].type == OpdsEntryType::BOOK)
               ? tr(STR_DOWNLOAD)
               : tr(STR_SELECT);
-      const char* previousLabel = (!searchTemplate.empty() && selectorIndex == 0) ? tr(STR_SEARCH) : tr(STR_DIR_UP);
-      const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabel, previousLabel, tr(STR_DIR_DOWN));
+      const char* searchLabel = searchTemplate.empty() ? "" : tr(STR_SEARCH);
+      const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabel, searchLabel, "");
       const bool listFillsArea = listNav.visibleRows > 0 && entries.size() >= static_cast<size_t>(listNav.visibleRows);
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea);
-      if (!entries.empty()) GUI.drawSideButtonHints(renderer, tr(STR_DIR_UP), tr(STR_DIR_DOWN));
       break;
     }
 
