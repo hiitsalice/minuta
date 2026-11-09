@@ -913,19 +913,19 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       fui::KeyboardKey& key = displayKeys[row][col];
 
       // Exact 40px keyboard grid: character keys are 40px, Shift/DEL are
-      // 80px, Mode/OK are 120px, and the space bar is 240px. Fixed widths let
+      // 60px, Mode/OK are 120px, and the space bar is 80px. Fixed widths let
       // FreeInkUI centre every row as a group.
       switch (sourceKey.kind) {
         case fui::KeyKind::Shift:
         case fui::KeyKind::Delete:
-          key.widthPx = 80;
+          key.widthPx = 60;
           break;
         case fui::KeyKind::Mode:
         case fui::KeyKind::Ok:
           key.widthPx = 120;
           break;
         case fui::KeyKind::Space:
-          key.widthPx = 240;
+          key.widthPx = 80;
           break;
         default:
           key.widthPx = static_cast<int16_t>(40 * (sourceKey.widthUnits ? sourceKey.widthUnits : 1));
