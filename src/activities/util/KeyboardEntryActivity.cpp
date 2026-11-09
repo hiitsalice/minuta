@@ -865,6 +865,12 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       drawTip("Hold DEL to clear all text", 394);
     }
 
+  } else if (inputType == InputType::Url && symbols && cursorMode) {
+
+    drawTip(tr(STR_KB_TIPS), 324);
+    drawTip("Press DOWN to return to keyboard", 352);
+    drawTip("Press LEFT or RIGHT to move cursor", 380);
+
   } else if (inputType == InputType::Url && cursorMode) {
 
     drawTip(tr(STR_KB_TIPS), 296);
