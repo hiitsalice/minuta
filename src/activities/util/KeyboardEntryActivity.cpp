@@ -740,6 +740,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   }
 
   const fui::Rect kbRect = keyboardRect();
+  renderer.drawRoundedRect(kbRect.x - 12, kbRect.y - 12, kbRect.width + 24, kbRect.height + 24, 1, 8, true);
 
   const int tipsLh = renderer.getLineHeight(UI_10_FONT_ID);
   const int underlineBottom = inputStartY + inputHeight + lineHeight + metrics.verticalSpacing + 4;
@@ -811,11 +812,11 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   if (cursorMode) {
     // Cursor mode's intended base positions are 296 / 324 / 352; the shared
     // 28px offset below applies to these hints as well as the other layers.
-    drawTip(tr(STR_KB_TIPS), 296);
-    drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 324);
+    drawTip(tr(STR_KB_TIPS), 324);
+    drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 352);
 
     if (!text.empty()) {
-      drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 352);
+      drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 380);
     }
 
   } else if (symbols) {
@@ -923,7 +924,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
           key.widthPx = 90;
           break;
         case fui::KeyKind::Space:
-          key.widthPx = 120;
+          key.widthPx = 160;
           break;
         default:
           key.widthPx = static_cast<int16_t>(40 * (sourceKey.widthUnits ? sourceKey.widthUnits : 1));
