@@ -53,7 +53,7 @@ const fui::KeyboardKey URL_ROW3[] = {UKS("Shift", fui::KeyKind::Shift, fui::QWER
                                      UK("b", "b", 'b'),
                                      UK("n", "n", 'n'),
                                      UK("m", "m", 'm'),
-                                     UKS("Delete", fui::KeyKind::Delete, fui::QWERTY_KEY_BACKSPACE, 2)};
+                                     UKS("Del", fui::KeyKind::Delete, fui::QWERTY_KEY_BACKSPACE, 2)};
 // URLs have no spaces, so the URL bottom row spends the space slot on ":",
 // "/", "." and the snippet-panel toggle instead (the legacy keyboard did the
 // same with its "URL" key).
@@ -384,7 +384,7 @@ fui::Rect KeyboardEntryActivity::keyboardRect() const {
   const int width = pageWidth * metrics.keyboardWidthPercent / 100;
   const int x = (pageWidth - width) / 2;
   const int y =
-      pageHeight - metrics.buttonHintsHeight - metrics.verticalSpacing - height + metrics.keyboardVerticalOffset;
+      pageHeight - metrics.buttonHintsHeight - metrics.verticalSpacing - height + metrics.keyboardVerticalOffset - 14;
   return fui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<int16_t>(width),
                    static_cast<int16_t>(height)};
 }
@@ -555,11 +555,11 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, title.c_str());
 
-  constexpr int kHintOffsetY = 14;
+  constexpr int kHintOffsetY = 0;
   const int lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
   // Keep the input text and its underline together, 10px below the original position.
   const int inputStartY = metrics.topPadding - 6 + metrics.headerHeight + metrics.verticalSpacing +
-                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 34;
+                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 6;
   const int inputHeight = 0;
 
   std::string displayText = displayTextForCurrentState();
@@ -745,29 +745,40 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   const fui::KeyboardLayout& frameLayout = currentLayout();
   const fui::KeyboardRow& frameRow = frameLayout.rows[3];
   int frameKeyWidth = 0;
+  int firstSide = -1;
+  int lastSide = -1;
   for (uint8_t col = 0; col < frameRow.count; ++col) {
-    const fui::KeyboardKey& key = frameRow.keys[col];
-    switch (key.kind) {
-      case fui::KeyKind::Shift:
-      case fui::KeyKind::Delete:
-        frameKeyWidth += 60;
-        break;
-      case fui::KeyKind::Mode:
-      case fui::KeyKind::Ok:
-        frameKeyWidth += 90;
-        break;
-      case fui::KeyKind::Space:
-        frameKeyWidth += 160;
-        break;
-      default:
-        frameKeyWidth += 40 * (key.widthUnits ? key.widthUnits : 1);
-        break;
-    }
+    const fui::KeyKind kind = frameRow.keys[col].kind;
+    if (kind == fui::KeyKind::Shift && firstSide < 0) firstSide = col;
+    if (kind == fui::KeyKind::Delete) lastSide = col;
   }
-  frameKeyWidth += static_cast<int>(frameRow.count - 1) * metrics.keyboardKeySpacing;
+  // Shift and Del define the keyboard's left and right edges. Only include
+  // the keys between those two markers when sizing the frame.
+  if (firstSide >= 0 && lastSide >= firstSide) {
+    for (int col = firstSide; col <= lastSide; ++col) {
+      const fui::KeyboardKey& key = frameRow.keys[col];
+      switch (key.kind) {
+        case fui::KeyKind::Shift:
+        case fui::KeyKind::Delete:
+          frameKeyWidth += 60;
+          break;
+        case fui::KeyKind::Mode:
+        case fui::KeyKind::Ok:
+          frameKeyWidth += 90;
+          break;
+        case fui::KeyKind::Space:
+          frameKeyWidth += 160;
+          break;
+        default:
+          frameKeyWidth += 40 * (key.widthUnits ? key.widthUnits : 1);
+          break;
+      }
+    }
+    frameKeyWidth += (lastSide - firstSide) * metrics.keyboardKeySpacing;
+  }
   const int frameWidth = frameKeyWidth + 24;
   const int frameX = (pageWidth - frameWidth) / 2;
-  renderer.drawRoundedRect(frameX, kbRect.y - 12, frameWidth, kbRect.height + 24, 2, 8, true);
+  renderer.drawRoundedRect(frameX, kbRect.y - 12, frameWidth, kbRect.height + 24, 1, 8, true);
 
   const int tipsLh = renderer.getLineHeight(UI_10_FONT_ID);
   const int underlineBottom = inputStartY + inputHeight + lineHeight + metrics.verticalSpacing + 4;
@@ -838,7 +849,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   if (cursorMode) {
     // Cursor mode's hint positions are 324 / 352 / 380; the shared
-    // 42px offset below applies to these hints as well as the other layers.
+    // 0px offset below applies to these hints as well as the other layers.
     drawTip(tr(STR_KB_TIPS), 324);
     drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 352);
 
@@ -918,7 +929,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   const fui::KeyboardLayout& layout = currentLayout();
 
   // FreeInkUI renders Delete keys as a bitmap and suppresses their label.
-  // Use a display-only copy so Minuta can show "DEL" while preserving the
+  // Use a display-only copy so Minuta can show "Del" while preserving the
   // original key value and the existing backspace/clear-all behaviour.
   constexpr uint8_t kMaxDisplayRows = 5;
   constexpr uint8_t kMaxDisplayKeysPerRow = 12;
@@ -964,7 +975,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
       if (key.kind == fui::KeyKind::Delete) {
         key.kind = fui::KeyKind::Normal;
-        key.label = "Delete";
+        key.label = "Del";
         key.output = nullptr;
         key.alt = nullptr;
       }
