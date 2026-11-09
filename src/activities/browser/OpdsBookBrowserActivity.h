@@ -48,19 +48,11 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   // Viewport memory (top/visibleRows) for the browsing list; `selected` is
   // mirrored from selectorIndex at build/move time.
   freeink::ui::ListNav listNav;
-  // Read by HttpDownloader between chunks; set by the Cancel button handler or
-  // a Back press, both pumped from the download's progress callback.
-  bool cancelDownload = false;
-  // Set when the cancel came from the home gesture (consumed by the download
-  // callback's own input pump); exit to home after the abort unwinds.
 
-  // Single screen fn dispatching on `state`: every state shares the themed
-  // header and gets built through FreeInkUI.
+  // Single screen fn dispatching on `state`. Browsing rows are built
+  // through FreeInkUI; the shared header and fixed-pixel status layouts use GUI.
   static void rootScreen(UiScreen& screen, void* user);
   static void onRowEvent(const freeink::ui::ActionEvent& event, void* user);
-  static void onSearchEvent(const freeink::ui::ActionEvent& event, void* user);
-  static void onCancelEvent(const freeink::ui::ActionEvent& event, void* user);
-  void screenHeader(UiScreen& screen, bool withSearch);
   void buildBrowsingScreen(UiScreen& screen);
   void buildDownloadScreen(UiScreen& screen);
   void buildStatusScreen(UiScreen& screen);
