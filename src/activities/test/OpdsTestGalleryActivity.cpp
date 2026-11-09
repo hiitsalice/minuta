@@ -7,22 +7,29 @@
 
 OpdsTestGalleryActivity::OpdsTestGalleryActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
     : Activity("OpdsTestGallery", renderer, mappedInput),
-      opdsPreview(renderer, mappedInput, OpdsServer{"Demo Library", "https://demo.invalid/opds", "", ""}) {}
+      opdsPreview(renderer, mappedInput,
+                  OpdsServer{"Project Gutenberg", "https://www.gutenberg.org/ebooks/search.opds/", "", ""}) {}
 
 void OpdsTestGalleryActivity::onEnter() {
   Activity::onEnter();
 
   opdsPreview.prepareSimulatorPreview();
-  opdsPreview.server.name = "Demo Library";
-  opdsPreview.searchTemplate = "https://demo.invalid/search?q={searchTerms}";
+  opdsPreview.server.name = "Project Gutenberg";
+  opdsPreview.searchTemplate = "https://www.gutenberg.org/ebooks/search.opds/?query={searchTerms}";
+
+  // Representative entries from Project Gutenberg's real public catalogue.
+  // The gallery uses the production OPDS renderer; these stable catalogue
+  // records keep the simulator preview deterministic and network-independent.
   opdsPreview.entries.clear();
   opdsPreview.entries.reserve(4);
   opdsPreview.entries.push_back(
-      OpdsEntry{OpdsEntryType::BOOK, "The Mysterious Affair at Styles", "Agatha Christie", "/books/styles.epub", ""});
-  opdsPreview.entries.push_back(OpdsEntry{OpdsEntryType::NAVIGATION, "Mystery", "", "/collections/mystery", ""});
+      OpdsEntry{OpdsEntryType::BOOK, "Pride and Prejudice", "Austen, Jane", "/ebooks/1342.epub.images", ""});
   opdsPreview.entries.push_back(
-      OpdsEntry{OpdsEntryType::BOOK, "The Murder of Roger Ackroyd", "Agatha Christie", "/books/ackroyd.epub", ""});
-  opdsPreview.entries.push_back(OpdsEntry{OpdsEntryType::NAVIGATION, "Next page", "", "?page=2", ""});
+      OpdsEntry{OpdsEntryType::BOOK, "Dracula", "Stoker, Bram", "/ebooks/345.epub.images", ""});
+  opdsPreview.entries.push_back(
+      OpdsEntry{OpdsEntryType::BOOK, "Frankenstein", "Shelley, Mary Wollstonecraft", "/ebooks/84.epub.images", ""});
+  opdsPreview.entries.push_back(
+      OpdsEntry{OpdsEntryType::BOOK, "The Adventures of Sherlock Holmes", "Doyle, Arthur Conan", "/ebooks/1661.epub.images", ""});
   opdsPreview.rebuildRowItems();
   opdsPreview.listNav.reset();
   opdsPreview.statusMessage = tr(STR_CHECKING_WIFI);
@@ -68,7 +75,7 @@ void OpdsTestGalleryActivity::selectPage() {
 
     case Page::Downloading:
       opdsPreview.state = OpdsBookBrowserActivity::BrowserState::DOWNLOADING;
-      opdsPreview.statusMessage = "The Mysterious Affair at Styles";
+      opdsPreview.statusMessage = "Pride and Prejudice";
       opdsPreview.downloadProgress = 43;
       opdsPreview.downloadTotal = 100;
       break;
