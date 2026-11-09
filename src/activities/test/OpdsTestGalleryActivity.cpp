@@ -36,7 +36,6 @@ void OpdsTestGalleryActivity::onEnter() {
   opdsPreview.errorMessage = tr(STR_FETCH_FEED_FAILED);
   opdsPreview.downloadProgress = 43;
   opdsPreview.downloadTotal = 100;
-  opdsPreview.cancelDownload = false;
 
   pageIndex = 0;
   page = Page::Status;
