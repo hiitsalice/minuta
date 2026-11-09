@@ -881,10 +881,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     // Cursor-mode hints use their own fixed three-line layout.
     drawTip(tr(STR_KB_TIPS), 324);
     drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 352);
-
-    if (!text.empty()) {
-      drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 380);
-    }
+    drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 380);
 
   } else if (symbols && inputType == InputType::Url) {
 
