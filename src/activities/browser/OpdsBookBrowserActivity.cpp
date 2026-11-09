@@ -69,8 +69,6 @@ void OpdsBookBrowserActivity::onEnter() {
   checkAndConnectWifi();
 }
 
-
-
 void OpdsBookBrowserActivity::onExit() {
   Activity::onExit();
   entries.clear();
