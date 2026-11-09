@@ -291,7 +291,7 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
   switch (state) {
     case BrowserState::BROWSING: {
       const auto labels =
-          mappedInput.mapLabels(tr(STR_BACK), tr(STR_SELECT), tr(STR_LOAD), searchTemplate.empty() ? "" : tr(STR_SEARCH));
+          mappedInput.mapLabels(tr(STR_BACK), tr(STR_SELECT), "Load", searchTemplate.empty() ? "" : tr(STR_SEARCH));
       const bool listFillsArea = listNav.visibleRows > 0 && entries.size() >= static_cast<size_t>(listNav.visibleRows);
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea);
       break;
