@@ -34,25 +34,10 @@ constexpr int DOWNLOAD_PROGRESS_STEP_PERCENT = 5;
 constexpr unsigned long DOWNLOAD_PROGRESS_MIN_UPDATE_MS = 5000;
 
 void drawEmptyButtonHints(GfxRenderer& renderer) {
-  // Informational screens only let the top edge of the hint strip peek into view.
-  const auto orientation = renderer.getOrientation();
-  renderer.setOrientation(GfxRenderer::Orientation::Portrait);
-  const int screenWidth = renderer.getScreenWidth();
-  const int screenHeight = renderer.getScreenHeight();
-  constexpr int buttonWidth = 106;
-  constexpr int narrowButtonPositions[] = {25, 130, 240, 345};
-  constexpr int wideButtonPositions[] = {38, 154, 268, 384};
-  const int* positions = screenWidth >= 528 ? wideButtonPositions : narrowButtonPositions;
-  const int buttonHeight = UITheme::getInstance().getMetrics().buttonHintsHeight;
-  constexpr int peekHeight = 4;
-  const int top = screenHeight - buttonHeight;
-  for (int i = 0; i < 4; ++i) {
-    const int x = positions[i];
-    renderer.drawLine(x, top, x + buttonWidth - 1, top);
-    renderer.drawLine(x, top, x, top + peekHeight - 1);
-    renderer.drawLine(x + buttonWidth - 1, top, x + buttonWidth - 1, top + peekHeight - 1);
-  }
-  renderer.setOrientation(orientation);
+  // Match WifiSelectionActivity::renderConnecting(): the normal hint renderer
+  // draws the subtle, partially visible empty hint strip.
+  const auto labels = mappedInput.mapLabels("", "", "", "");
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
 }  // namespace
@@ -240,7 +225,7 @@ void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
   props.valueInset = 0;
   props.labelText = screen.theme().bodyText;
   props.labelText.font = fui::GfxRendererTarget::FONT_BODY;
-  props.labelText.bold = true;
+  props.labelText.bold = false;
   props.labelText.align = fui::TextAlign::Center;
   props.labelText.maxLines = 1;
   props.labelText.lineGap = 1;
@@ -313,7 +298,8 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
         const int fillWidth = static_cast<int>((static_cast<uint64_t>(barWidth - 4) * clampedProgress) / downloadTotal);
         if (fillWidth > 0) renderer.fillRect(barX + 2, barY + 2, fillWidth, barHeight - 4);
       }
-      renderer.drawCenteredText(UI_10_FONT_ID, 418, statusMessage.c_str());
+      UITheme::drawCenteredText(renderer, UITheme::getInstance().getScreenSafeArea(renderer, true, false),
+                                UI_10_FONT_ID, 418, statusMessage.c_str(), true, EpdFontFamily::Style::ITALIC);
       drawEmptyButtonHints(renderer);
       break;
     }
@@ -404,7 +390,6 @@ void OpdsBookBrowserActivity::rebuildRowItems() {
     item.label = entry.title.c_str();
     if (entry.type == OpdsEntryType::BOOK && !entry.author.empty()) {
       item.subtitle = entry.author.c_str();
-      item.italic = true;
     }
     if (entry.type == OpdsEntryType::NAVIGATION) item.value = ">";
     item.actionValue = static_cast<int16_t>(rowItems.size());
