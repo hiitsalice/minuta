@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "OpdsServerStore.h"
 #include "activities/UiListActivity.h"
 
@@ -34,10 +36,10 @@ class OpdsSettingsActivity final : public UiListActivity {
   bool saveServer();
 
   // Row storage: at most 5 rows (Name/URL/Username/Password + Delete, see
-  // BASE_ITEMS in the .cpp), so a fixed-capacity array avoids any heap
-  // allocation for the row list. Labels are set once in the constructor
-  // (they never change); buildScreen() only refreshes the value pointers,
-  // which already point at editServer's own fields (no new strings built).
+  // BASE_ITEMS in the .cpp), so a fixed-capacity array avoids row-list growth.
+  // Labels are set once in the constructor; editable values use separate
+  // display strings so truncation never changes editServer's stored fields.
   static constexpr int MAX_MENU_ITEMS = 5;
   freeink::ui::ListItem fieldRowItems[MAX_MENU_ITEMS]{};
+  std::string displayedFieldValues[4];
 };

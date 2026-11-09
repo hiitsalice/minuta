@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "activities/UiListActivity.h"
@@ -27,11 +28,11 @@ class OpdsServerListActivity final : public UiListActivity {
 
   bool pickerMode = false;
 
-  // Row structure (labels, actionValue; server subtitles), rebuilt only when
-  // the server list itself reloads (rebuildRowItems(), called from onEnter()
-  // and after returning from the server editor) — not on every repaint. The
-  // folder/format rows' live subtitle is refreshed in place by buildScreen().
+  // Row structure (labels/actionValue and server rows), rebuilt only when the
+  // server list itself reloads (rebuildRowItems(), called from onEnter() and
+  // after returning from the editor). Folder/format values refresh in buildScreen().
   std::vector<freeink::ui::ListItem> rowItems_;
+  std::string displayedFolderValue_;
   void rebuildRowItems();
 
   int getItemCount() const;

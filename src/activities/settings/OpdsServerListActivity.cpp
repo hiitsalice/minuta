@@ -211,17 +211,6 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
     return;
   }
 
-  // rowItems_ (labels/actionValue, server subtitles) was built by
-  // rebuildRowItems() when the server list last reloaded; only the
-  // folder/format rows' live subtitle needs refreshing here (pointer
-  // reassignment onto already-owned strings — no allocation).
-  if (!pickerMode) {
-    const auto serverCount = static_cast<int>(OPDS_STORE.getServers().size());
-    rowItems_[serverCount + 1].value =
-        SETTINGS.opdsDownloadFolder[0] ? SETTINGS.opdsDownloadFolder : tr(STR_OPDS_SD_ROOT);
-    rowItems_[serverCount + 2].value = I18N.get(opdsFormatLabel(SETTINGS.opdsFilenameFormat));
-  }
-
   fui::ListProps props;
   props.items = rowItems_.data();
   props.count = static_cast<uint16_t>(rowItems_.size());
@@ -232,6 +221,20 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 2;
   props.labelText.lineGap = 6;
+  props.valueText = screen.theme().smallText;
+  props.valueText.align = fui::TextAlign::Right;
+
+  // The folder is editable; shorten only its displayed copy, never the saved path.
+  if (!pickerMode) {
+    const auto serverCount = static_cast<int>(OPDS_STORE.getServers().size());
+    const std::string folderValue =
+        SETTINGS.opdsDownloadFolder[0] ? SETTINGS.opdsDownloadFolder : tr(STR_OPDS_SD_ROOT);
+    displayedFolderValue_ =
+        fitListValueAfterLabel(uiTarget, screen, props, rowItems_[serverCount + 1].label, folderValue);
+    rowItems_[serverCount + 1].value = displayedFolderValue_.c_str();
+    rowItems_[serverCount + 2].value = I18N.get(opdsFormatLabel(SETTINGS.opdsFilenameFormat));
+  }
+
   syncListViewport(screen, props, /*hasSubtitle=*/false);
   screen.list(props);
 }

@@ -181,14 +181,6 @@ void OpdsSettingsActivity::buildScreen(UiScreen& screen) {
   // URL hint where the old sub-header band sat.
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
-  // fieldRowItems' labels/actionValue were set once in the constructor; only
-  // the live value pointers (already pointing at editServer's own fields, no
-  // new strings built) need refreshing here.
-  fieldRowItems[0].value = editServer.name.empty() ? tr(STR_NOT_SET) : editServer.name.c_str();
-  fieldRowItems[1].value = editServer.url.empty() ? tr(STR_NOT_SET) : editServer.url.c_str();
-  fieldRowItems[2].value = editServer.username.empty() ? tr(STR_NOT_SET) : editServer.username.c_str();
-  fieldRowItems[3].value = editServer.password.empty() ? tr(STR_NOT_SET) : "******";
-
   fui::ListProps props;
   props.items = fieldRowItems;
   props.count = static_cast<uint16_t>(getMenuItemCount());
@@ -201,6 +193,22 @@ void OpdsSettingsActivity::buildScreen(UiScreen& screen) {
   props.labelText = screen.theme().smallText;
   props.labelText.maxLines = 2;
   props.labelText.lineGap = 6;
+  props.valueText = screen.theme().smallText;
+  props.valueText.align = fui::TextAlign::Right;
+
+  // Keep editServer untouched; each row points to a bounded display copy.
+  const std::string fieldValues[BASE_ITEMS] = {
+      editServer.name.empty() ? std::string(tr(STR_NOT_SET)) : editServer.name,
+      editServer.url.empty() ? std::string(tr(STR_NOT_SET)) : editServer.url,
+      editServer.username.empty() ? std::string(tr(STR_NOT_SET)) : editServer.username,
+      editServer.password.empty() ? std::string(tr(STR_NOT_SET)) : std::string("******"),
+  };
+  for (int i = 0; i < BASE_ITEMS; ++i) {
+    displayedFieldValues[i] =
+        fitListValueAfterLabel(uiTarget, screen, props, fieldRowItems[i].label, fieldValues[i]);
+    fieldRowItems[i].value = displayedFieldValues[i].c_str();
+  }
+
   syncListViewport(screen, props);
   screen.list(props);
 }

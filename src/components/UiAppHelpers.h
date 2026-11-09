@@ -5,6 +5,7 @@
 #include <I18n.h>
 
 #include <atomic>
+#include <string>
 
 #include "MappedInputManager.h"
 #include "components/UIScale.h"
@@ -131,3 +132,61 @@ inline freeink::ui::BitmapRef listIconFor(const UIIcon icon, const int size = 24
   }
 }
 
+
+
+// Fits a trailing list value into the area after its label. FreeInkUI draws
+// values right-aligned; this helper prepares a display-only string so a long
+// value cannot consume the label's space. Truncation removes complete UTF-8
+// code points from the start and keeps the end of the original value.
+template <typename Screen>
+inline std::string fitListValueAfterLabel(const freeink::ui::GfxRendererTarget& target, const Screen& screen,
+                                          const freeink::ui::ListProps& props, const char* label,
+                                          const std::string& value, const int16_t minimumGap = 36) {
+  namespace fui = freeink::ui;
+  if (value.empty() || !label) return value;
+
+  const auto& theme = screen.theme();
+  const fui::Rect body = screen.body();
+  const int16_t rowHeight = props.rowHeight > 0 ? props.rowHeight : theme.rowHeight;
+  const int16_t rowGap = props.rowGap >= 0 ? props.rowGap : theme.listRowGap;
+  const uint16_t visibleRows = fui::listVisibleRows(body, rowHeight, rowGap);
+
+  const int16_t rowInset = props.rowInset >= 0 ? props.rowInset : theme.listInset;
+  int32_t rowWidth = body.width - static_cast<int32_t>(rowInset) * 2;
+  const int16_t scrollWidth = props.scrollIndicatorWidth >= 0 ? props.scrollIndicatorWidth : theme.listScrollWidth;
+  const int16_t scrollInset = props.scrollIndicatorInset >= 0 ? props.scrollIndicatorInset : theme.listScrollInset;
+  if (props.scrollIndicator && props.count > visibleRows && scrollWidth > 0) {
+    const int16_t needed = static_cast<int16_t>(scrollWidth + scrollInset + 2);
+    if (rowInset < needed) rowWidth -= needed - rowInset;
+  }
+
+  const int16_t sidePadding = props.sidePadding >= 0 ? props.sidePadding : theme.listSidePadding;
+  const int32_t bandWidth = rowWidth - static_cast<int32_t>(sidePadding) * 2;
+  const int16_t labelWidth = target.measureText(props.labelText.font, label, props.labelText).width;
+  freeink::ui::TextStyle valueStyle = props.valueText;
+  valueStyle.align = freeink::ui::TextAlign::Right;
+
+  const int16_t labelOffset = props.labelXOffset;
+  const int16_t requiredGap = minimumGap > props.textGap + labelOffset
+                                  ? minimumGap
+                                  : static_cast<int16_t>(props.textGap + labelOffset);
+  const int32_t maxValueWidth = bandWidth - props.valueInset - labelWidth - requiredGap;
+  if (maxValueWidth <= 0) return "";
+
+  if (target.measureText(valueStyle.font, value.c_str(), valueStyle).width <= maxValueWidth) return value;
+
+  constexpr const char* ELLIPSIS = "...";
+  if (target.measureText(valueStyle.font, ELLIPSIS, valueStyle).width > maxValueWidth) return "";
+
+  for (size_t start = 0; start < value.size();) {
+    std::string candidate(ELLIPSIS);
+    candidate.append(value, start, std::string::npos);
+    if (target.measureText(valueStyle.font, candidate.c_str(), valueStyle).width <= maxValueWidth) return candidate;
+
+    // Advance over one complete UTF-8 code point, never into a continuation byte.
+    ++start;
+    while (start < value.size() && (static_cast<unsigned char>(value[start]) & 0xC0) == 0x80) ++start;
+  }
+
+  return ELLIPSIS;
+}

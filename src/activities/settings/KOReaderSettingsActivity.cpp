@@ -127,10 +127,22 @@ void KOReaderSettingsActivity::buildScreen(UiScreen& screen) {
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
-  // rowItems_'s labels/actionValue were set once in the constructor; only the
-  // live value text needs refreshing here, by assigning into the existing
-  // rowValues_ strings (no array growth) rather than building a new
-  // items/values vector on every render.
+  fui::ListProps props;
+  props.items = rowItems_;
+  props.count = static_cast<uint16_t>(MENU_ITEMS);
+  props.action = ACTION_ROW;
+  props.valueInset = 3;
+  props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
+  props.rowGap = 0;
+  // Label at the value's font size: both sides of the row read as one unit.
+  // maxLines=2 also marks the style caller-owned (see textStyleUnset).
+  props.labelText = screen.theme().smallText;
+  props.labelText.maxLines = 2;
+  props.valueText = screen.theme().smallText;
+  props.valueText.align = fui::TextAlign::Right;
+
+  // Labels/actionValue are fixed; refresh live values without rebuilding the
+  // row array. Editable fields get a display-only leading ellipsis when needed.
   for (int i = 0; i < MENU_ITEMS; i++) {
     if (i == 0) {
       const auto username = KOREADER_STORE.getUsername();
@@ -159,20 +171,12 @@ void KOReaderSettingsActivity::buildScreen(UiScreen& screen) {
     } else if (i == 6 || i == 7) {
       rowValues_[i] = KOREADER_STORE.hasCredentials() ? "" : std::string("[") + tr(STR_SET_CREDENTIALS_FIRST) + "]";
     }
+    if (i <= 2 && !rowValues_[i].empty()) {
+      rowValues_[i] = fitListValueAfterLabel(uiTarget, screen, props, rowItems_[i].label, rowValues_[i]);
+    }
     rowItems_[i].value = rowValues_[i].empty() ? nullptr : rowValues_[i].c_str();
   }
 
-  fui::ListProps props;
-  props.items = rowItems_;
-  props.count = static_cast<uint16_t>(MENU_ITEMS);
-  props.action = ACTION_ROW;
-  props.valueInset = 3;
-  props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
-  props.rowGap = 0;
-  // Label at the value's font size: both sides of the row read as one unit.
-  // maxLines=2 also marks the style caller-owned (see textStyleUnset).
-  props.labelText = screen.theme().smallText;
-  props.labelText.maxLines = 2;
   syncListViewport(screen, props);
   screen.list(props);
 }
