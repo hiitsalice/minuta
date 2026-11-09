@@ -878,10 +878,10 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     drawTip("Press LEFT or RIGHT to move cursor", 352);
 
   } else if (cursorMode) {
-    // Cursor-mode hints use their own fixed three-line layout.
-    drawTip(tr(STR_KB_TIPS), 324);
-    drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 352);
-    drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 380);
+    // Regular entry cursor-mode hints use their own fixed three-line layout.
+    drawTip(tr(STR_KB_TIPS), 296);
+    drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 324);
+    drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 352);
 
   } else if (symbols && inputType == InputType::Url) {
 
