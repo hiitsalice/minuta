@@ -187,14 +187,18 @@ inline std::string fitListValueAfterLabel(const freeink::ui::GfxRendererTarget& 
   constexpr const char* ELLIPSIS = "...";
   if (target.measureText(valueStyle.font, ELLIPSIS, valueStyle).width > maxValueWidth) return "";
 
-  for (size_t start = 0; start < value.size();) {
-    std::string candidate(ELLIPSIS);
-    candidate.append(value, start, std::string::npos);
+  // Keep the beginning of the value and remove complete UTF-8 code points
+  // from the end until the retained prefix plus ellipsis fits.
+  size_t end = value.size();
+  while (end > 0) {
+    std::string candidate(value, 0, end);
+    candidate.append(ELLIPSIS);
     if (target.measureText(valueStyle.font, candidate.c_str(), valueStyle).width <= maxValueWidth) return candidate;
 
-    // Advance over one complete UTF-8 code point, never into a continuation byte.
-    ++start;
-    while (start < value.size() && (static_cast<unsigned char>(value[start]) & 0xC0) == 0x80) ++start;
+    // Move back over continuation bytes, then remove the leading byte of
+    // the final UTF-8 code point on the next iteration.
+    --end;
+    while (end > 0 && (static_cast<unsigned char>(value[end]) & 0xC0) == 0x80) --end;
   }
 
   return ELLIPSIS;
