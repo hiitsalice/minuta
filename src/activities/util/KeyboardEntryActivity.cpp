@@ -89,7 +89,6 @@ const fui::KeyboardKey URL_SNIP_ROW2[] = {UK("http://", "http://", 2004), UK("19
 const fui::KeyboardKey URL_SNIP_ROW3[] = {UK("/opds", "/opds", 2007), UK(":8080", ":8080", 2008),
                                           UK(".net", ".net", 2009)};
 const fui::KeyboardKey URL_SNIP_BOTTOM[] = {UKS("abc", fui::KeyKind::Mode, fui::QWERTY_KEY_MODE, 2),
-                                            UKW("URL", nullptr, URL_PANEL_VALUE, 2),
                                             UKS("Del", fui::KeyKind::Delete, fui::QWERTY_KEY_BACKSPACE, 2),
                                             UKS("OK", fui::KeyKind::Ok, fui::QWERTY_KEY_ENTER, 2)};
 
@@ -853,9 +852,12 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   if (inputType == InputType::Url && urlPanel) {
 
     // The URL snippets panel keeps the same hint block in normal and cursor mode.
-    drawTip(tr(STR_KB_TIPS), 324);
-    drawTip(tr(STR_KB_HINT_EXIT_URL_MODE), 352);
-    drawTip(tr(STR_KB_HINT_CLEAR_TEXT), 380);
+    drawTip(tr(STR_KB_TIPS), 310);
+    drawTip("Press ABC to exit URL mode", 338);
+    if (!text.empty()) {
+      drawTip("Hold UP to move cursor", 366);
+      drawTip("Hold DEL to clear all text", 394);
+    }
 
   } else if (inputType == InputType::Url && cursorMode) {
 
