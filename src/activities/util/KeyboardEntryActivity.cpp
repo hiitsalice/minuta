@@ -374,7 +374,8 @@ fui::Rect KeyboardEntryActivity::keyboardRect() const {
   const int pageHeight = renderer.getScreenHeight();
   const int rows = currentLayout().rowCount;
   const int gap = metrics.keyboardKeySpacing;
-  const int height = rows * metrics.keyboardKeyHeight + (rows > 1 ? (rows - 1) * gap : 0);
+  constexpr int keyHeight = 36;
+  const int height = rows * keyHeight + (rows > 1 ? (rows - 1) * gap : 0);
   const int width = pageWidth * metrics.keyboardWidthPercent / 100;
   const int x = (pageWidth - width) / 2;
   const int y =
@@ -551,37 +552,53 @@ void KeyboardEntryActivity::render(RenderLock&&) {
                                        : 0;
   const int textAreaWidth = pageWidth - 2 * effectiveMargin - toggleReserve;
 
-  // Keep the input to one row, no wider than the cursor hint beneath it.
-  // This width is measured with the active 10pt UI font rather than a
-  // character-count estimate, so the two lines align in actual rendered size.
-  constexpr const char* kInputWidthReferenceText = "Hold UP to move cursor";
-  const int referenceLineWidth =
-      renderer.getTextAdvanceX(UI_10_FONT_ID, kInputWidthReferenceText, EpdFontFamily::REGULAR);
-  const int maxLineWidth = std::min(textAreaWidth, referenceLineWidth);
+  // Use the entire input field. Long values are shortened from the beginning
+  // with a leading ellipsis rather than being constrained by the hint below.
+  const int maxLineWidth = textAreaWidth;
   const bool centerText = metrics.keyboardCenteredText;
 
   const size_t absoluteCursorPos = std::min(cursorPos, text.length());
 
-  // Keep the end of long values visible by default. In cursor mode, move the
-  // one-line window left when the cursor travels before the visible suffix.
-  size_t visibleStart = displayText.length();
-  while (visibleStart > 0) {
-    const size_t candidateStart = utf8Prev(displayText, visibleStart);
-    const int candidateWidth =
-        measureRange(displayText, static_cast<int>(candidateStart), static_cast<int>(displayText.length()));
-    if (candidateWidth > maxLineWidth && visibleStart < displayText.length()) break;
-    visibleStart = candidateStart;
-    if (candidateWidth > maxLineWidth) break;  // Always keep at least one complete character.
+  constexpr const char* kEllipsis = "…";
+  const int ellipsisWidth = renderer.getTextAdvanceX(UI_10_FONT_ID, kEllipsis, EpdFontFamily::REGULAR);
+
+  // Keep the end of long values visible by default. Reserve room for a real
+  // ellipsis before selecting the largest UTF-8-safe suffix that fits.
+  size_t visibleStart = 0;
+  size_t visibleEnd = displayText.length();
+  bool leadingEllipsis = false;
+  bool trailingEllipsis = false;
+  if (measureRange(displayText, 0, static_cast<int>(displayText.length())) > maxLineWidth) {
+    leadingEllipsis = true;
+    visibleStart = displayText.length();
+    while (visibleStart > 0) {
+      const size_t candidateStart = utf8Prev(displayText, visibleStart);
+      const int candidateWidth =
+          measureRange(displayText, static_cast<int>(candidateStart), static_cast<int>(displayText.length()));
+      if (candidateWidth + ellipsisWidth > maxLineWidth) break;
+      visibleStart = candidateStart;
+    }
   }
 
-  size_t visibleEnd = displayText.length();
+  // In cursor mode, move the one-line window to the cursor when it is before
+  // the visible suffix. Show ellipses at either end when text is omitted.
   if (cursorMode && absoluteCursorPos < visibleStart) {
     visibleStart = absoluteCursorPos;
-    visibleEnd = static_cast<size_t>(
-        lineBreakEnd(displayText, static_cast<int>(visibleStart), maxLineWidth));
+    leadingEllipsis = visibleStart > 0;
+    const int prefixReserve = leadingEllipsis ? ellipsisWidth : 0;
+    visibleEnd = static_cast<size_t>(lineBreakEnd(
+        displayText, static_cast<int>(visibleStart), std::max(1, maxLineWidth - prefixReserve)));
+    if (visibleEnd < displayText.length()) {
+      trailingEllipsis = true;
+      visibleEnd = static_cast<size_t>(lineBreakEnd(
+          displayText, static_cast<int>(visibleStart),
+          std::max(1, maxLineWidth - prefixReserve - ellipsisWidth)));
+    }
   }
 
   const std::string visibleText = displayText.substr(visibleStart, visibleEnd - visibleStart);
+  const std::string visibleDisplayText =
+      (leadingEllipsis ? kEllipsis : "") + visibleText + (trailingEllipsis ? kEllipsis : "");
   const bool cursorVisible = absoluteCursorPos >= visibleStart && absoluteCursorPos <= visibleEnd;
   const size_t renderCursorPos = cursorVisible ? absoluteCursorPos - visibleStart : 0;
 
@@ -603,17 +620,19 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     if (w > cursorCharWidth) cursorCharWidth = w;
   }
 
-  const int textWidth = renderer.getTextAdvanceX(UI_10_FONT_ID, visibleText.c_str(), EpdFontFamily::REGULAR);
+  const int textWidth =
+      renderer.getTextAdvanceX(UI_10_FONT_ID, visibleDisplayText.c_str(), EpdFontFamily::REGULAR);
   const int inputTextStartX = centerText ? (pageWidth - maxLineWidth) / 2 : effectiveMargin;
   int cursorPixelX = inputTextStartX;
   const int cursorLineY = inputStartY + 12;
   std::string beforeCursor;
 
   if (cursorVisible) {
+    if (leadingEllipsis) beforeCursor = kEllipsis;
     if (isPassword && !passwordVisible && cursorMode) {
-      beforeCursor = std::string(renderCursorPos, '*');
+      beforeCursor += std::string(renderCursorPos, '*');
     } else {
-      beforeCursor = visibleText.substr(0, renderCursorPos);
+      beforeCursor += visibleText.substr(0, renderCursorPos);
     }
 
     const int beforeWidth =
@@ -636,16 +655,17 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   if (cursorVisible && cursorMode && isPassword && !passwordVisible && !togglePos) {
     // Draw text in 3 parts to avoid block cursor overflowing onto next char.
     // displayText uses '*' for all chars; actual char may be wider than '*'.
-    const std::string part1 = visibleText.substr(0, renderCursorPos);
+    const std::string part1 = (leadingEllipsis ? kEllipsis : "") + visibleText.substr(0, renderCursorPos);
     renderer.drawText(UI_10_FONT_ID, lineStartX, inputStartY + 10, part1.c_str());
 
     const size_t afterStart = renderCursorPos + cursorCharBytes;
-    if (afterStart < visibleText.length()) {
-      const std::string part3 = visibleText.substr(afterStart);
+    std::string part3 = visibleText.substr(afterStart);
+    if (trailingEllipsis) part3 += kEllipsis;
+    if (!part3.empty()) {
       renderer.drawText(UI_10_FONT_ID, cursorPixelX + cursorCharWidth, inputStartY + 10, part3.c_str());
     }
   } else {
-    renderer.drawText(UI_10_FONT_ID, lineStartX, inputStartY + 10, visibleText.c_str());
+    renderer.drawText(UI_10_FONT_ID, lineStartX, inputStartY + 10, visibleDisplayText.c_str());
   }
 
   const int fieldWidth = textWidth;
@@ -778,10 +798,10 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
     // Symbol mode has a fixed three-line hint block. The two actions only
     // appear once there is text to edit.
-    drawTip(tr(STR_KB_TIPS), 296);
+    drawTip(tr(STR_KB_TIPS), 324);
     if (!text.empty()) {
-      drawTip("Hold UP to move cursor", 324);
-      drawTip(tr(STR_KB_HINT_CLEAR_TEXT), 352);
+      drawTip("Hold UP to move cursor", 352);
+      drawTip(tr(STR_KB_HINT_CLEAR_TEXT), 380);
     }
 
   } else if (urlPanel) {
@@ -862,8 +882,31 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     }
 
     for (uint8_t col = 0; col < sourceRow.count; ++col) {
-      displayKeys[row][col] = sourceRow.keys[col];
+      const fui::KeyboardKey& sourceKey = sourceRow.keys[col];
+      displayKeys[row][col] = sourceKey;
       fui::KeyboardKey& key = displayKeys[row][col];
+
+      // Use exact compact key widths. Ordinary character keys are 36px wide;
+      // the four function-key types are 136px; Space flexes to fill the row.
+      switch (sourceKey.kind) {
+        case fui::KeyKind::Shift:
+        case fui::KeyKind::Delete:
+        case fui::KeyKind::Mode:
+        case fui::KeyKind::Ok:
+          key.widthPx = 136;
+          break;
+        case fui::KeyKind::Space:
+          key.widthPx = 0;
+          break;
+        default:
+          key.widthPx = static_cast<int16_t>(36 * (sourceKey.widthUnits ? sourceKey.widthUnits : 1));
+          break;
+      }
+
+      // The alternate outputs remain available to long-press handling, but
+      // are no longer drawn as small corner labels on the keys.
+      key.alt = nullptr;
+
       if (key.kind == fui::KeyKind::Delete) {
         key.kind = fui::KeyKind::Normal;
         key.label = "DEL";
@@ -886,6 +929,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   props.selectedIndex = cursorMode ? -1 : static_cast<int16_t>(selectedLogicalIndex());
   props.labelText.font = fui::GfxRendererTarget::FONT_BODY;
   props.altText.font = fui::GfxRendererTarget::FONT_SMALL;
+  props.labelOffsetY = 1;
   props.gap = static_cast<int16_t>(metrics.keyboardKeySpacing);
   props.padding = fui::Insets{0, 0, 0, 0};
   // Fingers land low on the bottom row (occlusion) and there is no key below
