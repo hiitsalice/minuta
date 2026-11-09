@@ -402,12 +402,10 @@ void KeyboardEntryActivity::loop() {
       rightLongHandled = false;
       requestUpdate();
     }
-    upHeld = false;
-    upLongHandled = false;
   }
 
   if (mappedInput.wasPressed(MappedInputManager::Button::Up)) {
-    upHeld = !cursorMode && !text.empty();
+    upHeld = !cursorMode;
     upLongHandled = false;
   }
 
@@ -420,7 +418,7 @@ void KeyboardEntryActivity::loop() {
   }
 
   if (mappedInput.wasReleased(MappedInputManager::Button::Up)) {
-    if (upHeld && !upLongHandled && !cursorMode && !text.empty()) {
+    if (upHeld && !upLongHandled && !cursorMode) {
       moveSelectionRow(-1);
       requestUpdate();
     }
@@ -561,7 +559,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   const int lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
   // Keep the input text and its underline together, 24px below the original position.
   const int inputStartY = metrics.topPadding - 6 + metrics.headerHeight + metrics.verticalSpacing +
-                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 36;
+                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 48;
   const int inputHeight = 0;
 
   std::string displayText = displayTextForCurrentState();
@@ -913,7 +911,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       fui::KeyboardKey& key = displayKeys[row][col];
 
       // Exact 40px keyboard grid: character keys are 40px, Shift/DEL are
-      // 60px, Mode/OK are 120px, and the space bar is 80px. Fixed widths let
+      // 60px, Mode/OK are 90px, and the space bar is 120px. Fixed widths let
       // FreeInkUI centre every row as a group.
       switch (sourceKey.kind) {
         case fui::KeyKind::Shift:
@@ -922,10 +920,10 @@ void KeyboardEntryActivity::render(RenderLock&&) {
           break;
         case fui::KeyKind::Mode:
         case fui::KeyKind::Ok:
-          key.widthPx = 120;
+          key.widthPx = 90;
           break;
         case fui::KeyKind::Space:
-          key.widthPx = 80;
+          key.widthPx = 120;
           break;
         default:
           key.widthPx = static_cast<int16_t>(40 * (sourceKey.widthUnits ? sourceKey.widthUnits : 1));
