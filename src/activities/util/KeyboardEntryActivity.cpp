@@ -380,7 +380,8 @@ fui::Rect KeyboardEntryActivity::keyboardRect() const {
   const int pageHeight = renderer.getScreenHeight();
   const int rows = currentLayout().rowCount;
   const int gap = metrics.keyboardKeySpacing;
-  const int height = rows * metrics.keyboardKeyHeight + (rows > 1 ? (rows - 1) * gap : 0);
+  const int keyHeight = (inputType == InputType::Url && urlPanel) ? 60 : metrics.keyboardKeyHeight;
+  const int height = rows * keyHeight + (rows > 1 ? (rows - 1) * gap : 0);
   const int width = pageWidth * metrics.keyboardWidthPercent / 100;
   const int x = (pageWidth - width) / 2;
   const int y =
@@ -753,7 +754,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     for (uint8_t col = 0; col < frameRow.count; ++col) {
       const fui::KeyboardKey& key = frameRow.keys[col];
       if (inputType == InputType::Url && urlPanel) {
-        rowWidth += 120;
+        rowWidth += 90;
         continue;
       }
       switch (key.kind) {
@@ -948,10 +949,11 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       displayKeys[row][col] = sourceKey;
       fui::KeyboardKey& key = displayKeys[row][col];
 
-      // The URL snippets panel uses a 3-column grid of 120x40 keys.
+      // The URL snippets panel uses a 3-column grid of 90x60 keys.
+      // Its four-row layout gets a matching 60px key height via keyboardRect().
       // Other layers use the standard compact keyboard dimensions.
       if (inputType == InputType::Url && urlPanel) {
-        key.widthPx = 120;
+        key.widthPx = 90;
       } else switch (sourceKey.kind) {
         case fui::KeyKind::Shift:
         case fui::KeyKind::Delete:
