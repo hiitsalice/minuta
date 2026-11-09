@@ -273,8 +273,7 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
               : tr(STR_SELECT);
       const char* previousLabel = (!searchTemplate.empty() && selectorIndex == 0) ? tr(STR_SEARCH) : tr(STR_DIR_UP);
       const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabel, previousLabel, tr(STR_DIR_DOWN));
-      const bool listFillsArea =
-          listNav.visibleRows > 0 && entries.size() >= static_cast<size_t>(listNav.visibleRows);
+      const bool listFillsArea = listNav.visibleRows > 0 && entries.size() >= static_cast<size_t>(listNav.visibleRows);
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea);
       if (!entries.empty()) GUI.drawSideButtonHints(renderer, tr(STR_DIR_UP), tr(STR_DIR_DOWN));
       break;
@@ -292,8 +291,7 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
 
       if (downloadTotal > 0 && downloadProgress > 0 && barWidth > 4) {
         const size_t clampedProgress = std::min(downloadProgress, downloadTotal);
-        const int fillWidth = static_cast<int>(
-            (static_cast<uint64_t>(barWidth - 4) * clampedProgress) / downloadTotal);
+        const int fillWidth = static_cast<int>((static_cast<uint64_t>(barWidth - 4) * clampedProgress) / downloadTotal);
         if (fillWidth > 0) renderer.fillRect(barX + 2, barY + 2, fillWidth, barHeight - 4);
       }
       renderer.drawCenteredText(UI_10_FONT_ID, 418, statusMessage.c_str());
