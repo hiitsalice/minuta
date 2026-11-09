@@ -559,9 +559,9 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   constexpr int kHintOffsetY = 42;
   const int lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
-  // Keep the input text and its underline together, 12px lower.
+  // Keep the input text and its underline together, 24px below the original position.
   const int inputStartY = metrics.topPadding - 6 + metrics.headerHeight + metrics.verticalSpacing +
-                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 24;
+                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 36;
   const int inputHeight = 0;
 
   std::string displayText = displayTextForCurrentState();
@@ -913,7 +913,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       fui::KeyboardKey& key = displayKeys[row][col];
 
       // Exact 40px keyboard grid: character keys are 40px, Shift/DEL are
-      // 80px, Mode/OK are 120px, and the space bar is 400px. Fixed widths let
+      // 80px, Mode/OK are 120px, and the space bar is 240px. Fixed widths let
       // FreeInkUI centre every row as a group.
       switch (sourceKey.kind) {
         case fui::KeyKind::Shift:
@@ -925,7 +925,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
           key.widthPx = 120;
           break;
         case fui::KeyKind::Space:
-          key.widthPx = 400;
+          key.widthPx = 240;
           break;
         default:
           key.widthPx = static_cast<int16_t>(40 * (sourceKey.widthUnits ? sourceKey.widthUnits : 1));
