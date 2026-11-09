@@ -40,10 +40,11 @@ void drawEmptyButtonHints(GfxRenderer& renderer) {
   const int screenWidth = renderer.getScreenWidth();
   const int screenHeight = renderer.getScreenHeight();
   constexpr int buttonWidth = 106;
-  constexpr int buttonHeight = BaseMetrics::values.buttonHintsHeight;
-  constexpr int buttonPositions[] = {25, 130, 240, 345};
-  const int* positions = screenWidth >= 528 ? (const int[]){38, 154, 268, 384} : buttonPositions;
-  const int peekHeight = 4;
+  constexpr int narrowButtonPositions[] = {25, 130, 240, 345};
+  constexpr int wideButtonPositions[] = {38, 154, 268, 384};
+  const int* positions = screenWidth >= 528 ? wideButtonPositions : narrowButtonPositions;
+  const int buttonHeight = UITheme::getInstance().getMetrics().buttonHintsHeight;
+  constexpr int peekHeight = 4;
   const int top = screenHeight - buttonHeight;
   for (int i = 0; i < 4; ++i) {
     const int x = positions[i];
@@ -401,7 +402,10 @@ void OpdsBookBrowserActivity::rebuildRowItems() {
   for (const auto& entry : entries) {
     fui::ListItem item;
     item.label = entry.title.c_str();
-    if (entry.type == OpdsEntryType::BOOK && !entry.author.empty()) item.subtitle = entry.author.c_str();
+    if (entry.type == OpdsEntryType::BOOK && !entry.author.empty()) {
+      item.subtitle = entry.author.c_str();
+      item.italic = true;
+    }
     if (entry.type == OpdsEntryType::NAVIGATION) item.value = ">";
     item.actionValue = static_cast<int16_t>(rowItems.size());
     rowItems.push_back(item);
