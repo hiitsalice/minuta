@@ -43,7 +43,7 @@
 #ifdef SIMULATOR
 #include <Memory.h>
 
-#include "activities/test/OpdsWifiTestGalleryActivity.h"
+#include "activities/test/OpdsTestGalleryActivity.h"
 #endif
 #include "activities/util/LowBatteryWarningActivity.h"
 #include "components/UITheme.h"
@@ -518,7 +518,7 @@ void setup() {
   }
 
 #ifdef SIMULATOR
-  auto gallery = makeUniqueNoThrow<OpdsWifiTestGalleryActivity>(renderer, mappedInputManager);
+  auto gallery = makeUniqueNoThrow<OpdsTestGalleryActivity>(renderer, mappedInputManager);
   if (gallery) {
     activityManager.replaceActivity(std::move(gallery));
   } else {
