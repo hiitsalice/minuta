@@ -384,12 +384,25 @@ fui::Rect KeyboardEntryActivity::keyboardRect() const {
 }
 
 void KeyboardEntryActivity::loop() {
-  if (!cursorMode && mappedInput.wasPressed(MappedInputManager::Button::Up)) {
+  // Cursor navigation has no useful target on an empty input. Also leave
+  // cursor mode immediately if the text is cleared while it is active.
+  if (cursorMode && text.empty()) {
+    cursorMode = false;
+    togglePos = false;
+    passwordVisible = false;
+    cursorPos = 0;
+    rightHeld = false;
+    rightLongHandled = false;
+    requestUpdate();
+  }
+
+  if (!cursorMode && !text.empty() && mappedInput.wasPressed(MappedInputManager::Button::Up)) {
     upHeld = true;
     upLongHandled = false;
   }
 
-  if (upHeld && !upLongHandled && mappedInput.isPressed(MappedInputManager::Button::Up) &&
+  if (upHeld && !upLongHandled && !text.empty() &&
+      mappedInput.isPressed(MappedInputManager::Button::Up) &&
       mappedInput.getHeldTime() >= LONG_PRESS_MS) {
     cursorMode = true;
     upLongHandled = true;
@@ -534,6 +547,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, title.c_str());
 
+  constexpr int kHintOffsetY = 28;
   const int lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
   const int inputStartY = metrics.topPadding - 6 + metrics.headerHeight + metrics.verticalSpacing +
                           metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 12;
@@ -702,7 +716,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   if (cursorMode && !text.empty()) {
     const int hintLh = renderer.getLineHeight(UI_10_FONT_ID);
     const int underlineY = inputStartY + inputHeight + lineHeight + metrics.verticalSpacing;
-    const int hintY = underlineY + 4;
+    const int hintY = underlineY + 4 + kHintOffsetY;
     if (inputType == InputType::Password && togglePos) {
       int hintLineY = hintY;
       renderer.drawCenteredText(
@@ -725,7 +739,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   constexpr int tipsOffset = 12;
 
   auto drawTip = [&](const char* tip, int y) {
-    renderer.drawCenteredText(UI_10_FONT_ID, y, tip, true);
+    renderer.drawCenteredText(UI_10_FONT_ID, y + kHintOffsetY, tip, true);
   };
 
   /*
@@ -786,11 +800,13 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   int y = tipsStartY;
 
   if (cursorMode) {
-    drawTip(tr(STR_KB_TIPS), 268);
-    drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 296);
+    // Cursor mode's intended base positions are 296 / 324 / 352; the shared
+    // 28px offset below applies to these hints as well as the other layers.
+    drawTip(tr(STR_KB_TIPS), 296);
+    drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 324);
 
     if (!text.empty()) {
-      drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 324);
+      drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 352);
     }
 
   } else if (symbols) {
@@ -885,14 +901,16 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       displayKeys[row][col] = sourceKey;
       fui::KeyboardKey& key = displayKeys[row][col];
 
-      // Use exact compact key widths. Ordinary character keys are 36px wide;
-      // the four function-key types are 136px; Space flexes to fill the row.
+      // Use exact compact key widths. Character keys are 36px, Shift/DEL
+      // are 72px, and mode/OK keys are 108px. Space fills the remaining row.
       switch (sourceKey.kind) {
         case fui::KeyKind::Shift:
         case fui::KeyKind::Delete:
+          key.widthPx = 72;
+          break;
         case fui::KeyKind::Mode:
         case fui::KeyKind::Ok:
-          key.widthPx = 136;
+          key.widthPx = 108;
           break;
         case fui::KeyKind::Space:
           key.widthPx = 0;
