@@ -53,8 +53,8 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   // mirrored from selectorIndex at build/move time.
   freeink::ui::ListNav listNav;
 
-  // Single screen fn dispatching on `state`: every state shares the themed
-  // header and gets built through FreeInkUI.
+  // Single screen fn dispatching on `state`. Browsing rows are built
+  // through FreeInkUI; the shared header and fixed-pixel status layouts use GUI.
   static void rootScreen(UiScreen& screen, void* user);
   static void onRowEvent(const freeink::ui::ActionEvent& event, void* user);
   void buildBrowsingScreen(UiScreen& screen);
