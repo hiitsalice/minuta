@@ -131,6 +131,12 @@ void KeyboardEntryActivity::onEnter() {
   rightLongHandled = false;
   savedCursorPos = 0;
   rightStartCursorPos = 0;
+  upHeld = false;
+  upLongHandled = false;
+  downHeld = false;
+  downLongHandled = false;
+  confirmHeld = false;
+  confirmLongHandled = false;
   interactionsReady = false;
   requestUpdate();
 }
@@ -384,20 +390,24 @@ fui::Rect KeyboardEntryActivity::keyboardRect() const {
 }
 
 void KeyboardEntryActivity::loop() {
-  // Cursor navigation has no useful target on an empty input. Also leave
-  // cursor mode immediately if the text is cleared while it is active.
-  if (cursorMode && text.empty()) {
-    cursorMode = false;
-    togglePos = false;
-    passwordVisible = false;
-    cursorPos = 0;
-    rightHeld = false;
-    rightLongHandled = false;
-    requestUpdate();
+  // Cursor navigation has no useful target on an empty input. Also discard
+  // any pending UP hold so an empty field can never enter cursor mode later.
+  if (text.empty()) {
+    if (cursorMode) {
+      cursorMode = false;
+      togglePos = false;
+      passwordVisible = false;
+      cursorPos = 0;
+      rightHeld = false;
+      rightLongHandled = false;
+      requestUpdate();
+    }
+    upHeld = false;
+    upLongHandled = false;
   }
 
-  if (!cursorMode && !text.empty() && mappedInput.wasPressed(MappedInputManager::Button::Up)) {
-    upHeld = true;
+  if (mappedInput.wasPressed(MappedInputManager::Button::Up)) {
+    upHeld = !cursorMode && !text.empty();
     upLongHandled = false;
   }
 
@@ -410,7 +420,7 @@ void KeyboardEntryActivity::loop() {
   }
 
   if (mappedInput.wasReleased(MappedInputManager::Button::Up)) {
-    if (upHeld && !upLongHandled && !cursorMode) {
+    if (upHeld && !upLongHandled && !cursorMode && !text.empty()) {
       moveSelectionRow(-1);
       requestUpdate();
     }
@@ -547,7 +557,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, title.c_str());
 
-  constexpr int kHintOffsetY = 28;
+  constexpr int kHintOffsetY = 42;
   const int lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
   const int inputStartY = metrics.topPadding - 6 + metrics.headerHeight + metrics.verticalSpacing +
                           metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 12;
@@ -901,22 +911,23 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       displayKeys[row][col] = sourceKey;
       fui::KeyboardKey& key = displayKeys[row][col];
 
-      // Use exact compact key widths. Character keys are 36px, Shift/DEL
-      // are 72px, and mode/OK keys are 108px. Space fills the remaining row.
+      // Exact 48px keyboard grid: character keys are 48px, Shift/DEL are
+      // 96px, Mode/OK are 144px, and the space bar is 432px. Fixed widths let
+      // FreeInkUI centre every row as a group.
       switch (sourceKey.kind) {
         case fui::KeyKind::Shift:
         case fui::KeyKind::Delete:
-          key.widthPx = 72;
+          key.widthPx = 96;
           break;
         case fui::KeyKind::Mode:
         case fui::KeyKind::Ok:
-          key.widthPx = 108;
+          key.widthPx = 144;
           break;
         case fui::KeyKind::Space:
-          key.widthPx = 0;
+          key.widthPx = 432;
           break;
         default:
-          key.widthPx = static_cast<int16_t>(36 * (sourceKey.widthUnits ? sourceKey.widthUnits : 1));
+          key.widthPx = static_cast<int16_t>(48 * (sourceKey.widthUnits ? sourceKey.widthUnits : 1));
           break;
       }
 
