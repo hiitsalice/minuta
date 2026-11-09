@@ -957,8 +957,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       displayKeys[row][col] = sourceKey;
       fui::KeyboardKey& key = displayKeys[row][col];
 
-      // The URL snippets panel uses a 3-column grid of 90x60 keys.
-      // Its four-row layout gets a matching 60px key height via keyboardRect().
+      // The URL snippets panel uses a 3-column grid of 100x40 keys.
       // Other layers use the standard compact keyboard dimensions.
       if (inputType == InputType::Url && urlPanel) {
         key.widthPx = 100;
