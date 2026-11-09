@@ -102,7 +102,7 @@ const fui::KeyboardRow URL_ROWS[] = {
 const fui::KeyboardRow URL_SHIFT_ROWS[] = {
     {URL_NUM_ROW, 10, 0}, {URL_SHIFT_ROW1, 10, 0}, {URL_SHIFT_ROW2, 9, 1}, {URL_SHIFT_ROW3, 9, 0}, {URL_BOTTOM, 6, 0}};
 const fui::KeyboardRow URL_SNIP_ROWS[] = {
-    {URL_SNIP_ROW1, 3, 0}, {URL_SNIP_ROW2, 3, 0}, {URL_SNIP_ROW3, 3, 0}, {URL_SNIP_BOTTOM, 4, 0}};
+    {URL_SNIP_ROW1, 3, 0}, {URL_SNIP_ROW2, 3, 0}, {URL_SNIP_ROW3, 3, 0}, {URL_SNIP_BOTTOM, 3, 0}};
 
 const fui::KeyboardLayout URL_LAYOUT{URL_ROWS, 5};
 const fui::KeyboardLayout URL_SHIFT_LAYOUT{URL_SHIFT_ROWS, 5};
@@ -849,9 +849,15 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   int y = tipsStartY;
 
-  if (inputType == InputType::Url && urlPanel) {
+  if (inputType == InputType::Url && urlPanel && cursorMode) {
 
-    // The URL snippets panel keeps the same hint block in normal and cursor mode.
+    drawTip(tr(STR_KB_TIPS), 324);
+    drawTip("Press DOWN to return to keyboard", 352);
+    drawTip("Press LEFT or RIGHT to move cursor", 380);
+
+  } else if (inputType == InputType::Url && urlPanel) {
+
+    // The URL snippets panel keeps the same hint block in normal mode.
     drawTip(tr(STR_KB_TIPS), 310);
     drawTip("Press ABC to exit URL mode", 338);
     if (!text.empty()) {
@@ -862,8 +868,8 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   } else if (inputType == InputType::Url && cursorMode) {
 
     drawTip(tr(STR_KB_TIPS), 324);
-    drawTip("Press DOWN", 352);
-    drawTip("Press LEFT", 380);
+    drawTip("Press DOWN to return to keyboard", 352);
+    drawTip("Press LEFT or RIGHT to move cursor", 380);
 
   } else if (cursorMode) {
     // Cursor-mode hints use their own fixed three-line layout.
