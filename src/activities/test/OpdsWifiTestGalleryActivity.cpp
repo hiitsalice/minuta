@@ -5,9 +5,6 @@
 #include <I18n.h>
 #include <Logging.h>
 
-#include "OpdsParser.h"
-#include "fontIds.h"
-
 OpdsWifiTestGalleryActivity::OpdsWifiTestGalleryActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
     : Activity("OpdsWifiTestGallery", renderer, mappedInput),
       opdsPreview(renderer, mappedInput, OpdsServer{"Demo Library", "https://demo.invalid/opds", "", ""}),
@@ -27,12 +24,10 @@ void OpdsWifiTestGalleryActivity::onEnter() {
   opdsPreview.entries.reserve(4);
   opdsPreview.entries.push_back(
       OpdsEntry{OpdsEntryType::BOOK, "The Mysterious Affair at Styles", "Agatha Christie", "/books/styles.epub", ""});
-  opdsPreview.entries.push_back(
-      OpdsEntry{OpdsEntryType::NAVIGATION, "Mystery", "", "/collections/mystery", ""});
+  opdsPreview.entries.push_back(OpdsEntry{OpdsEntryType::NAVIGATION, "Mystery", "", "/collections/mystery", ""});
   opdsPreview.entries.push_back(
       OpdsEntry{OpdsEntryType::BOOK, "The Murder of Roger Ackroyd", "Agatha Christie", "/books/ackroyd.epub", ""});
-  opdsPreview.entries.push_back(
-      OpdsEntry{OpdsEntryType::NAVIGATION, "Next page", "", "?page=2", ""});
+  opdsPreview.entries.push_back(OpdsEntry{OpdsEntryType::NAVIGATION, "Next page", "", "?page=2", ""});
   opdsPreview.rebuildRowItems();
   opdsPreview.listNav.reset();
   opdsPreview.statusMessage = tr(STR_CHECKING_WIFI);
@@ -162,20 +157,10 @@ void OpdsWifiTestGalleryActivity::selectPage() {
 
 void OpdsWifiTestGalleryActivity::logCurrentPage() const {
   static constexpr const char* PAGE_LABELS[PAGE_COUNT] = {
-      "OPDS checking Wi-Fi",
-      "OPDS book catalogue",
-      "OPDS downloading",
-      "OPDS error",
-      "Wi-Fi auto-connecting",
-      "Wi-Fi scanning",
-      "Wi-Fi connecting",
-      "Wi-Fi network list",
-      "Wi-Fi no networks",
-      "Wi-Fi connected",
-      "Wi-Fi save password",
-      "Wi-Fi connection failed",
-      "Wi-Fi forget password",
-      "Keyboard entry",
+      "OPDS checking Wi-Fi",   "OPDS book catalogue", "OPDS downloading",    "OPDS error",
+      "Wi-Fi auto-connecting", "Wi-Fi scanning",      "Wi-Fi connecting",    "Wi-Fi network list",
+      "Wi-Fi no networks",     "Wi-Fi connected",     "Wi-Fi save password", "Wi-Fi connection failed",
+      "Wi-Fi forget password", "Keyboard entry",
   };
 
   LOG_INF("GALLERY", "Preview %u/%u: %s (side UP/DOWN to navigate)", static_cast<unsigned>(pageIndex + 1),

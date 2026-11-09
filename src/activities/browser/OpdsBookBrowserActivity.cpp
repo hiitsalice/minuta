@@ -1,4 +1,3 @@
-#include <algorithm>
 #include "OpdsBookBrowserActivity.h"
 
 #include <Arduino.h>
@@ -9,6 +8,8 @@
 #include <Logging.h>
 #include <OpdsStream.h>
 #include <WiFi.h>
+
+#include <algorithm>
 
 #include "CrossPointSettings.h"
 #include "MappedInputManager.h"
@@ -268,7 +269,7 @@ void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
   props.items = rowItems.data();
   props.count = static_cast<uint16_t>(rowItems.size());
   props.action = ACTION_ROW;
-  props.valueInset = 8;               // air between the nav chevron and the row edge
+  props.valueInset = 8;  // air between the nav chevron and the row edge
   listNav.selected = selectorIndex;
   int16_t rowHeight = screen.theme().rowHeight;
   rowHeight = static_cast<int16_t>(UITheme::getInstance().getMetrics().listWithSubtitleRowHeight);

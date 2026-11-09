@@ -42,15 +42,16 @@
 #include "activities/settings/SdFirmwareUpdateActivity.h"
 #ifdef SIMULATOR
 #include <Memory.h>
+
 #include "activities/test/OpdsWifiTestGalleryActivity.h"
 #endif
+#include "activities/util/LowBatteryWarningActivity.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
-#include "activities/util/LowBatteryWarningActivity.h"
 #include "images/LoadingIcon.h"
 #include "platform/UsbSerialJtagHandoff.h"
-#include "util/ButtonNavigator.h"
 #include "util/BookCacheUtils.h"
+#include "util/ButtonNavigator.h"
 #include "util/ScreenshotUtil.h"
 
 GfxRenderer renderer(display);
