@@ -28,8 +28,8 @@ void OpdsTestGalleryActivity::onEnter() {
       OpdsEntry{OpdsEntryType::BOOK, "Dracula", "Stoker, Bram", "/ebooks/345.epub.images", ""});
   opdsPreview.entries.push_back(
       OpdsEntry{OpdsEntryType::BOOK, "Frankenstein", "Shelley, Mary Wollstonecraft", "/ebooks/84.epub.images", ""});
-  opdsPreview.entries.push_back(
-      OpdsEntry{OpdsEntryType::BOOK, "The Adventures of Sherlock Holmes", "Doyle, Arthur Conan", "/ebooks/1661.epub.images", ""});
+  opdsPreview.entries.push_back(OpdsEntry{OpdsEntryType::BOOK, "The Adventures of Sherlock Holmes",
+                                         "Doyle, Arthur Conan", "/ebooks/1661.epub.images", ""});
   opdsPreview.rebuildRowItems();
   opdsPreview.listNav.reset();
   opdsPreview.statusMessage = tr(STR_CHECKING_WIFI);
