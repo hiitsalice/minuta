@@ -132,6 +132,8 @@ void KOReaderSettingsActivity::buildScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(MENU_ITEMS);
   props.action = ACTION_ROW;
   props.valueInset = 3;
+  // Keep editable labels intact; the value slot begins at least 36px after them.
+  props.textGap = 36;
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.rowGap = 0;
   // Label at the value's font size: both sides of the row read as one unit.
@@ -148,7 +150,8 @@ void KOReaderSettingsActivity::buildScreen(UiScreen& screen) {
       const auto username = KOREADER_STORE.getUsername();
       rowValues_[i] = username.empty() ? tr(STR_NOT_SET) : username;
     } else if (i == 1) {
-      rowValues_[i] = KOREADER_STORE.getPassword().empty() ? tr(STR_NOT_SET) : "******";
+      const std::string password = KOREADER_STORE.getPassword();
+      rowValues_[i] = password.empty() ? tr(STR_NOT_SET) : maskListPassword(password);
     } else if (i == 2) {
       rowValues_[i] = KOREADER_STORE.getServerUrl();
       if (rowValues_[i].empty()) {

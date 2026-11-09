@@ -186,6 +186,8 @@ void OpdsSettingsActivity::buildScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(getMenuItemCount());
   props.action = ACTION_ROW;
   props.valueInset = 3;
+  // Keep editable labels intact; the value slot begins at least 36px after them.
+  props.textGap = 36;
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.rowGap = 0;
   // Label at the value's font size: both sides of the row read as one unit.
@@ -201,7 +203,7 @@ void OpdsSettingsActivity::buildScreen(UiScreen& screen) {
       editServer.name.empty() ? std::string(tr(STR_NOT_SET)) : editServer.name,
       editServer.url.empty() ? std::string(tr(STR_NOT_SET)) : editServer.url,
       editServer.username.empty() ? std::string(tr(STR_NOT_SET)) : editServer.username,
-      editServer.password.empty() ? std::string(tr(STR_NOT_SET)) : std::string("******"),
+      editServer.password.empty() ? std::string(tr(STR_NOT_SET)) : maskListPassword(editServer.password),
   };
   for (int i = 0; i < BASE_ITEMS; ++i) {
     displayedFieldValues[i] =

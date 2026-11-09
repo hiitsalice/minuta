@@ -216,6 +216,8 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(rowItems_.size());
   props.action = ACTION_ROW;
   props.valueInset = 3;
+  // Keep the folder label clear of its trailing editable value.
+  props.textGap = 36;
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.rowGap = 0;
   props.labelText = screen.theme().smallText;

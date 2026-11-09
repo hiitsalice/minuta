@@ -134,6 +134,15 @@ inline freeink::ui::BitmapRef listIconFor(const UIIcon icon, const int size = 24
 
 
 
+// Creates one mask glyph per UTF-8 character, rather than one per byte.
+inline std::string maskListPassword(const std::string& password) {
+  size_t characterCount = 0;
+  for (const unsigned char byte : password) {
+    if ((byte & 0xC0) != 0x80) ++characterCount;
+  }
+  return std::string(characterCount, '*');
+}
+
 // Fits a trailing list value into the area after its label. FreeInkUI draws
 // values right-aligned; this helper prepares a display-only string so a long
 // value cannot consume the label's space. Truncation removes complete UTF-8
