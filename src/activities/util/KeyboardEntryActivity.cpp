@@ -810,8 +810,8 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   int y = tipsStartY;
 
   if (cursorMode) {
-    // Cursor mode's intended base positions are 296 / 324 / 352; the shared
-    // 28px offset below applies to these hints as well as the other layers.
+    // Cursor mode's hint positions are 324 / 352 / 380; the shared
+    // 42px offset below applies to these hints as well as the other layers.
     drawTip(tr(STR_KB_TIPS), 324);
     drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 352);
 
@@ -912,7 +912,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       fui::KeyboardKey& key = displayKeys[row][col];
 
       // Exact 40px keyboard grid: character keys are 40px, Shift/DEL are
-      // 60px, Mode/OK are 90px, and the space bar is 120px. Fixed widths let
+      // 60px, Mode/OK are 90px, and the space bar is 160px. Fixed widths let
       // FreeInkUI centre every row as a group.
       switch (sourceKey.kind) {
         case fui::KeyKind::Shift:
