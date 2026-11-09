@@ -327,8 +327,8 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
     }
 
     default:
-      // CHECK_WIFI and LOADING share the same layout and keep the empty
-      // front/side hint outlines without assigning any hint actions.
+      // CHECK_WIFI and LOADING share the same layout and keep only the
+      // shallow front-hint outline peek, with no assigned hint actions.
       renderer.drawCenteredText(UI_10_FONT_ID, 400, statusMessage.c_str());
       drawEmptyButtonHints(renderer);
       break;
