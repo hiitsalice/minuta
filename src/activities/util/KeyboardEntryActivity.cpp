@@ -680,14 +680,9 @@ void KeyboardEntryActivity::render(RenderLock&&) {
           passwordVisible ? tr(STR_KB_HINT_TOGGLE_HIDE_PASSWORD) : tr(STR_KB_HINT_TOGGLE_SHOW_PASSWORD), true);
       hintLineY += hintLh;
       renderer.drawCenteredText(UI_10_FONT_ID, hintLineY, tr(STR_KB_HINT_RETURN_CURSOR), true);
-    } else {
-      int hintLineY = hintY + 10;
-      renderer.drawCenteredText(UI_10_FONT_ID, hintLineY, tr(STR_KB_HINT_MOVE_CURSOR), true);
-      hintLineY += hintLh;
-      if (inputType == InputType::Password) {
-        const char* passTip = passwordVisible ? tr(STR_KB_HINT_HIDE_PASSWORD) : tr(STR_KB_HINT_SHOW_PASSWORD);
-        renderer.drawCenteredText(UI_10_FONT_ID, hintLineY, passTip, true);
-      }
+    } else if (inputType == InputType::Password) {
+      const char* passTip = passwordVisible ? tr(STR_KB_HINT_HIDE_PASSWORD) : tr(STR_KB_HINT_SHOW_PASSWORD);
+      renderer.drawCenteredText(UI_10_FONT_ID, hintY, passTip, true);
     }
   }
 
@@ -761,7 +756,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   int y = tipsStartY;
 
   if (cursorMode) {
-    y += 54;
+    y += tipsLh + tipGap;
   }
 
   drawTip(tr(STR_KB_TIPS), y);
@@ -769,6 +764,8 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   if (cursorMode) {
 
+    drawTip(tr(STR_KB_HINT_MOVE_CURSOR), y);
+    y += tipsLh + tipGap;
     drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), y);
 
   } else if (urlPanel) {
