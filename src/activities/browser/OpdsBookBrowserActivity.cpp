@@ -156,7 +156,10 @@ void OpdsBookBrowserActivity::loop() {
     } else if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       navigateBack();
     } else if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
-      if (!searchTemplate.empty() && selectorIndex == 0) launchSearch();
+      if (!searchTemplate.empty() && selectorIndex == 0) {
+        launchSearch();
+        return;  // Do not also treat the Search button as previous-row navigation.
+      }
     }
 
     if (!entries.empty()) {
