@@ -90,9 +90,6 @@ class KeyboardEntryActivity : public Activity {
   // on dual-core targets.
   std::atomic<bool> interactionsReady{false};
 
-  int delPressCount = 0;
-  bool hintVisible = false;
-  unsigned long hintShowTime = 0;
 
   void onComplete(std::string text);
   void onCancel();
