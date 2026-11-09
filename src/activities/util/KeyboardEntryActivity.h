@@ -38,6 +38,10 @@ class KeyboardEntryActivity : public Activity {
   size_t maxLength;
   InputType inputType;
   bool passwordVisible = false;
+  bool passwordRevealActive = false;
+  uint32_t passwordRevealStartedAt = 0;
+  size_t passwordRevealStart = 0;
+  size_t passwordRevealEnd = 0;
 
   ButtonNavigator buttonNavigator;
 
