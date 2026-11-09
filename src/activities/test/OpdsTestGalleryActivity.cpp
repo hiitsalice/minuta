@@ -29,7 +29,7 @@ void OpdsTestGalleryActivity::onEnter() {
   opdsPreview.entries.push_back(
       OpdsEntry{OpdsEntryType::BOOK, "Frankenstein", "Shelley, Mary Wollstonecraft", "/ebooks/84.epub.images", ""});
   opdsPreview.entries.push_back(OpdsEntry{OpdsEntryType::BOOK, "The Adventures of Sherlock Holmes",
-                                         "Doyle, Arthur Conan", "/ebooks/1661.epub.images", ""});
+                                          "Doyle, Arthur Conan", "/ebooks/1661.epub.images", ""});
   opdsPreview.rebuildRowItems();
   opdsPreview.listNav.reset();
   opdsPreview.statusMessage = tr(STR_CHECKING_WIFI);
@@ -88,15 +88,16 @@ void OpdsTestGalleryActivity::selectPage() {
 
 void OpdsTestGalleryActivity::logCurrentPage() const {
   static constexpr const char* PAGE_LABELS[PAGE_COUNT] = {
-      "OPDS status", "OPDS browsing", "OPDS downloading", "OPDS error",
+      "OPDS status",
+      "OPDS browsing",
+      "OPDS downloading",
+      "OPDS error",
   };
 
   LOG_INF("GALLERY", "Preview %u/%u: %s (side UP/DOWN to navigate)", static_cast<unsigned>(pageIndex + 1),
           static_cast<unsigned>(PAGE_COUNT), PAGE_LABELS[pageIndex]);
 }
 
-void OpdsTestGalleryActivity::render(RenderLock&& lock) {
-  opdsPreview.render(std::move(lock));
-}
+void OpdsTestGalleryActivity::render(RenderLock&& lock) { opdsPreview.render(std::move(lock)); }
 
 #endif
