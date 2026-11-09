@@ -757,12 +757,8 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   if (cursorMode) {
     y += tipsLh + tipGap;
-  }
-
-  drawTip(tr(STR_KB_TIPS), y);
-  y += tipsLh + tipGap;
-
-  if (cursorMode) {
+    drawTip(tr(STR_KB_TIPS), y);
+    y += tipsLh + tipGap;
 
     drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), y);
     y += tipsLh + tipGap;
@@ -771,8 +767,20 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       drawTip(tr(STR_KB_HINT_MOVE_CURSOR), y);
     }
 
+  } else if (symbols) {
+
+    // Symbol mode has a fixed three-line hint block. The two actions only
+    // appear once there is text to edit.
+    drawTip(tr(STR_KB_TIPS), 300);
+    if (!text.empty()) {
+      drawTip("Hold UP to move cursor", 324);
+      drawTip(tr(STR_KB_HINT_CLEAR_TEXT), 348);
+    }
+
   } else if (urlPanel) {
 
+    drawTip(tr(STR_KB_TIPS), y);
+    y += tipsLh + tipGap;
     drawTip(tr(STR_KB_HINT_EXIT_URL_MODE), y);
     y += tipsLh + tipGap;
 
@@ -780,33 +788,36 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       drawTip(tr(STR_KB_HINT_CLEAR_TEXT), y);
     }
 
-  } else if (symbols) {
+  } else if (inputType == InputType::Url) {
+
+    drawTip(tr(STR_KB_TIPS), y);
+    y += tipsLh + tipGap;
+    drawTip("Hold UP to move cursor", y);
+    y += tipsLh + tipGap;
+    drawTip(altCharTip, y);
+    y += tipsLh + tipGap;
+    drawTip(tr(STR_KB_HINT_URL_SNIPPETS), y);
 
     if (!text.empty()) {
+      y += tipsLh + tipGap;
       drawTip(tr(STR_KB_HINT_CLEAR_TEXT), y);
     }
 
   } else {
 
-    drawTip("Hold UP to move cursor", y);
-    y += tipsLh + tipGap;
+    // Keep the regular text-entry hints at their requested fixed baselines.
+    drawTip(tr(STR_KB_TIPS), 276);
 
     if (splitAltTip) {
-      drawTip(altTipFirst.c_str(), y);
-      y += tipsLh + tipGap;
-      drawTip(altTipSecond.c_str(), y);
+      drawTip(altTipFirst.c_str(), 300);
+      drawTip(altTipSecond.c_str(), 324);
     } else {
-      drawTip(altCharTip, y);
-    }
-
-    if (inputType == InputType::Url) {
-      y += tipsLh + tipGap;
-      drawTip(tr(STR_KB_HINT_URL_SNIPPETS), y);
+      drawTip(altCharTip, 300);
     }
 
     if (!text.empty()) {
-      y += tipsLh + tipGap;
-      drawTip(tr(STR_KB_HINT_CLEAR_TEXT), y);
+      drawTip("Hold UP to move cursor", 348);
+      drawTip(tr(STR_KB_HINT_CLEAR_TEXT), 372);
     }
   }
 
@@ -826,7 +837,38 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   fui::KeyboardProps props;
   const fui::KeyboardLayout& layout = currentLayout();
-  props.layout = &layout;
+
+  // FreeInkUI renders Delete keys as a bitmap and suppresses their label.
+  // Use a display-only copy so Minuta can show "DEL" while preserving the
+  // original key value and the existing backspace/clear-all behaviour.
+  constexpr uint8_t kMaxDisplayRows = 5;
+  constexpr uint8_t kMaxDisplayKeysPerRow = 12;
+  fui::KeyboardKey displayKeys[kMaxDisplayRows][kMaxDisplayKeysPerRow];
+  fui::KeyboardRow displayRows[kMaxDisplayRows];
+  bool canLabelDeleteKey = layout.rowCount <= kMaxDisplayRows;
+
+  for (uint8_t row = 0; canLabelDeleteKey && row < layout.rowCount; ++row) {
+    const fui::KeyboardRow& sourceRow = layout.rows[row];
+    if (sourceRow.count > kMaxDisplayKeysPerRow) {
+      canLabelDeleteKey = false;
+      break;
+    }
+
+    for (uint8_t col = 0; col < sourceRow.count; ++col) {
+      displayKeys[row][col] = sourceRow.keys[col];
+      fui::KeyboardKey& key = displayKeys[row][col];
+      if (key.kind == fui::KeyKind::Delete) {
+        key.kind = fui::KeyKind::Normal;
+        key.label = "DEL";
+        key.output = nullptr;
+        key.alt = nullptr;
+      }
+    }
+    displayRows[row] = {displayKeys[row], sourceRow.count, sourceRow.insetUnits};
+  }
+
+  const fui::KeyboardLayout displayLayout{displayRows, layout.rowCount};
+  props.layout = canLabelDeleteKey ? &displayLayout : &layout;
   props.keyAction = ACTION_KEY;  // one action id; loop() dispatches on key value
   props.okLabel = tr(STR_OK_BUTTON);
   props.shiftLabel = tr(STR_KEY_SHIFT);
