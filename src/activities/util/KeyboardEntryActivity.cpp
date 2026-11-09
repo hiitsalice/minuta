@@ -380,7 +380,7 @@ fui::Rect KeyboardEntryActivity::keyboardRect() const {
   const int pageHeight = renderer.getScreenHeight();
   const int rows = currentLayout().rowCount;
   const int gap = metrics.keyboardKeySpacing;
-  const int keyHeight = (inputType == InputType::Url && urlPanel) ? 60 : metrics.keyboardKeyHeight;
+  const int keyHeight = (inputType == InputType::Url && urlPanel) ? 40 : metrics.keyboardKeyHeight;
   const int height = rows * keyHeight + (rows > 1 ? (rows - 1) * gap : 0);
   const int width = pageWidth * metrics.keyboardWidthPercent / 100;
   const int x = (pageWidth - width) / 2;
@@ -754,7 +754,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     for (uint8_t col = 0; col < frameRow.count; ++col) {
       const fui::KeyboardKey& key = frameRow.keys[col];
       if (inputType == InputType::Url && urlPanel) {
-        rowWidth += 90;
+        rowWidth += 100;
         continue;
       }
       switch (key.kind) {
@@ -850,9 +850,21 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   int y = tipsStartY;
 
-  if (cursorMode) {
-    // Cursor mode's hint positions are 324 / 352 / 380; the shared
-    // 0px offset below applies to these hints as well as the other layers.
+  if (inputType == InputType::Url && urlPanel) {
+
+    // The URL snippets panel keeps the same hint block in normal and cursor mode.
+    drawTip(tr(STR_KB_TIPS), 324);
+    drawTip(tr(STR_KB_HINT_EXIT_URL_MODE), 352);
+    drawTip(tr(STR_KB_HINT_CLEAR_TEXT), 380);
+
+  } else if (inputType == InputType::Url && cursorMode) {
+
+    drawTip(tr(STR_KB_TIPS), 296);
+    drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 324);
+    drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 352);
+
+  } else if (cursorMode) {
+    // Cursor-mode hints use their own fixed three-line layout.
     drawTip(tr(STR_KB_TIPS), 324);
     drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 352);
 
@@ -883,15 +895,11 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   } else if (inputType == InputType::Url) {
 
-    // URL-entry hints retain their fixed three-line layout. The snippets
-    // instruction takes the third line; clear-text remains conditional below.
-    drawTip(tr(STR_KB_TIPS), 324);
-    drawTip("Hold UP to move cursor", 352);
-    drawTip(tr(STR_KB_HINT_URL_SNIPPETS), 380);
-
-    if (!text.empty()) {
-      drawTip(tr(STR_KB_HINT_CLEAR_TEXT), 408);
-    }
+    // URL entry has a dedicated four-line hint block.
+    drawTip(tr(STR_KB_TIPS), 282);
+    drawTip(tr(STR_KB_HINT_URL_SNIPPETS), 310);
+    drawTip("Hold UP to move cursor", 338);
+    drawTip("Hold DEL to clear all text", 366);
 
   } else {
 
@@ -953,7 +961,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       // Its four-row layout gets a matching 60px key height via keyboardRect().
       // Other layers use the standard compact keyboard dimensions.
       if (inputType == InputType::Url && urlPanel) {
-        key.widthPx = 90;
+        key.widthPx = 100;
       } else switch (sourceKey.kind) {
         case fui::KeyKind::Shift:
         case fui::KeyKind::Delete:
