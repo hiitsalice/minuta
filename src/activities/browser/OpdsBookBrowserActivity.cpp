@@ -66,6 +66,30 @@ void OpdsBookBrowserActivity::onEnter() {
   checkAndConnectWifi();
 }
 
+#ifdef SIMULATOR
+void OpdsBookBrowserActivity::prepareSimulatorPreview() {
+  Activity::onEnter();
+
+  state = BrowserState::CHECK_WIFI;
+  entries.clear();
+  navigationHistory.clear();
+  searchTemplate.clear();
+  currentPath.clear();
+  selectorIndex = 0;
+  errorMessage.clear();
+  statusMessage = tr(STR_CHECKING_WIFI);
+  downloadProgress = downloadTotal = 0;
+  cancelDownload = false;
+
+  listNav.reset();
+  resetUi();
+  app.on(ACTION_ROW, &OpdsBookBrowserActivity::onRowEvent, this);
+  app.on(ACTION_SEARCH, &OpdsBookBrowserActivity::onSearchEvent, this);
+  app.on(ACTION_CANCEL, &OpdsBookBrowserActivity::onCancelEvent, this);
+  app.setScreen(&OpdsBookBrowserActivity::rootScreen, this);
+}
+#endif
+
 void OpdsBookBrowserActivity::onExit() {
   Activity::onExit();
   entries.clear();

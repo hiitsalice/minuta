@@ -26,6 +26,10 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   void render(RenderLock&&) override;
 
  private:
+#ifdef SIMULATOR
+  friend class OpdsWifiTestGalleryActivity;
+  void prepareSimulatorPreview();
+#endif
   ButtonNavigator buttonNavigator;
   BrowserState state = BrowserState::LOADING;
   std::vector<OpdsEntry> entries;

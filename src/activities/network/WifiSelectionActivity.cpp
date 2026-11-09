@@ -121,6 +121,34 @@ void WifiSelectionActivity::onEnter() {
   startWifiScan();
 }
 
+#ifdef SIMULATOR
+void WifiSelectionActivity::prepareSimulatorPreview() {
+  Activity::onEnter();
+
+  selectedNetworkIndex = 0;
+  networks.clear();
+  networkStatuses.clear();
+  networkRowItems.clear();
+  realNetworkCount = 0;
+  state = WifiSelectionState::SCANNING;
+  selectedSSID.clear();
+  connectedIP.clear();
+  connectionError.clear();
+  enteredPassword.clear();
+  usedSavedPassword = false;
+  autoConnecting = false;
+  manualNetworkListRequested = false;
+  autoAttemptedSsids.clear();
+
+  listNav.reset();
+  resetUi();
+  app.on(ACTION_ROW, &WifiSelectionActivity::onRowEvent, this);
+  app.on(ACTION_SCAN, &WifiSelectionActivity::onScanEvent, this);
+  uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
+  app.setScreen(&WifiSelectionActivity::listScreen, this);
+}
+#endif
+
 void WifiSelectionActivity::onExit() {
   Activity::onExit();
 

@@ -102,6 +102,11 @@ class WifiSelectionActivity final : public Activity, private UiAppHost {
   static constexpr unsigned long AUTO_CONNECTION_TIMEOUT_MS = 7000;
   unsigned long connectionStartTime = 0;
 
+#ifdef SIMULATOR
+  friend class OpdsWifiTestGalleryActivity;
+  void prepareSimulatorPreview();
+#endif
+
   // The UiAppHost app hosts the network list and the save/forget prompts
   // (themed rows and dialogs, touch routing); every other state keeps its
   // legacy centered-text rendering.

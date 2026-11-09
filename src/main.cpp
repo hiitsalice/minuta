@@ -40,6 +40,10 @@
 #include "activities/Activity.h"
 #include "activities/ActivityManager.h"
 #include "activities/settings/SdFirmwareUpdateActivity.h"
+#ifdef SIMULATOR
+#include <Memory.h>
+#include "activities/test/OpdsWifiTestGalleryActivity.h"
+#endif
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "activities/util/LowBatteryWarningActivity.h"
@@ -511,6 +515,15 @@ void setup() {
     delay(10);
     gpio.update();
   }
+
+#ifdef SIMULATOR
+  auto gallery = makeUniqueNoThrow<OpdsWifiTestGalleryActivity>(renderer, mappedInputManager);
+  if (gallery) {
+    activityManager.replaceActivity(std::move(gallery));
+  } else {
+    LOG_ERR("MAIN", "OOM: OPDS/Wi-Fi test gallery");
+  }
+#endif
 
   allowSleepAt = millis() + 2000;
 }
