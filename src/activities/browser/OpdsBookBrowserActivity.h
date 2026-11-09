@@ -27,7 +27,7 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
 
  private:
 #ifdef SIMULATOR
-  friend class OpdsWifiTestGalleryActivity;
+  friend class OpdsTestGalleryActivity;
   void prepareSimulatorPreview();
 #endif
   ButtonNavigator buttonNavigator;
