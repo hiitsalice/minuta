@@ -861,9 +861,9 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   } else if (inputType == InputType::Url && cursorMode) {
 
-    drawTip(tr(STR_KB_TIPS), 296);
-    drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 324);
-    drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 352);
+    drawTip(tr(STR_KB_TIPS), 324);
+    drawTip("Press DOWN", 352);
+    drawTip("Press LEFT", 380);
 
   } else if (cursorMode) {
     // Cursor-mode hints use their own fixed three-line layout.
@@ -872,6 +872,15 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
     if (!text.empty()) {
       drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 380);
+    }
+
+  } else if (symbols && inputType == InputType::Url) {
+
+    // URL symbol mode uses the same fixed baselines as regular symbol mode.
+    drawTip(tr(STR_KB_TIPS), 324);
+    if (!text.empty()) {
+      drawTip("Hold UP to move cursor", 352);
+      drawTip("Hold DEL to clear all text", 380);
     }
 
   } else if (symbols) {
