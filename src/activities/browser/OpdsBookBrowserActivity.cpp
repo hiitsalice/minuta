@@ -152,15 +152,29 @@ void OpdsBookBrowserActivity::loop() {
   if (state == BrowserState::DOWNLOADING) return;
 
   if (state == BrowserState::BROWSING) {
-    if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
-      activateSelected();
-    } else if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
+    if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       navigateBack();
-    } else if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
-      if (!searchTemplate.empty()) {
-        launchSearch();
-        return;
+      return;
+    }
+    if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+      // Select is for catalogue navigation only; books use the separate Load button.
+      if (!entries.empty() && selectorIndex >= 0 && selectorIndex < static_cast<int>(entries.size()) &&
+          entries[selectorIndex].type != OpdsEntryType::BOOK) {
+        navigateToEntry(entries[selectorIndex]);
       }
+      return;
+    }
+    if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
+      // Load is for books only; it never doubles as catalogue navigation.
+      if (!entries.empty() && selectorIndex >= 0 && selectorIndex < static_cast<int>(entries.size()) &&
+          entries[selectorIndex].type == OpdsEntryType::BOOK) {
+        downloadBook(entries[selectorIndex]);
+      }
+      return;
+    }
+    if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+      if (!searchTemplate.empty()) launchSearch();
+      return;
     }
 
     if (!entries.empty()) {
@@ -170,14 +184,20 @@ void OpdsBookBrowserActivity::loop() {
         listNav.follow(static_cast<int>(entries.size()));
         requestUpdate();
       };
-      buttonNavigator.onNextRelease(
-          [this, &moveSelection] { moveSelection(ButtonNavigator::nextIndex(selectorIndex, entries.size())); });
-      buttonNavigator.onPreviousRelease(
-          [this, &moveSelection] { moveSelection(ButtonNavigator::previousIndex(selectorIndex, entries.size())); });
-      buttonNavigator.onNextContinuous([this, &moveSelection] {
+      // Browsing uses the side buttons exclusively for list navigation. The
+      // front Left/Right buttons are reserved for Load and Search.
+      buttonNavigator.onRelease({MappedInputManager::Button::Down},
+                                [this, &moveSelection] {
+                                  moveSelection(ButtonNavigator::nextIndex(selectorIndex, entries.size()));
+                                });
+      buttonNavigator.onRelease({MappedInputManager::Button::Up},
+                                [this, &moveSelection] {
+                                  moveSelection(ButtonNavigator::previousIndex(selectorIndex, entries.size()));
+                                });
+      buttonNavigator.onContinuous({MappedInputManager::Button::Down}, [this, &moveSelection] {
         moveSelection(ButtonNavigator::nextPageIndex(selectorIndex, entries.size(), listNav.visibleRows));
       });
-      buttonNavigator.onPreviousContinuous([this, &moveSelection] {
+      buttonNavigator.onContinuous({MappedInputManager::Button::Up}, [this, &moveSelection] {
         moveSelection(ButtonNavigator::previousPageIndex(selectorIndex, entries.size(), listNav.visibleRows));
       });
     }
@@ -270,13 +290,8 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
 
   switch (state) {
     case BrowserState::BROWSING: {
-      const char* confirmLabel =
-          (!entries.empty() && selectorIndex >= 0 && selectorIndex < static_cast<int>(entries.size()) &&
-           entries[selectorIndex].type == OpdsEntryType::BOOK)
-              ? tr(STR_DOWNLOAD)
-              : tr(STR_SELECT);
-      const char* searchLabel = searchTemplate.empty() ? "" : tr(STR_SEARCH);
-      const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabel, searchLabel, "");
+      const auto labels =
+          mappedInput.mapLabels(tr(STR_BACK), tr(STR_SELECT), tr(STR_LOAD), searchTemplate.empty() ? "" : tr(STR_SEARCH));
       const bool listFillsArea = listNav.visibleRows > 0 && entries.size() >= static_cast<size_t>(listNav.visibleRows);
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea);
       break;
