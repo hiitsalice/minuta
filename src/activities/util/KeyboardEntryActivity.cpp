@@ -743,39 +743,42 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   // Match the frame's horizontal inset to its 12px top inset. The
   // Shift-to-Delete row defines the keyboard's visible outer width.
   const fui::KeyboardLayout& frameLayout = currentLayout();
-  const fui::KeyboardRow& frameRow = frameLayout.rows[3];
   int frameKeyWidth = 0;
-  int firstSide = -1;
-  int lastSide = -1;
-  for (uint8_t col = 0; col < frameRow.count; ++col) {
-    const fui::KeyKind kind = frameRow.keys[col].kind;
-    if (kind == fui::KeyKind::Shift && firstSide < 0) firstSide = col;
-    if (kind == fui::KeyKind::Delete) lastSide = col;
-  }
-  // Shift and Del define the keyboard's left and right edges. Only include
-  // the keys between those two markers when sizing the frame.
-  if (firstSide >= 0 && lastSide >= firstSide) {
-    for (int col = firstSide; col <= lastSide; ++col) {
+  // The letter layout has Shift and Del on the same row. The symbol layout
+  // places Shift on the bottom row and Del on the row above, so find both
+  // markers across the whole layout and size the frame to the widest row.
+  bool hasShift = false;
+  bool hasDelete = false;
+  for (uint8_t row = 0; row < frameLayout.rowCount; ++row) {
+    const fui::KeyboardRow& frameRow = frameLayout.rows[row];
+    int rowWidth = 0;
+    for (uint8_t col = 0; col < frameRow.count; ++col) {
       const fui::KeyboardKey& key = frameRow.keys[col];
+      if (key.kind == fui::KeyKind::Shift) hasShift = true;
+      if (key.kind == fui::KeyKind::Delete) hasDelete = true;
       switch (key.kind) {
         case fui::KeyKind::Shift:
         case fui::KeyKind::Delete:
-          frameKeyWidth += 60;
+          rowWidth += 60;
           break;
         case fui::KeyKind::Mode:
         case fui::KeyKind::Ok:
-          frameKeyWidth += 90;
+          rowWidth += 90;
           break;
         case fui::KeyKind::Space:
-          frameKeyWidth += 160;
+          rowWidth += 160;
           break;
         default:
-          frameKeyWidth += 40 * (key.widthUnits ? key.widthUnits : 1);
+          rowWidth += 40 * (key.widthUnits ? key.widthUnits : 1);
           break;
       }
     }
-    frameKeyWidth += (lastSide - firstSide) * metrics.keyboardKeySpacing;
+    if (frameRow.count > 1) rowWidth += (frameRow.count - 1) * metrics.keyboardKeySpacing;
+    frameKeyWidth = std::max(frameKeyWidth, rowWidth);
   }
+  // Keep the frame tied to the actual keyboard's Shift/Del side controls,
+  // while accommodating symbol layers where those controls are on separate rows.
+  if (!hasShift || !hasDelete) frameKeyWidth = 0;
   const int frameWidth = frameKeyWidth + 24;
   const int frameX = (pageWidth - frameWidth) / 2;
   renderer.drawRoundedRect(frameX, kbRect.y - 12, frameWidth, kbRect.height + 24, 1, 8, true);
