@@ -33,9 +33,8 @@ constexpr fui::ActionId ACTION_ROW = 1;
 constexpr int DOWNLOAD_PROGRESS_STEP_PERCENT = 5;
 constexpr unsigned long DOWNLOAD_PROGRESS_MIN_UPDATE_MS = 5000;
 
-void drawEmptyButtonHints(GfxRenderer& renderer) {
-  // Match WifiSelectionActivity::renderConnecting(): the normal hint renderer
-  // draws the subtle, partially visible empty hint strip.
+void drawEmptyButtonHints(GfxRenderer& renderer, const MappedInputManager& mappedInput) {
+  // Match WifiSelectionActivity::renderConnecting() exactly.
   const auto labels = mappedInput.mapLabels("", "", "", "");
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
@@ -300,7 +299,7 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
       }
       UITheme::drawCenteredText(renderer, UITheme::getInstance().getScreenSafeArea(renderer, true, false),
                                 UI_10_FONT_ID, 418, statusMessage.c_str(), true, EpdFontFamily::Style::ITALIC);
-      drawEmptyButtonHints(renderer);
+      drawEmptyButtonHints(renderer, mappedInput);
       break;
     }
 
@@ -314,9 +313,9 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
 
     default:
       // CHECK_WIFI and LOADING share the same layout and keep only the
-      // shallow front-hint outline peek, with no assigned hint actions.
+      // empty hint strip, with no assigned hint actions.
       renderer.drawCenteredText(UI_10_FONT_ID, 400, statusMessage.c_str());
-      drawEmptyButtonHints(renderer);
+      drawEmptyButtonHints(renderer, mappedInput);
       break;
   }
 
