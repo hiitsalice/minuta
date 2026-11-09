@@ -559,7 +559,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   const int lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
   // Keep the input text and its underline together, 10px below the original position.
   const int inputStartY = metrics.topPadding - 6 + metrics.headerHeight + metrics.verticalSpacing +
-                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 6;
+                          metrics.verticalSpacing * 4 + metrics.keyboardVerticalOffset + 12;
   const int inputHeight = 0;
 
   std::string displayText = displayTextForCurrentState();
@@ -756,6 +756,10 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       const fui::KeyboardKey& key = frameRow.keys[col];
       if (key.kind == fui::KeyKind::Shift) hasShift = true;
       if (key.kind == fui::KeyKind::Delete) hasDelete = true;
+      if (inputType == InputType::Url && urlPanel) {
+        rowWidth += 120;
+        continue;
+      }
       switch (key.kind) {
         case fui::KeyKind::Shift:
         case fui::KeyKind::Delete:
@@ -776,9 +780,9 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     if (frameRow.count > 1) rowWidth += (frameRow.count - 1) * metrics.keyboardKeySpacing;
     frameKeyWidth = std::max(frameKeyWidth, rowWidth);
   }
-  // Keep the frame tied to the actual keyboard's Shift/Del side controls,
-  // while accommodating symbol layers where those controls are on separate rows.
-  if (!hasShift || !hasDelete) frameKeyWidth = 0;
+  // URL snippets have no Shift key, so size every layer from its actual
+  // widest row rather than requiring the Shift/Del pair.
+  if (frameKeyWidth == 0) frameKeyWidth = 0;
   const int frameWidth = frameKeyWidth + 24;
   const int frameX = (pageWidth - frameWidth) / 2;
   renderer.drawRoundedRect(frameX, kbRect.y - 12, frameWidth, kbRect.height + 24, 1, 8, true);
@@ -883,17 +887,14 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   } else if (inputType == InputType::Url) {
 
-    drawTip(tr(STR_KB_TIPS), y);
-    y += tipsLh + tipGap;
-    drawTip("Hold UP to move cursor", y);
-    y += tipsLh + tipGap;
-    drawTip(altCharTip, y);
-    y += tipsLh + tipGap;
-    drawTip(tr(STR_KB_HINT_URL_SNIPPETS), y);
+    // URL-entry hints retain their fixed three-line layout. The snippets
+    // instruction takes the third line; clear-text remains conditional below.
+    drawTip(tr(STR_KB_TIPS), 324);
+    drawTip("Hold UP to move cursor", 352);
+    drawTip(tr(STR_KB_HINT_URL_SNIPPETS), 380);
 
     if (!text.empty()) {
-      y += tipsLh + tipGap;
-      drawTip(tr(STR_KB_HINT_CLEAR_TEXT), y);
+      drawTip(tr(STR_KB_HINT_CLEAR_TEXT), 408);
     }
 
   } else {
@@ -952,10 +953,11 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       displayKeys[row][col] = sourceKey;
       fui::KeyboardKey& key = displayKeys[row][col];
 
-      // Exact 40px keyboard grid: character keys are 40px, Shift/DEL are
-      // 60px, Mode/OK are 90px, and the space bar is 160px. Fixed widths let
-      // FreeInkUI centre every row as a group.
-      switch (sourceKey.kind) {
+      // The URL snippets panel uses a 3-column grid of 120x40 keys.
+      // Other layers use the standard compact keyboard dimensions.
+      if (inputType == InputType::Url && urlPanel) {
+        key.widthPx = 120;
+      } else switch (sourceKey.kind) {
         case fui::KeyKind::Shift:
         case fui::KeyKind::Delete:
           key.widthPx = 60;
