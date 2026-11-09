@@ -1,5 +1,7 @@
 #include "KeyboardEntryActivity.h"
 
+#include <Arduino.h>
+
 #include <HalGPIO.h>
 #include <I18n.h>
 
@@ -124,6 +126,10 @@ void KeyboardEntryActivity::onEnter() {
   cursorMode = false;
   togglePos = false;
   passwordVisible = false;
+  passwordRevealActive = false;
+  passwordRevealStartedAt = 0;
+  passwordRevealStart = 0;
+  passwordRevealEnd = 0;
   selRow = 0;
   selCol = 0;
   rightHeld = false;
@@ -237,8 +243,14 @@ void KeyboardEntryActivity::insertUtf8(const char* out) {
   const size_t n = strlen(out);
   if (maxLength != 0 && text.length() + n > maxLength) return;
   if (cursorPos > text.length()) cursorPos = text.length();
+  passwordRevealStart = cursorPos;
   text.insert(cursorPos, out, n);
   cursorPos += n;
+  if (inputType == InputType::Password) {
+    passwordRevealEnd = cursorPos;
+    passwordRevealStartedAt = millis();
+    passwordRevealActive = true;
+  }
 }
 
 bool KeyboardEntryActivity::backspaceUtf8() {
@@ -321,14 +333,11 @@ std::string KeyboardEntryActivity::displayTextForCurrentState() const {
     return displayText;
   }
 
-  size_t revealPos;
-  if (cursorMode) {
-    revealPos = text.length();  // no reveal in displayText; block draws actual char directly
-  } else {
-    revealPos = (text.length() > 0 && cursorPos > 0) ? cursorPos - 1 : std::string::npos;
-  }
+  const bool revealRecentInput =
+      !cursorMode && passwordRevealActive &&
+      static_cast<uint32_t>(millis() - passwordRevealStartedAt) < 1500;
   for (size_t i = 0; i < displayText.length(); i++) {
-    if (i != revealPos) {
+    if (!revealRecentInput || i < passwordRevealStart || i >= passwordRevealEnd) {
       displayText[i] = '*';
     }
   }
@@ -390,6 +399,12 @@ fui::Rect KeyboardEntryActivity::keyboardRect() const {
 }
 
 void KeyboardEntryActivity::loop() {
+  if (inputType == InputType::Password && passwordRevealActive &&
+      static_cast<uint32_t>(millis() - passwordRevealStartedAt) >= 1500) {
+    passwordRevealActive = false;
+    requestUpdate();
+  }
+
   // Cursor navigation has no useful target on an empty input. Also discard
   // any pending UP hold so an empty field can never enter cursor mode later.
   if (text.empty()) {
