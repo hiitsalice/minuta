@@ -604,7 +604,8 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   }
 
   const int textWidth = renderer.getTextAdvanceX(UI_10_FONT_ID, visibleText.c_str(), EpdFontFamily::REGULAR);
-  int cursorPixelX = effectiveMargin;
+  const int inputTextStartX = centerText ? (pageWidth - maxLineWidth) / 2 : effectiveMargin;
+  int cursorPixelX = inputTextStartX;
   const int cursorLineY = inputStartY + 12;
   std::string beforeCursor;
 
@@ -627,14 +628,11 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       kernOffset = beforeAndCursorWidth - beforeWidth - charAdvance;
     }
 
-    if (centerText) {
-      cursorPixelX = effectiveMargin + (maxLineWidth - textWidth) / 2 + beforeWidth + kernOffset;
-    } else {
-      cursorPixelX = effectiveMargin + beforeWidth + kernOffset;
-    }
+    const int textOffsetX = centerText ? (maxLineWidth - textWidth) / 2 : 0;
+    cursorPixelX = inputTextStartX + textOffsetX + beforeWidth + kernOffset;
   }
 
-  const int lineStartX = centerText ? effectiveMargin + (maxLineWidth - textWidth) / 2 : effectiveMargin;
+  const int lineStartX = inputTextStartX + (centerText ? (maxLineWidth - textWidth) / 2 : 0);
   if (cursorVisible && cursorMode && isPassword && !passwordVisible && !togglePos) {
     // Draw text in 3 parts to avoid block cursor overflowing onto next char.
     // displayText uses '*' for all chars; actual char may be wider than '*'.
