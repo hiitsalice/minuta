@@ -877,6 +877,12 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     drawTip("Press DOWN to return to keyboard", 324);
     drawTip("Press LEFT or RIGHT to move cursor", 352);
 
+  } else if (symbols && cursorMode) {
+    // Symbol-screen cursor mode keeps the lower three-line hint layout.
+    drawTip(tr(STR_KB_TIPS), 324);
+    drawTip(tr(STR_KB_HINT_RETURN_KEYBOARD), 352);
+    drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 380);
+
   } else if (cursorMode) {
     // Regular entry cursor-mode hints use their own fixed three-line layout.
     drawTip(tr(STR_KB_TIPS), 296);
