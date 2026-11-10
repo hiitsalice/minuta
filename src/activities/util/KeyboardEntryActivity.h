@@ -67,16 +67,15 @@ class KeyboardEntryActivity : public Activity {
   bool confirmLongHandled = false;
 
   bool cursorMode = false;
-  bool togglePos = false;
   size_t cursorPos = 0;  // byte offset into text (always on a code point boundary)
   bool upHeld = false;
   bool upLongHandled = false;
   bool downHeld = false;
   bool downLongHandled = false;
+  bool leftHeld = false;
+  bool leftLongHandled = false;
   bool rightHeld = false;
   bool rightLongHandled = false;
-  size_t savedCursorPos = 0;
-  size_t rightStartCursorPos = 0;
 
   // Tap/hold routing (threshold long-press, release swallow, slide re-arm)
   // lives in the SDK; loop() feeds it the level-triggered touch state.

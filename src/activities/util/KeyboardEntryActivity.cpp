@@ -124,7 +124,6 @@ void KeyboardEntryActivity::onEnter() {
   symbols = false;
   urlPanel = false;
   cursorMode = false;
-  togglePos = false;
   passwordVisible = false;
   passwordRevealActive = false;
   passwordRevealStartedAt = 0;
@@ -134,8 +133,8 @@ void KeyboardEntryActivity::onEnter() {
   selCol = 0;
   rightHeld = false;
   rightLongHandled = false;
-  savedCursorPos = 0;
-  rightStartCursorPos = 0;
+  leftHeld = false;
+  leftLongHandled = false;
   upHeld = false;
   upLongHandled = false;
   downHeld = false;
@@ -410,9 +409,10 @@ void KeyboardEntryActivity::loop() {
   if (text.empty()) {
     if (cursorMode) {
       cursorMode = false;
-      togglePos = false;
       passwordVisible = false;
       cursorPos = 0;
+      leftHeld = false;
+      leftLongHandled = false;
       rightHeld = false;
       rightLongHandled = false;
       requestUpdate();
@@ -444,9 +444,12 @@ void KeyboardEntryActivity::loop() {
   if (mappedInput.wasPressed(MappedInputManager::Button::Down)) {
     downHeld = true;
     if (cursorMode) {
-      togglePos = false;
       passwordVisible = false;
       cursorMode = false;
+      leftHeld = false;
+      leftLongHandled = false;
+      rightHeld = false;
+      rightLongHandled = false;
       downLongHandled = true;
       requestUpdate();
     } else {
@@ -469,24 +472,35 @@ void KeyboardEntryActivity::loop() {
     requestUpdate();
   });
 
-  if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
-    if (cursorMode) {
-      if (togglePos) {
-        cursorPos = savedCursorPos;
-        togglePos = false;
-        requestUpdate();
-      } else if (cursorPos > 0) {
-        cursorPos = utf8Prev(text, cursorPos);
-        requestUpdate();
-      }
+  if (mappedInput.wasPressed(MappedInputManager::Button::Left)) {
+    if (cursorMode && inputType == InputType::Password && passwordVisible) {
+      leftHeld = true;
+      leftLongHandled = false;
     }
   }
 
+  if (leftHeld && !leftLongHandled && mappedInput.isPressed(MappedInputManager::Button::Left) &&
+      mappedInput.getHeldTime() >= LONG_PRESS_MS) {
+    if (cursorMode && inputType == InputType::Password && passwordVisible) {
+      passwordVisible = false;
+      leftLongHandled = true;
+      requestUpdate();
+    }
+  }
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
+    if (cursorMode && !leftLongHandled && cursorPos > 0) {
+      cursorPos = utf8Prev(text, cursorPos);
+      requestUpdate();
+    }
+    leftHeld = false;
+    leftLongHandled = false;
+  }
+
   if (mappedInput.wasPressed(MappedInputManager::Button::Right)) {
-    if (cursorMode && inputType == InputType::Password && !togglePos) {
+    if (cursorMode && inputType == InputType::Password && !passwordVisible) {
       rightHeld = true;
       rightLongHandled = false;
-      rightStartCursorPos = cursorPos;
     }
   }
 
@@ -498,26 +512,22 @@ void KeyboardEntryActivity::loop() {
 
   if (rightHeld && !rightLongHandled && mappedInput.isPressed(MappedInputManager::Button::Right) &&
       mappedInput.getHeldTime() >= LONG_PRESS_MS) {
-    if (cursorMode && inputType == InputType::Password && !togglePos) {
-      savedCursorPos = rightStartCursorPos;
-      togglePos = true;
+    if (cursorMode && inputType == InputType::Password && !passwordVisible) {
+      passwordVisible = true;
       rightLongHandled = true;
       requestUpdate();
     }
   }
 
   if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
-    if (cursorMode && inputType == InputType::Password) {
-      rightHeld = false;
-      rightLongHandled = false;
-    }
-    if (cursorMode && !togglePos && cursorPos < text.length()) {
+    const bool passwordRevealHandled = rightLongHandled;
+    rightHeld = false;
+    rightLongHandled = false;
+    if (cursorMode && !passwordRevealHandled && cursorPos < text.length()) {
       cursorPos = utf8Next(text, cursorPos);
       requestUpdate();
     }
     if (cursorMode) return;
-    rightHeld = false;
-    rightLongHandled = false;
   }
 
   if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
@@ -548,9 +558,6 @@ void KeyboardEntryActivity::loop() {
       if (selKey && activateValue(selKey->value, false)) {
         requestUpdate();
       }
-    } else if (confirmHeld && !confirmLongHandled && cursorMode && inputType == InputType::Password && togglePos) {
-      passwordVisible = !passwordVisible;
-      requestUpdate();
     }
     confirmHeld = false;
     confirmLongHandled = false;
@@ -582,11 +589,12 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   const bool isPassword = (inputType == InputType::Password);
   const int availableWidth = pageWidth;
   const int effectiveMargin = (pageWidth - availableWidth * metrics.keyboardTextFieldWidthPercent / 100) / 2;
-  const int toggleGap = isPassword ? 4 : 0;
-  const int toggleReserve = isPassword ? std::max(renderer.getTextWidth(UI_10_FONT_ID, "[abc]"),
-                                                  renderer.getTextWidth(UI_10_FONT_ID, "[***]")) +
-                                             toggleGap
-                                       : 0;
+  const bool showPasswordToggle = isPassword && !cursorMode;
+  const int toggleGap = showPasswordToggle ? 4 : 0;
+  const int toggleReserve = showPasswordToggle ? std::max(renderer.getTextWidth(UI_10_FONT_ID, "[abc]"),
+                                                          renderer.getTextWidth(UI_10_FONT_ID, "[***]")) +
+                                                     toggleGap
+                                               : 0;
   const int textAreaWidth = pageWidth - 2 * effectiveMargin - toggleReserve;
 
   // Use the entire input field. Long values are shortened from the beginning
@@ -689,7 +697,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   }
 
   const int lineStartX = inputTextStartX + (centerText ? (maxLineWidth - textWidth) / 2 : 0);
-  if (cursorVisible && cursorMode && isPassword && !passwordVisible && !togglePos) {
+  if (cursorVisible && cursorMode && isPassword && !passwordVisible) {
     // Draw text in 3 parts to avoid block cursor overflowing onto next char.
     // displayText uses '*' for all chars; actual char may be wider than '*'.
     const std::string part1 = (leadingEllipsis ? kEllipsis : "") + visibleText.substr(0, renderCursorPos);
@@ -722,36 +730,12 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     renderer.fillRect(cursorPixelX, cursorY, cursorWidth, cursorHeight, true);
   }
 
-  if (isPassword) {
+  if (showPasswordToggle) {
     const char* toggleLabel = passwordVisible ? "[***]" : "[abc]";
     const int toggleWidth = renderer.getTextWidth(UI_10_FONT_ID, toggleLabel);
     const int toggleX = pageWidth - effectiveMargin - toggleWidth;
     const int toggleY = inputStartY + inputHeight + 12;
-    const bool toggleSelected = cursorMode && togglePos;
-
-    if (toggleSelected) {
-      renderer.fillRect(toggleX - 2, toggleY, toggleWidth + 5, lineHeight + 3, true);
-      renderer.drawText(UI_10_FONT_ID, toggleX, toggleY, toggleLabel, false);
-    } else {
-      renderer.drawText(UI_10_FONT_ID, toggleX, toggleY, toggleLabel, true);
-    }
-  }
-
-  if (cursorMode && !text.empty()) {
-    const int hintLh = renderer.getLineHeight(UI_10_FONT_ID);
-    const int underlineY = inputStartY + inputHeight + lineHeight + metrics.verticalSpacing;
-    const int hintY = underlineY + 4 + kHintOffsetY;
-    if (inputType == InputType::Password && togglePos) {
-      int hintLineY = hintY;
-      renderer.drawCenteredText(
-          UI_10_FONT_ID, hintLineY,
-          passwordVisible ? tr(STR_KB_HINT_TOGGLE_HIDE_PASSWORD) : tr(STR_KB_HINT_TOGGLE_SHOW_PASSWORD), true);
-      hintLineY += hintLh;
-      renderer.drawCenteredText(UI_10_FONT_ID, hintLineY, tr(STR_KB_HINT_RETURN_CURSOR), true);
-    } else if (inputType == InputType::Password) {
-      const char* passTip = passwordVisible ? tr(STR_KB_HINT_HIDE_PASSWORD) : tr(STR_KB_HINT_SHOW_PASSWORD);
-      renderer.drawCenteredText(UI_10_FONT_ID, hintY, passTip, true);
-    }
+    renderer.drawText(UI_10_FONT_ID, toggleX, toggleY, toggleLabel, true);
   }
 
   const fui::Rect kbRect = keyboardRect();
@@ -864,7 +848,13 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   int y = tipsStartY;
 
-  if (inputType == InputType::Url && urlPanel && cursorMode) {
+  if (inputType == InputType::Password && cursorMode) {
+    drawTip(tr(STR_KB_TIPS), 282);
+    drawTip("Press DOWN to return to keyboard", 310);
+    drawTip("Press LEFT or RIGHT to move cursor", 338);
+    drawTip(passwordVisible ? "Hold LEFT to hide password" : "Hold RIGHT to show password", 366);
+
+  } else if (inputType == InputType::Url && urlPanel && cursorMode) {
 
     drawTip(tr(STR_KB_TIPS), 324);
     drawTip("Press DOWN to return to keyboard", 352);
