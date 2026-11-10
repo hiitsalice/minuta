@@ -7,6 +7,7 @@
 #include <Serialization.h>
 
 #include <cstring>
+#include <climits>
 
 #include "../../../../src/fontIds.h"
 #include "../../../../src/CrossPointSettings.h"
@@ -125,65 +126,6 @@ TextBlock::TextBlock(const std::vector<std::string>& words, const std::vector<in
   auto* styles = const_cast<uint8_t*>(stylesArr);
   auto* text = const_cast<char*>(textArr);
   uint16_t off = 0;
-  if (highlights != nullptr && !highlights->empty() && SETTINGS.highlightMarkerEnabled) {
-    const int highlightHeight = renderer.getLineHeight(fontId) - 9;
-
-    for (const auto& highlight : *highlights) {
-      int markerLeft = INT_MAX;
-      int markerRight = INT_MIN;
-      int markerY = 0;
-
-      for (uint16_t wordIndex = 0; wordIndex < numWords; wordIndex++) {
-        const char* markerWord = wordText(wordIndex);
-        const uint32_t wordStart = wordVisibleOffset(wordIndex);
-        const uint32_t wordEnd = wordStart + utf8Length(markerWord);
-        const uint32_t selectedStart = std::max(highlight.startVisibleTextOffset, wordStart);
-        const uint32_t selectedEnd = std::min(highlight.endVisibleTextOffset, wordEnd);
-        if (selectedStart >= selectedEnd) continue;
-
-        const uint32_t prefixChars = selectedStart - wordStart;
-        const uint32_t selectedChars = selectedEnd - selectedStart;
-        const char* cursor = markerWord;
-        uint32_t chars = 0;
-        while (*cursor && chars < prefixChars) {
-          const unsigned char c = static_cast<unsigned char>(*cursor);
-          cursor += (c < 0x80) ? 1 : ((c & 0xE0) == 0xC0) ? 2
-                                    : ((c & 0xF0) == 0xE0) ? 3 : 4;
-          ++chars;
-        }
-
-        const std::string prefix(markerWord, cursor - markerWord);
-        const char* selectedBegin = cursor;
-        while (*cursor && chars < prefixChars + selectedChars) {
-          const unsigned char c = static_cast<unsigned char>(*cursor);
-          cursor += (c < 0x80) ? 1 : ((c & 0xE0) == 0xC0) ? 2
-                                    : ((c & 0xF0) == 0xE0) ? 3 : 4;
-          ++chars;
-        }
-
-        const std::string selectedText(selectedBegin, cursor - selectedBegin);
-        const auto style = wordStyle(wordIndex);
-        const int prefixWidth = renderer.getTextAdvanceX(fontId, prefix.c_str(), style);
-        const int selectedWidth = renderer.getTextAdvanceX(fontId, selectedText.c_str(), style);
-        const int wordX = xposArr[wordIndex] + x;
-        const int wordY = y + rubyShift +
-                          ((style & EpdFontFamily::SUP) != 0 ? -ascender * 2 / 5
-                           : (style & EpdFontFamily::SUB) != 0 ? ascender / 4 : 0);
-        const int selectedLeft = wordX + prefixWidth;
-        const int selectedRight = selectedLeft + selectedWidth;
-
-        markerLeft = std::min(markerLeft, selectedLeft);
-        markerRight = std::max(markerRight, selectedRight);
-        markerY = wordY + 8;
-      }
-
-      if (markerLeft < markerRight) {
-        renderer.fillRectDither(markerLeft - 2, markerY, markerRight - markerLeft + 4,
-                                highlightHeight, Color::LightGray);
-      }
-    }
-  }
-
   for (uint16_t i = 0; i < numWords; i++) {
     textOff[i] = off;
     xpos[i] = wordXpos[i];
@@ -289,6 +231,66 @@ void TextBlock::render(const GfxRenderer& renderer, const int fontId, const int 
   // Loop-invariant: hoisted out of the word loop so rubyTexts is scanned once,
   // not once per word.
   const int rubyShift = getRubyShift(ascender);
+
+  if (highlights != nullptr && !highlights->empty() && SETTINGS.highlightMarkerEnabled) {
+    const int highlightHeight = renderer.getLineHeight(fontId) - 9;
+
+    for (const auto& highlight : *highlights) {
+      int markerLeft = INT_MAX;
+      int markerRight = INT_MIN;
+      int markerY = 0;
+
+      for (uint16_t wordIndex = 0; wordIndex < numWords; wordIndex++) {
+        const char* markerWord = wordText(wordIndex);
+        const uint32_t wordStart = wordVisibleOffset(wordIndex);
+        const uint32_t wordEnd = wordStart + utf8Length(markerWord);
+        const uint32_t selectedStart = std::max(highlight.startVisibleTextOffset, wordStart);
+        const uint32_t selectedEnd = std::min(highlight.endVisibleTextOffset, wordEnd);
+        if (selectedStart >= selectedEnd) continue;
+
+        const uint32_t prefixChars = selectedStart - wordStart;
+        const uint32_t selectedChars = selectedEnd - selectedStart;
+        const char* cursor = markerWord;
+        uint32_t chars = 0;
+        while (*cursor && chars < prefixChars) {
+          const unsigned char c = static_cast<unsigned char>(*cursor);
+          cursor += (c < 0x80) ? 1 : ((c & 0xE0) == 0xC0) ? 2
+                                    : ((c & 0xF0) == 0xE0) ? 3 : 4;
+          ++chars;
+        }
+
+        const std::string prefix(markerWord, cursor - markerWord);
+        const char* selectedBegin = cursor;
+        while (*cursor && chars < prefixChars + selectedChars) {
+          const unsigned char c = static_cast<unsigned char>(*cursor);
+          cursor += (c < 0x80) ? 1 : ((c & 0xE0) == 0xC0) ? 2
+                                    : ((c & 0xF0) == 0xE0) ? 3 : 4;
+          ++chars;
+        }
+
+        const std::string selectedText(selectedBegin, cursor - selectedBegin);
+        const auto style = wordStyle(wordIndex);
+        const int prefixWidth = renderer.getTextAdvanceX(fontId, prefix.c_str(), style);
+        const int selectedWidth = renderer.getTextAdvanceX(fontId, selectedText.c_str(), style);
+        const int wordX = xposArr[wordIndex] + x;
+        const int wordY = y + rubyShift +
+                          ((style & EpdFontFamily::SUP) != 0 ? -ascender * 2 / 5
+                           : (style & EpdFontFamily::SUB) != 0 ? ascender / 4 : 0);
+        const int selectedLeft = wordX + prefixWidth;
+        const int selectedRight = selectedLeft + selectedWidth;
+
+        markerLeft = std::min(markerLeft, selectedLeft);
+        markerRight = std::max(markerRight, selectedRight);
+        markerY = wordY + 8;
+      }
+
+      if (markerLeft < markerRight) {
+        renderer.fillRectDither(markerLeft - 2, markerY, markerRight - markerLeft + 4,
+                                highlightHeight, Color::LightGray);
+      }
+    }
+  }
+
 
   for (uint16_t i = 0; i < numWords; i++) {
     const char* word = wordText(i);
