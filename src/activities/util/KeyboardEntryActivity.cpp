@@ -589,13 +589,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   const bool isPassword = (inputType == InputType::Password);
   const int availableWidth = pageWidth;
   const int effectiveMargin = (pageWidth - availableWidth * metrics.keyboardTextFieldWidthPercent / 100) / 2;
-  const bool showPasswordToggle = isPassword && !cursorMode;
-  const int toggleGap = showPasswordToggle ? 4 : 0;
-  const int toggleReserve = showPasswordToggle ? std::max(renderer.getTextWidth(UI_10_FONT_ID, "[abc]"),
-                                                          renderer.getTextWidth(UI_10_FONT_ID, "[***]")) +
-                                                     toggleGap
-                                               : 0;
-  const int textAreaWidth = pageWidth - 2 * effectiveMargin - toggleReserve;
+  const int textAreaWidth = pageWidth - 2 * effectiveMargin;
 
   // Use the entire input field. Long values are shortened from the beginning
   // with a leading ellipsis rather than being constrained by the hint below.
@@ -661,7 +655,8 @@ void KeyboardEntryActivity::render(RenderLock&&) {
 
   int cursorCharWidth = 6;
   if (cursorCharBytes > 0) {
-    int w = renderer.getTextWidth(UI_10_FONT_ID, cursorChar);
+    const char* cursorWidthText = (isPassword && !passwordVisible && cursorMode) ? displayCursorChar : cursorChar;
+    int w = renderer.getTextWidth(UI_10_FONT_ID, cursorWidthText);
     if (w > cursorCharWidth) cursorCharWidth = w;
   }
 
@@ -703,6 +698,10 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     const std::string part1 = (leadingEllipsis ? kEllipsis : "") + visibleText.substr(0, renderCursorPos);
     renderer.drawText(UI_10_FONT_ID, lineStartX, inputStartY + 10, part1.c_str());
 
+    if (cursorCharBytes > 0) {
+      renderer.drawText(UI_10_FONT_ID, cursorPixelX, inputStartY + 10, displayCursorChar);
+    }
+
     const size_t afterStart = renderCursorPos + cursorCharBytes;
     std::string part3 = visibleText.substr(afterStart);
     if (trailingEllipsis) part3 += kEllipsis;
@@ -728,14 +727,6 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     const int cursorY = cursorLineY + cursorVerticalPadding - 8;
 
     renderer.fillRect(cursorPixelX, cursorY, cursorWidth, cursorHeight, true);
-  }
-
-  if (showPasswordToggle) {
-    const char* toggleLabel = passwordVisible ? "[***]" : "[abc]";
-    const int toggleWidth = renderer.getTextWidth(UI_10_FONT_ID, toggleLabel);
-    const int toggleX = pageWidth - effectiveMargin - toggleWidth;
-    const int toggleY = inputStartY + inputHeight + 12;
-    renderer.drawText(UI_10_FONT_ID, toggleX, toggleY, toggleLabel, true);
   }
 
   const fui::Rect kbRect = keyboardRect();
