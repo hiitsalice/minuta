@@ -71,7 +71,7 @@ void HighlightWordSelectActivity::extractWords() {
     for (uint16_t i = 0; i < block->wordCount(); i++) {
       const char* text = block->wordText(i);
       if (!isSelectableToken(text)) {
-        if (hasPreviousSelectableToken && strcmp(text, " ") != 0) {
+        if (hasPreviousSelectableToken && (text[0] != ' ' || text[1] != '\0')) {
           onlyWhitespaceSincePreviousSelectable = false;
         }
         continue;
@@ -362,13 +362,14 @@ bool HighlightWordSelectActivity::drawSelection() {
   // row. Punctuation tokens are not selectable, so leave their glyphs untouched.
   for (int rowFirst = first; rowFirst <= last;) {
     const uint16_t row = words[rowFirst].row;
+    const int16_t rowY = words[rowFirst].y;
     int rowLeft = INT_MAX;
     int rowRight = INT_MIN;
     int rowTop = INT_MAX;
     int rowBottom = INT_MIN;
     int rowLast = rowFirst;
 
-    while (rowLast <= last && words[rowLast].row == row &&
+    while (rowLast <= last && words[rowLast].row == row && words[rowLast].y == rowY &&
            (rowLast == rowFirst || words[rowLast].connectsToPrevious)) {
       const auto& word = words[rowLast];
       rowLeft = std::min(rowLeft, static_cast<int>(word.x));
@@ -378,8 +379,7 @@ bool HighlightWordSelectActivity::drawSelection() {
       rowLast++;
     }
 
-    renderer.fillRect(rowLeft - 2, rowTop - 2, rowRight - rowLeft + 4,
-                      rowBottom - rowTop + 4, true);
+    renderer.fillRect(rowLeft - 2, rowTop - 2, rowRight - rowLeft + 4, rowBottom - rowTop + 4, true);
     rowFirst = rowLast;
   }
 
@@ -389,8 +389,8 @@ bool HighlightWordSelectActivity::drawSelection() {
     const auto& word = words[i];
     renderer.drawText(fontId, word.x, word.y, word.text.c_str(), false, word.style);
 
-    if (i < last && words[i + 1].row == word.row &&
-        !word.separatorAfter.empty() && word.separatorWidth > 0) {
+    if (i < last && words[i + 1].row == word.row && !word.separatorAfter.empty() &&
+        word.separatorWidth > 0) {
       renderer.drawText(fontId, word.separatorX, word.y,
                         word.separatorAfter.c_str(), false, word.style);
     }
