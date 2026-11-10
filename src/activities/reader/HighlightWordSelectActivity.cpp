@@ -347,19 +347,39 @@ bool HighlightWordSelectActivity::drawSelection() {
   snapshotH = static_cast<int16_t>(hh);
   snapshotIdx = saved ? selected : -1;
 
+  // Paint one continuous selection band per visual row. Filling each word
+  // separately leaves the layout gaps between words white, even though the
+  // selected range is one continuous span of text.
+  for (int rowFirst = first; rowFirst <= last;) {
+    const uint16_t row = words[rowFirst].row;
+    int rowLeft = INT_MAX;
+    int rowRight = INT_MIN;
+    int rowTop = INT_MAX;
+    int rowBottom = INT_MIN;
+    int rowLast = rowFirst;
+
+    while (rowLast <= last && words[rowLast].row == row) {
+      const auto& word = words[rowLast];
+      rowLeft = std::min(rowLeft, static_cast<int>(word.x));
+      rowRight = std::max(rowRight, static_cast<int>(word.x) + word.width);
+      rowTop = std::min(rowTop, static_cast<int>(word.y));
+      rowBottom = std::max(rowBottom, static_cast<int>(word.y) + lineHeight);
+      rowLast++;
+    }
+
+    renderer.fillRect(rowLeft - 2, rowTop - 2, rowRight - rowLeft + 4,
+                      rowBottom - rowTop + 4, true);
+    rowFirst = rowLast;
+  }
+
+  // Restore the selected glyphs over the solid row bands. A dash is included
+  // only when the selection continues across its connected word parts.
   for (int i = first; i <= last; i++) {
     const auto& word = words[i];
-    const int wx = word.x - 2;
-    const int wy = word.y - 2;
-    const int ww = word.width + 4;
-    const int wh = lineHeight + 4;
-
-    renderer.fillRect(wx, wy, ww, wh, true);
     renderer.drawText(fontId, word.x, word.y, word.text.c_str(), false, word.style);
 
-    // A dash is highlighted only when the selection continues across it.
-    if (i < last && !word.separatorAfter.empty() && word.separatorWidth > 0) {
-      renderer.fillRect(word.separatorX, wy, word.separatorWidth, wh, true);
+    if (i < last && words[i + 1].row == word.row &&
+        !word.separatorAfter.empty() && word.separatorWidth > 0) {
       renderer.drawText(fontId, word.separatorX, word.y,
                         word.separatorAfter.c_str(), false, word.style);
     }
