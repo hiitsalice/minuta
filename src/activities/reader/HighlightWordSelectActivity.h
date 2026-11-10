@@ -32,6 +32,7 @@ class HighlightWordSelectActivity final : public Activity {
     int16_t y;
     int16_t width;
     uint16_t row;
+    bool connectsToPrevious = false;
     std::string text;
     std::string separatorAfter;
     int16_t separatorX = 0;
