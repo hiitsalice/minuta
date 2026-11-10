@@ -223,7 +223,6 @@ void CalibreConnectActivity::loop() {
 void CalibreConnectActivity::render(RenderLock&&) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int pageWidth = renderer.getScreenWidth();
-  const int pageHeight = renderer.getScreenHeight();
   const int lineHeight = renderer.getLineHeight(UI_10_FONT_ID);
 
   renderer.clearScreen();
@@ -231,13 +230,11 @@ void CalibreConnectActivity::render(RenderLock&&) {
 
   std::string firstButtonHint;
   std::string secondButtonHint;
+  bool showEmptyHintStrip = state == CalibreConnectState::SERVER_STARTING;
   if (state == CalibreConnectState::SERVER_STARTING) {
-    const int y = (pageHeight - lineHeight) / 2;
-    renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CALIBRE_STARTING));
-    firstButtonHint = tr(STR_BACK);
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_CALIBRE_STARTING));
   } else if (state == CalibreConnectState::ERROR) {
-    const int y = (pageHeight - lineHeight) / 2;
-    renderer.drawCenteredText(UI_10_FONT_ID, y, tr(STR_CONNECTION_FAILED), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_CONNECTION_FAILED));
     firstButtonHint = tr(STR_BACK);
   } else if (state == CalibreConnectState::SERVER_RUNNING) {
     const auto uploadStatus = webServer ? webServer->getWsUploadStatus() : CrossPointWebServer::WsUploadStatus{};
@@ -326,12 +323,16 @@ void CalibreConnectActivity::render(RenderLock&&) {
 
     if (receiving) {
       firstButtonHint.clear();
+      showEmptyHintStrip = true;
     }
   }
 
-  // During a transfer, draw no hint footer at all. Back is consumed and ignored
-  // in loop(), and no other buttons have actions on this screen.
-  if (!firstButtonHint.empty() || !secondButtonHint.empty()) {
+  // Starting and receiving have no active actions, but retain the visible
+  // hint strip so its edge peeks into the screen like the scanning state.
+  if (showEmptyHintStrip) {
+    const auto labels = mappedInput.mapLabels("", "", "", "");
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  } else if (!firstButtonHint.empty() || !secondButtonHint.empty()) {
     const auto labels = mappedInput.mapLabels(
         firstButtonHint.c_str(), secondButtonHint.c_str(), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
