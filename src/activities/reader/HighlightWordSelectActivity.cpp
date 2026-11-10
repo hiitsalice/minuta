@@ -63,12 +63,19 @@ void HighlightWordSelectActivity::extractWords() {
     if (!block || !block->valid()) continue;
 
     bool rowHasWords = false;
+    bool hasPreviousSelectableToken = false;
+    bool onlyWhitespaceSincePreviousSelectable = true;
     const int ascender = renderer.getFontAscenderSize(fontId);
     const int rubyShift = block->getRubyShift(ascender);
 
     for (uint16_t i = 0; i < block->wordCount(); i++) {
       const char* text = block->wordText(i);
-      if (!isSelectableToken(text)) continue;
+      if (!isSelectableToken(text)) {
+        if (hasPreviousSelectableToken && strcmp(text, " ") != 0) {
+          onlyWhitespaceSincePreviousSelectable = false;
+        }
+        continue;
+      }
 
       WordBox box;
       box.x = static_cast<int16_t>(line->xPos + block->wordXpos(i) + marginLeft);
@@ -76,12 +83,15 @@ void HighlightWordSelectActivity::extractWords() {
       box.style = block->wordStyle(i);
       box.width = 0;
       box.row = rowCount;
+      box.connectsToPrevious = hasPreviousSelectableToken && onlyWhitespaceSincePreviousSelectable;
       box.text = text;
       box.visibleTextOffset = block->wordVisibleOffset(i);
       box.endVisibleTextOffset = block->wordVisibleEndOffset(i);
 
       words.push_back(std::move(box));
       rowHasWords = true;
+      hasPreviousSelectableToken = true;
+      onlyWhitespaceSincePreviousSelectable = true;
 
       pageText.append(text);
       pageText.push_back(' ');
@@ -168,6 +178,7 @@ void HighlightWordSelectActivity::extractWords() {
           original.x + renderer.getTextAdvanceX(fontId, prefix.c_str(), original.style));
       item.width = static_cast<int16_t>(
           renderer.getTextAdvanceX(fontId, item.text.c_str(), item.style));
+      item.connectsToPrevious = p > 0 || original.connectsToPrevious;
       item.visibleTextOffset = original.visibleTextOffset + utf8Length(prefix);
       item.endVisibleTextOffset = item.visibleTextOffset + utf8Length(item.text);
       item.separatorAfter.clear();
@@ -347,9 +358,8 @@ bool HighlightWordSelectActivity::drawSelection() {
   snapshotH = static_cast<int16_t>(hh);
   snapshotIdx = saved ? selected : -1;
 
-  // Paint one continuous selection band per visual row. Filling each word
-  // separately leaves the layout gaps between words white, even though the
-  // selected range is one continuous span of text.
+  // Paint one continuous band for each whitespace-connected run on a visual
+  // row. Punctuation tokens are not selectable, so leave their glyphs untouched.
   for (int rowFirst = first; rowFirst <= last;) {
     const uint16_t row = words[rowFirst].row;
     int rowLeft = INT_MAX;
@@ -358,7 +368,8 @@ bool HighlightWordSelectActivity::drawSelection() {
     int rowBottom = INT_MIN;
     int rowLast = rowFirst;
 
-    while (rowLast <= last && words[rowLast].row == row) {
+    while (rowLast <= last && words[rowLast].row == row &&
+           (rowLast == rowFirst || words[rowLast].connectsToPrevious)) {
       const auto& word = words[rowLast];
       rowLeft = std::min(rowLeft, static_cast<int>(word.x));
       rowRight = std::max(rowRight, static_cast<int>(word.x) + word.width);
