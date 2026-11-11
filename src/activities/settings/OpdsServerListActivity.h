@@ -13,7 +13,8 @@
  */
 class OpdsServerListActivity final : public UiListActivity {
  public:
-  explicit OpdsServerListActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, bool pickerMode = false);
+  explicit OpdsServerListActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, bool pickerMode = false,
+                                  bool returnToParent = false);
 
   void onEnter() override;
   void render(RenderLock&&) override;
@@ -31,6 +32,7 @@ class OpdsServerListActivity final : public UiListActivity {
   const char* headerTitle() const override;
 
   bool pickerMode = false;
+  bool returnToParent = false;
 
   // Row structure (labels/actionValue and server rows), rebuilt only when the
   // server list itself reloads (rebuildRowItems(), called from onEnter() and
