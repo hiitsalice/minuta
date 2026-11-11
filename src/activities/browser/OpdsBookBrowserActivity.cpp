@@ -43,11 +43,12 @@ void drawEmptyButtonHints(GfxRenderer& renderer, const MappedInputManager& mappe
 }  // namespace
 
 OpdsBookBrowserActivity::OpdsBookBrowserActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
-                                                 OpdsServer server)
+                                                 OpdsServer server, const bool returnToParentOnBack)
     : Activity("OpdsBookBrowser", renderer, mappedInput),
       UiAppHost(renderer),
       buttonNavigator(),
-      server(std::move(server)) {}
+      server(std::move(server)),
+      returnToParentOnBack(returnToParentOnBack) {}
 
 void OpdsBookBrowserActivity::onEnter() {
   Activity::onEnter();
@@ -408,7 +409,11 @@ void OpdsBookBrowserActivity::navigateToEntry(const OpdsEntry& entry) {
 
 void OpdsBookBrowserActivity::navigateBack() {
   if (navigationHistory.empty()) {
-    finish();
+    if (returnToParentOnBack) {
+      finish();
+    } else {
+      onGoHome();
+    }
   } else {
     currentPath = navigationHistory.back();
     navigationHistory.pop_back();
