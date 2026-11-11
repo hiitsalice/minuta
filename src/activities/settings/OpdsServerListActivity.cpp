@@ -56,8 +56,10 @@ int OpdsServerListActivity::getItemCount() const {
 }
 
 OpdsServerListActivity::OpdsServerListActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
-                                               const bool pickerMode)
-    : UiListActivity("OpdsServerList", renderer, mappedInput), pickerMode(pickerMode) {}
+                                               const bool pickerMode, const bool returnToParent)
+    : UiListActivity("OpdsServerList", renderer, mappedInput),
+      pickerMode(pickerMode),
+      returnToParent(returnToParent) {}
 
 void OpdsServerListActivity::onEnter() {
   UiListActivity::onEnter();
@@ -106,7 +108,11 @@ void OpdsServerListActivity::rebuildRowItems() {
 }
 
 void OpdsServerListActivity::onBackButton() {
-  finish();
+  if (pickerMode && !returnToParent) {
+    activityManager.goHome(HomeMenuItem::OPDS_BROWSER);
+  } else {
+    finish();
+  }
 }
 
 bool OpdsServerListActivity::isEmptyPicker() const {
@@ -155,14 +161,18 @@ void OpdsServerListActivity::handleSelection() {
   const auto serverCount = static_cast<int>(OPDS_STORE.getCount());
 
   if (pickerMode) {
-    // The browser is nested above this picker. When it closes, close the picker
-    // too so a single Back from the browser returns to the originating screen.
     if (nav.selected < serverCount) {
       const auto* server = OPDS_STORE.getServer(static_cast<size_t>(nav.selected));
       if (server) {
-        startActivityForResult(
-            std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, *server),
-            [this](const ActivityResult&) { finish(); });
+        if (returnToParent) {
+          // Return to Settings after the browser closes, skipping this picker.
+          startActivityForResult(
+              std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, *server, true),
+              [this](const ActivityResult&) { finish(); });
+        } else {
+          // Preserve the original Home-launched browser flow.
+          activityManager.replaceActivity(std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, *server));
+        }
       }
     }
     return;
