@@ -90,6 +90,7 @@ class ActivityManager {
   void goToBrowser();
 #ifdef SIMULATOR
   void goToOpdsBrowserTestScreens();
+  void goToOpdsCatalogueTestScreen();
 #endif
   void goToReader(std::string path, bool allowFastInitialRefresh = false);
   void goToSleep(bool fromTimeout = false);

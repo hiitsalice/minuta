@@ -46,6 +46,9 @@ StrId opdsFormatLabel(uint8_t format) {
 }  // namespace
 
 int OpdsServerListActivity::getItemCount() const {
+#ifdef SIMULATOR
+  if (simulatorTestMode) return static_cast<int>(rowItems_.size());
+#endif
   int count = static_cast<int>(OPDS_STORE.getCount());
   // Settings mode appends three virtual items: "Add Server", "Download folder"
   // and "Filename format".
@@ -56,13 +59,28 @@ int OpdsServerListActivity::getItemCount() const {
 }
 
 OpdsServerListActivity::OpdsServerListActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
-                                               const bool pickerMode, const bool returnToParent)
+                                               const bool pickerMode, const bool returnToParent,
+                                               const bool simulatorTestMode)
     : UiListActivity("OpdsServerList", renderer, mappedInput),
       pickerMode(pickerMode),
-      returnToParent(returnToParent) {}
+      returnToParent(returnToParent),
+      simulatorTestMode(simulatorTestMode) {}
 
 void OpdsServerListActivity::onEnter() {
   UiListActivity::onEnter();
+
+#ifdef SIMULATOR
+  if (simulatorTestMode) {
+    rowItems_.clear();
+    for (const char* name : {"Project Gutenberg", "Standard Ebooks", "Internet Archive"}) {
+      fui::ListItem item;
+      item.label = name;
+      rowItems_.push_back(item);
+    }
+    nav.selected = 0;
+    return;
+  }
+#endif
 
   // Reload from disk in case servers were added/removed by a subactivity or the web UI
   OPDS_STORE.loadFromFile();
@@ -107,6 +125,16 @@ void OpdsServerListActivity::rebuildRowItems() {
   }
 }
 
+bool OpdsServerListActivity::handleCustomInput() {
+#ifdef SIMULATOR
+  if (simulatorTestMode && mappedInput.wasReleased(MappedInputManager::Button::Power)) {
+    activityManager.goToOpdsBrowserTestScreens();
+    return true;
+  }
+#endif
+  return false;
+}
+
 void OpdsServerListActivity::onBackButton() {
   if (pickerMode && !returnToParent) {
     activityManager.goHome(HomeMenuItem::OPDS_BROWSER);
@@ -149,6 +177,9 @@ void OpdsServerListActivity::drawFooter() {
 const char* OpdsServerListActivity::headerTitle() const { return tr(STR_OPDS_SERVERS); }
 
 void OpdsServerListActivity::activateIndex(const int index) {
+#ifdef SIMULATOR
+  if (simulatorTestMode) return;
+#endif
   nav.selected = index;
   // Activation opens an editor/browser or repaints a new value; a lingering
   // flash would gray an unrelated row.

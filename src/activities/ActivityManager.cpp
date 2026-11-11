@@ -261,6 +261,10 @@ void ActivityManager::goToBrowser() {
 void ActivityManager::goToOpdsBrowserTestScreens() {
   replaceActivity(std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, OpdsServer{}, false, true));
 }
+
+void ActivityManager::goToOpdsCatalogueTestScreen() {
+  replaceActivity(std::make_unique<OpdsServerListActivity>(renderer, mappedInput, true, false, true));
+}
 #endif
 
 void ActivityManager::goToReader(std::string path, const bool allowFastInitialRefresh) {
