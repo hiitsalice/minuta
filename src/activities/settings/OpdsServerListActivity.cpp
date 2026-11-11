@@ -106,11 +106,7 @@ void OpdsServerListActivity::rebuildRowItems() {
 }
 
 void OpdsServerListActivity::onBackButton() {
-  if (pickerMode) {
-    activityManager.goHome(HomeMenuItem::OPDS_BROWSER);
-  } else {
-    finish();
-  }
+  finish();
 }
 
 bool OpdsServerListActivity::isEmptyPicker() const {
@@ -159,11 +155,14 @@ void OpdsServerListActivity::handleSelection() {
   const auto serverCount = static_cast<int>(OPDS_STORE.getCount());
 
   if (pickerMode) {
-    // Picker mode: selecting a server navigates to the OPDS browser
+    // The browser is nested above this picker. When it closes, close the picker
+    // too so a single Back from the browser returns to the originating screen.
     if (nav.selected < serverCount) {
       const auto* server = OPDS_STORE.getServer(static_cast<size_t>(nav.selected));
       if (server) {
-        activityManager.replaceActivity(std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, *server));
+        startActivityForResult(
+            std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, *server),
+            [this](const ActivityResult&) { finish(); });
       }
     }
     return;
@@ -277,7 +276,7 @@ void OpdsServerListActivity::render(RenderLock&& lock) {
     const auto& metrics = UITheme::getInstance().getMetrics();
     renderer.clearScreen();
     GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, renderer.getScreenWidth(), metrics.headerHeight},
-                   headerTitle());
+                   tr(STR_OPDS_BROWSER));
     // Publish an empty interaction table so no stale row can receive a tap.
     renderUi();
     renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_SERVERS));
