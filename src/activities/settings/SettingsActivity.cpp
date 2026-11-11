@@ -16,7 +16,9 @@
 #include "FontDownloadActivity.h"
 #include "KOReaderSettingsActivity.h"
 #include "MappedInputManager.h"
+#include "OpdsServerStore.h"
 #include "OpdsServerListActivity.h"
+#include "activities/browser/OpdsBookBrowserActivity.h"
 #include "OtaUpdateActivity.h"
 #include "SdCardFontSystem.h"
 #include "SdFirmwareUpdateActivity.h"
@@ -350,9 +352,17 @@ void SettingsActivity::toggleCurrentSetting() {
       case SettingAction::OPDSServers:
         startActivityForResult(std::make_unique<OpdsServerListActivity>(renderer, mappedInput), resultHandler);
         break;
-      case SettingAction::OPDSBrowser:
-        activityManager.goToBrowser();
+      case SettingAction::OPDSBrowser: {
+        const auto& servers = OPDS_STORE.getServers();
+        if (servers.size() == 1) {
+          startActivityForResult(
+              std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, servers[0]), resultHandler);
+        } else {
+          startActivityForResult(
+              std::make_unique<OpdsServerListActivity>(renderer, mappedInput, true), resultHandler);
+        }
         break;
+      }
       case SettingAction::FileTransfer:
         activityManager.goToFileTransfer();
         break;
