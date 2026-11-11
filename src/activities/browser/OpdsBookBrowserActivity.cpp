@@ -128,10 +128,7 @@ void OpdsBookBrowserActivity::loop() {
   }
 
   if (state == BrowserState::LOADING) {
-    if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-      navigateBack();
-    }
-    return;
+    return;  // all buttons are disabled while loading a feed
   }
 
   if (state == BrowserState::DOWNLOADING) return;
