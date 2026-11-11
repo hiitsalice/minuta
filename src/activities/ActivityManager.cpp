@@ -232,7 +232,16 @@ void ActivityManager::goToFileBrowser(std::string path) {
   replaceActivity(std::make_unique<FileBrowserActivity>(renderer, mappedInput, std::move(path)));
 }
 
-void ActivityManager::goToBrowseMenu() { replaceActivity(std::make_unique<BrowseMenuActivity>(renderer, mappedInput)); }
+void ActivityManager::goToBrowseMenu() {
+  // Return to the existing caller when one is on the activity stack.
+  // Otherwise, create a fresh Browse Menu as usual.
+  if (!stackActivities.empty()) {
+    popActivity();
+    return;
+  }
+
+  replaceActivity(std::make_unique<BrowseMenuActivity>(renderer, mappedInput));
+}
 
 void ActivityManager::goToRecentBooks() {
   replaceActivity(std::make_unique<RecentBooksActivity>(renderer, mappedInput));
@@ -267,12 +276,10 @@ void ActivityManager::goToReader(std::string path, const bool allowFastInitialRe
   // Reject unsupported book formats without replacing the current screen.
   // Keep the existing activity underneath the information popup so dismissing
   // it returns to the same folder, recent-books list, or Home screen.
-  const bool isSupportedBookFormat =
-      FsHelpers::hasEpubExtension(path) || FsHelpers::hasMarkdownExtension(path);
+  const bool isSupportedBookFormat = FsHelpers::hasEpubExtension(path) || FsHelpers::hasMarkdownExtension(path);
 
   if (!isSupportedBookFormat) {
-    const bool isRemovedFormat =
-        FsHelpers::hasTxtExtension(path) || FsHelpers::hasXtcExtension(path);
+    const bool isRemovedFormat = FsHelpers::hasTxtExtension(path) || FsHelpers::hasXtcExtension(path);
 
     if (!isRemovedFormat) {
       LOG_ERR("ACT", "Unsupported file format: %s", path.c_str());

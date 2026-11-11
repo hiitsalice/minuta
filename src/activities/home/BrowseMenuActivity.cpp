@@ -7,7 +7,10 @@
 
 #include "CrossPointSettings.h"
 #include "activities/ActivityManager.h"
+#include "activities/home/FileBrowserActivity.h"
+#include "activities/home/RecentBooksActivity.h"
 #include "activities/settings/FontDownloadActivity.h"
+#include "activities/settings/SettingsActivity.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 #include "fontIds.h"
@@ -50,13 +53,13 @@ void BrowseMenuActivity::activateIndex(const int index) {
 
   switch (index) {
     case 0:
-      activityManager.goToSettings();
+      activityManager.pushActivity(std::make_unique<SettingsActivity>(renderer, mappedInput));
       break;
     case 1:
-      activityManager.goToFileBrowser();
+      activityManager.pushActivity(std::make_unique<FileBrowserActivity>(renderer, mappedInput));
       break;
     case 2:
-      activityManager.goToRecentBooks();
+      activityManager.pushActivity(std::make_unique<RecentBooksActivity>(renderer, mappedInput));
       break;
     default:
       startActivityForResult(std::make_unique<FontDownloadActivity>(renderer, mappedInput),
@@ -76,19 +79,13 @@ void BrowseMenuActivity::buildScreen(UiScreen& screen) {
   // Minuta's two-item Browse menu is deliberately spacious.
   const int browseRowHeight = metrics.listRowHeight;
   const int browseRowGap = 0;
-  const int listHeight =
-      MENU_ITEM_COUNT * browseRowHeight +
-      (MENU_ITEM_COUNT - 1) * browseRowGap;
+  const int listHeight = MENU_ITEM_COUNT * browseRowHeight + (MENU_ITEM_COUNT - 1) * browseRowGap;
 
   (void)listHeight;
   const int topInset = metrics.topPadding + metrics.headerHeight - 3;
 
   screen.setContentMargin(
-      fui::Insets{
-          static_cast<int16_t>(topInset),
-          0,
-          static_cast<int16_t>(metrics.buttonHintsHeight),
-          0});
+      fui::Insets{static_cast<int16_t>(topInset), 0, static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   fui::ListProps props;
