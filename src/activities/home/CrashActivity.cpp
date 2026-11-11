@@ -1,12 +1,12 @@
 #include "CrashActivity.h"
 
-#include <algorithm>
-#include <sstream>
-#include <string>
-
 #include <GfxRenderer.h>
 #include <HalSystem.h>
 #include <I18n.h>
+
+#include <algorithm>
+#include <sstream>
+#include <string>
 
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
@@ -25,9 +25,8 @@ void CrashActivity::onEnter() {
   rows_.emplace_back("Minuta restarted after an unexpected error.");
 
   const auto& metrics = UITheme::getInstance().getMetrics();
-  const int textWidth = std::max(
-      1, static_cast<int>(renderer.getScreenWidth()) -
-             2 * static_cast<int>(metrics.contentSidePadding) - 8);
+  const int textWidth =
+      std::max(1, static_cast<int>(renderer.getScreenWidth()) - 2 * static_cast<int>(metrics.contentSidePadding) - 32);
 
   std::istringstream report(reportText);
   std::string line;
@@ -41,8 +40,7 @@ void CrashActivity::onEnter() {
       continue;
     }
 
-    const auto wrapped = renderer.wrappedText(
-        UI_10_FONT_ID, line.c_str(), textWidth, 128);
+    const auto wrapped = renderer.wrappedText(UI_10_FONT_ID, line.c_str(), textWidth, 128);
 
     if (wrapped.empty()) {
       rows_.push_back(line);
@@ -61,9 +59,7 @@ void CrashActivity::onEnter() {
   for (const auto& row : rows_) {
     const char* boldPrefix = nullptr;
 
-    if (row.rfind("Minuta restarted after an unexpected error.", 0) == 0) {
-      boldPrefix = "Minuta restarted after an unexpected error.";
-    } else if (row.rfind("Firmware version:", 0) == 0) {
+    if (row.rfind("Firmware version:", 0) == 0) {
       boldPrefix = "Firmware version:";
     } else if (row.rfind("Panic reason:", 0) == 0) {
       boldPrefix = "Panic reason:";
@@ -97,15 +93,10 @@ void CrashActivity::buildScreen(UiScreen& screen) {
 
   const auto& metrics = UITheme::getInstance().getMetrics();
 
-  screen.setContentMargin(fui::Insets{
-      static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 3),
-      0,
-      static_cast<int16_t>(metrics.buttonHintsHeight),
-      0
-  });
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 3), 0,
+                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
 
-  screen.spacer(static_cast<int16_t>(
-      metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   fui::ListProps props;
   props.items = items_.data();
@@ -158,14 +149,10 @@ void CrashActivity::navigateButtons() {
 void CrashActivity::drawFooter() {
   const int pageSize = std::max(1, nav.pageRows());
   const bool canScrollUp = nav.top > 0;
-  const bool canScrollDown =
-      static_cast<int>(nav.top) + pageSize < listCount();
+  const bool canScrollDown = static_cast<int>(nav.top) + pageSize < listCount();
 
-  const auto labels = mappedInput.mapLabels(
-      tr(STR_BACK), "",
-      canScrollUp ? "Prev" : "",
-      canScrollDown ? "Next" : "");
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", canScrollUp ? "Prev" : "", canScrollDown ? "Next" : "");
 
-  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4,
-                      -1, drawButtonHintDivider() && listFillsArea());
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1,
+                      drawButtonHintDivider() && listFillsArea());
 }
