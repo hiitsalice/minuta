@@ -408,7 +408,7 @@ void OpdsBookBrowserActivity::navigateToEntry(const OpdsEntry& entry) {
 
 void OpdsBookBrowserActivity::navigateBack() {
   if (navigationHistory.empty()) {
-    onGoHome();
+    finish();
   } else {
     currentPath = navigationHistory.back();
     navigationHistory.pop_back();
