@@ -356,10 +356,10 @@ void SettingsActivity::toggleCurrentSetting() {
         const auto& servers = OPDS_STORE.getServers();
         if (servers.size() == 1) {
           startActivityForResult(
-              std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, servers[0]), resultHandler);
+              std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, servers[0], true), resultHandler);
         } else {
           startActivityForResult(
-              std::make_unique<OpdsServerListActivity>(renderer, mappedInput, true), resultHandler);
+              std::make_unique<OpdsServerListActivity>(renderer, mappedInput, true, true), resultHandler);
         }
         break;
       }
