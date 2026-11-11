@@ -138,7 +138,7 @@ void OpdsServerListActivity::navigateButtons() {
   UiListActivity::navigateButtons();
 }
 
-const char* OpdsServerListActivity::headerTitle() const { return tr(STR_OPDS_SERVERS); }
+const char* OpdsServerListActivity::headerTitle() const { return tr(STR_OPDS_BROWSER); }
 
 void OpdsServerListActivity::activateIndex(const int index) {
 #ifdef SIMULATOR
