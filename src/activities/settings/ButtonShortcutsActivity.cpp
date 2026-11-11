@@ -59,7 +59,9 @@ constexpr Entry kDictionary[] = {{1, "Hold SELECT on word beside - or \xE2\x80\x
 constexpr Entry kHiddenFeatures[] = {{1, "Hold UP", nullptr},
                                      {2, "To previous section", nullptr},
                                      {1, "Hold DOWN", nullptr},
-                                     {2, "To next section", nullptr}};
+                                     {2, "To next section", nullptr},
+                                     {1, "Hold SELECT/LOAD", nullptr},
+                                     {2, "Search (if available)", nullptr}};
 constexpr Entry kWifi[] = {{1, "Symbol: +", nullptr},
                            {2, "Saved Wi-Fi", nullptr},
                            {1, "Symbol: *", nullptr},
