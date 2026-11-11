@@ -59,15 +59,15 @@ constexpr Entry kDictionary[] = {{1, "Hold SELECT on word beside - or \xE2\x80\x
 constexpr Entry kHiddenFeatures[] = {{1, "Hold UP", nullptr},
                                      {2, "To previous section", nullptr},
                                      {1, "Hold DOWN", nullptr},
-                                     {2, "To next section", nullptr},
-                                     {1, "Hold SELECT/LOAD", nullptr},
-                                     {2, "Search (if available)", nullptr}};
+                                     {2, "To next section", nullptr}};
 constexpr Entry kWifi[] = {{1, "Symbol: +", nullptr},
                            {2, "Saved Wi-Fi", nullptr},
                            {1, "Symbol: *", nullptr},
                            {2, "Encrypted Wi-Fi", nullptr}};
 constexpr Entry kOpds[] = {{1, "Add /opds to URL", nullptr},
                            {2, "Use Calibre", nullptr}};
+constexpr Entry kOpdsBrowser[] = {{1, "Hold SELECT/LOAD", nullptr},
+                                  {2, "Search (if available)", nullptr}};
 
 struct SectionDef {
   const char* title;
@@ -76,7 +76,6 @@ struct SectionDef {
 };
 
 constexpr SectionDef kSections[] = {
-    {"Hidden Features", kHiddenFeatures, static_cast<int>(std::size(kHiddenFeatures))},
     {"General", kGeneral, static_cast<int>(std::size(kGeneral))},
     {"Home", kHome, static_cast<int>(std::size(kHome))},
     {"Settings", kSettings, static_cast<int>(std::size(kSettings))},
@@ -86,8 +85,10 @@ constexpr SectionDef kSections[] = {
     {"Reader Menu", kReaderMenu, static_cast<int>(std::size(kReaderMenu))},
     {"Highlight List", kHighlight, static_cast<int>(std::size(kHighlight))},
     {"Dictionary", kDictionary, static_cast<int>(std::size(kDictionary))},
+    {"Hidden Features", kHiddenFeatures, static_cast<int>(std::size(kHiddenFeatures))},
     {"Wi-Fi Networks", kWifi, static_cast<int>(std::size(kWifi))},
     {"OPDS Server", kOpds, static_cast<int>(std::size(kOpds))},
+    {"OPDS Browser", kOpdsBrowser, static_cast<int>(std::size(kOpdsBrowser))},
 };
 constexpr int kSectionCount = static_cast<int>(std::size(kSections));
 
@@ -102,8 +103,7 @@ ButtonShortcutsActivity::ButtonShortcutsActivity(GfxRenderer& renderer, MappedIn
 const char* ButtonShortcutsActivity::headerTitle() const { return tr(STR_BUTTON_SHORTCUTS); }
 
 void ButtonShortcutsActivity::onEnter() {
-  expanded_.assign(kSectionCount, 0);
-  expanded_[0] = 1;  // Keep Hidden Features visible and expanded on entry.
+  expanded_.assign(kSectionCount, 0);  // Reset every section to collapsed on each entry.
   rebuildRows();
   UiListActivity::onEnter();
   nav.selected = 0;
