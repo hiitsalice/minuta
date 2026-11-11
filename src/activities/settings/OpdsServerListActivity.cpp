@@ -133,8 +133,9 @@ void OpdsServerListActivity::onBackButton() {
   }
 }
 
-bool OpdsServerListActivity::isEmptyPicker() const {
-  return pickerMode && OPDS_STORE.getCount() == 0;
+void OpdsServerListActivity::navigateButtons() {
+  if (getItemCount() == 0) return;
+  UiListActivity::navigateButtons();
 }
 
 const char* OpdsServerListActivity::headerTitle() const { return tr(STR_OPDS_SERVERS); }
