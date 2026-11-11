@@ -43,12 +43,14 @@ void drawEmptyButtonHints(GfxRenderer& renderer, const MappedInputManager& mappe
 }  // namespace
 
 OpdsBookBrowserActivity::OpdsBookBrowserActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
-                                                 OpdsServer server, const bool returnToParentOnBack)
+                                                 OpdsServer server, const bool returnToParentOnBack,
+                                                 const bool simulatorTestMode)
     : Activity("OpdsBookBrowser", renderer, mappedInput),
       UiAppHost(renderer),
       buttonNavigator(),
       server(std::move(server)),
-      returnToParentOnBack(returnToParentOnBack) {}
+      returnToParentOnBack(returnToParentOnBack),
+      simulatorTestMode(simulatorTestMode) {}
 
 void OpdsBookBrowserActivity::onEnter() {
   Activity::onEnter();
@@ -66,8 +68,34 @@ void OpdsBookBrowserActivity::onEnter() {
   resetUi();
   app.on(ACTION_ROW, &OpdsBookBrowserActivity::onRowEvent, this);
   app.setScreen(&OpdsBookBrowserActivity::rootScreen, this);
-  requestUpdate();
 
+#ifdef SIMULATOR
+  if (simulatorTestMode) {
+    // Mock feed entries let the simulator exercise the real OPDS list renderer
+    // without a configured server or a network connection.
+    entries = {
+        {OpdsEntryType::NAVIGATION, "Browse by Category", "", "categories", ""},
+        {OpdsEntryType::NAVIGATION, "Recently Added", "", "recent", ""},
+        {OpdsEntryType::NAVIGATION, "Popular Titles", "", "popular", ""},
+        {OpdsEntryType::BOOK, "The Mysterious Affair at Styles", "Agatha Christie", "styles.epub", ""},
+        {OpdsEntryType::BOOK, "The Murder of Roger Ackroyd", "Agatha Christie", "roger-ackroyd.epub", ""},
+        {OpdsEntryType::BOOK, "The Secret Adversary", "Agatha Christie", "secret-adversary.epub", ""},
+        {OpdsEntryType::BOOK, "The Adventures of Sherlock Holmes", "Arthur Conan Doyle", "sherlock.epub", ""},
+        {OpdsEntryType::BOOK, "The Moonstone", "Wilkie Collins", "moonstone.epub", ""},
+        {OpdsEntryType::BOOK, "The Secret Garden", "Frances Hodgson Burnett", "secret-garden.epub", ""},
+        {OpdsEntryType::BOOK, "The Thirty-Nine Steps", "John Buchan", "thirty-nine-steps.epub", ""},
+        {OpdsEntryType::BOOK, "The Picture of Dorian Gray", "Oscar Wilde", "dorian-gray.epub", ""},
+        {OpdsEntryType::BOOK, "Pride and Prejudice", "Jane Austen", "pride-and-prejudice.epub", ""},
+    };
+    rebuildRowItems();
+    state = BrowserState::LOADING;
+    statusMessage = tr(STR_LOADING);
+    requestUpdate();
+    return;
+  }
+#endif
+
+  requestUpdate();
   checkAndConnectWifi();
 }
 
@@ -93,6 +121,16 @@ void OpdsBookBrowserActivity::onRowEvent(const fui::ActionEvent& event, void* us
   auto* self = static_cast<OpdsBookBrowserActivity*>(user);
   if (self->state != BrowserState::BROWSING) return;
   if (event.value < 0 || event.value >= static_cast<int16_t>(self->entries.size())) return;
+#ifdef SIMULATOR
+  if (self->simulatorTestMode) {
+    self->selectorIndex = event.value;
+    self->listNav.selected = event.value;
+    self->listNav.follow(static_cast<int>(self->entries.size()));
+    self->app.clearTapFlash();
+    self->requestUpdate();
+    return;
+  }
+#endif
   self->selectorIndex = event.value;
   // The tapped row leaves the screen either way (new feed or download view);
   // a lingering tap flash would gray an unrelated row on the next list.
@@ -101,6 +139,43 @@ void OpdsBookBrowserActivity::onRowEvent(const fui::ActionEvent& event, void* us
 }
 
 void OpdsBookBrowserActivity::loop() {
+#ifdef SIMULATOR
+  if (simulatorTestMode) {
+    // POWER switches preview pages; the displayed screens keep their real hints.
+    // All other actions are inert except list selection movement on the list page.
+    if (mappedInput.wasReleased(MappedInputManager::Button::Power)) {
+      if (state == BrowserState::LOADING) {
+        state = BrowserState::BROWSING;
+        selectorIndex = 0;
+        listNav.reset();
+      } else {
+        state = BrowserState::LOADING;
+        statusMessage = tr(STR_LOADING);
+      }
+      requestUpdate();
+      return;
+    }
+
+    if (state == BrowserState::BROWSING && !entries.empty()) {
+      int next = selectorIndex;
+      if (mappedInput.wasReleased(MappedInputManager::Button::Down) ||
+          mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+        next = ButtonNavigator::nextIndex(selectorIndex, entries.size());
+      } else if (mappedInput.wasReleased(MappedInputManager::Button::Up) ||
+                 mappedInput.wasReleased(MappedInputManager::Button::Left)) {
+        next = ButtonNavigator::previousIndex(selectorIndex, entries.size());
+      }
+      if (next != selectorIndex) {
+        selectorIndex = next;
+        listNav.selected = next;
+        listNav.follow(static_cast<int>(entries.size()));
+        requestUpdate();
+      }
+    }
+    return;
+  }
+#endif
+
   if (state == BrowserState::WIFI_SELECTION || state == BrowserState::SEARCH_INPUT) {
     return;
   }

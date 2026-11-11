@@ -257,6 +257,12 @@ void ActivityManager::goToBrowser() {
   }
 }
 
+#ifdef SIMULATOR
+void ActivityManager::goToOpdsBrowserTestScreens() {
+  replaceActivity(std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, OpdsServer{}, false, true));
+}
+#endif
+
 void ActivityManager::goToReader(std::string path, const bool allowFastInitialRefresh) {
   if (path.empty()) {
     goToFileBrowser("/");
