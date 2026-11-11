@@ -238,7 +238,7 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
 
   const int itemCount = getItemCount();
   if (itemCount == 0) {
-    screen.centeredText(tr(STR_NO_SERVERS), screen.theme().bodyText);
+    // The empty picker state is drawn at fixed Y=400 in render().
     return;
   }
 
@@ -278,6 +278,8 @@ void OpdsServerListActivity::render(RenderLock&& lock) {
     renderer.clearScreen();
     GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, renderer.getScreenWidth(), metrics.headerHeight},
                    headerTitle());
+    // Publish an empty interaction table so no stale row can receive a tap.
+    renderUi();
     renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_SERVERS));
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
