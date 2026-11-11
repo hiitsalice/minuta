@@ -32,6 +32,7 @@ namespace {
 constexpr fui::ActionId ACTION_ROW = 1;
 constexpr int DOWNLOAD_PROGRESS_STEP_PERCENT = 5;
 constexpr unsigned long DOWNLOAD_PROGRESS_MIN_UPDATE_MS = 5000;
+constexpr unsigned long SEARCH_HOLD_MS = 700;  // hold Select/Load this long to open Search
 
 void drawEmptyButtonHints(GfxRenderer& renderer, const MappedInputManager& mappedInput) {
   // Match WifiSelectionActivity::renderConnecting() exactly.
@@ -121,9 +122,13 @@ void OpdsBookBrowserActivity::loop() {
     return;
   }
 
-  if (state == BrowserState::CHECK_WIFI || state == BrowserState::LOADING) {
+  if (state == BrowserState::CHECK_WIFI) {
+    return;  // all buttons are disabled while checking Wi-Fi
+  }
+
+  if (state == BrowserState::LOADING) {
     if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-      state == BrowserState::CHECK_WIFI ? onGoHome() : navigateBack();
+      navigateBack();
     }
     return;
   }
@@ -135,24 +140,14 @@ void OpdsBookBrowserActivity::loop() {
       navigateBack();
       return;
     }
-    if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
-      // Select is for catalogue navigation only; books use the separate Load button.
-      if (!entries.empty() && selectorIndex >= 0 && selectorIndex < static_cast<int>(entries.size()) &&
-          entries[selectorIndex].type != OpdsEntryType::BOOK) {
-        navigateToEntry(entries[selectorIndex]);
-      }
-      return;
-    }
-    if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
-      // Load is for books only; it never doubles as catalogue navigation.
-      if (!entries.empty() && selectorIndex >= 0 && selectorIndex < static_cast<int>(entries.size()) &&
-          entries[selectorIndex].type == OpdsEntryType::BOOK) {
-        downloadBook(entries[selectorIndex]);
-      }
-      return;
-    }
-    if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+    if (mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, SEARCH_HOLD_MS)) {
+      // Holding Select/Load opens Search, only when the server provides a search template.
       if (!searchTemplate.empty()) launchSearch();
+      return;
+    }
+    if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+      // One button for both: Select opens a category or page row, Load downloads a book.
+      activateSelected();
       return;
     }
 
@@ -165,20 +160,20 @@ void OpdsBookBrowserActivity::loop() {
       };
       // Browsing uses the side buttons exclusively for list navigation. The
       // front Left/Right buttons are reserved for Load and Search.
-      buttonNavigator.onRelease({MappedInputManager::Button::Down},
-                                [this, &moveSelection] {
-                                  moveSelection(ButtonNavigator::nextIndex(selectorIndex, entries.size()));
-                                });
-      buttonNavigator.onRelease({MappedInputManager::Button::Up},
-                                [this, &moveSelection] {
-                                  moveSelection(ButtonNavigator::previousIndex(selectorIndex, entries.size()));
-                                });
-      buttonNavigator.onContinuous({MappedInputManager::Button::Down}, [this, &moveSelection] {
-        moveSelection(ButtonNavigator::nextPageIndex(selectorIndex, entries.size(), listNav.visibleRows));
-      });
-      buttonNavigator.onContinuous({MappedInputManager::Button::Up}, [this, &moveSelection] {
-        moveSelection(ButtonNavigator::previousPageIndex(selectorIndex, entries.size(), listNav.visibleRows));
-      });
+      buttonNavigator.onRelease(
+          {MappedInputManager::Button::Down, MappedInputManager::Button::Right},
+          [this, &moveSelection] { moveSelection(ButtonNavigator::nextIndex(selectorIndex, entries.size())); });
+      buttonNavigator.onRelease(
+          {MappedInputManager::Button::Up, MappedInputManager::Button::Left},
+          [this, &moveSelection] { moveSelection(ButtonNavigator::previousIndex(selectorIndex, entries.size())); });
+      buttonNavigator.onContinuous(
+          {MappedInputManager::Button::Down, MappedInputManager::Button::Right}, [this, &moveSelection] {
+            moveSelection(ButtonNavigator::nextPageIndex(selectorIndex, entries.size(), listNav.visibleRows));
+          });
+      buttonNavigator.onContinuous(
+          {MappedInputManager::Button::Up, MappedInputManager::Button::Left}, [this, &moveSelection] {
+            moveSelection(ButtonNavigator::previousPageIndex(selectorIndex, entries.size(), listNav.visibleRows));
+          });
     }
   }
 }
@@ -205,7 +200,7 @@ void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
   refreshSharedUiThemeTokens(uiTarget);
 
   const auto& metrics = UITheme::getInstance().getMetrics();
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 3), 0,
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 2), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
@@ -223,7 +218,7 @@ void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
   props.valueInset = 0;
   props.labelText = screen.theme().bodyText;
   props.labelText.font = fui::GfxRendererTarget::FONT_BODY;
-  props.labelText.bold = false;
+  props.labelText.bold = true;
   props.labelText.italic = false;
   props.labelText.align = fui::TextAlign::Center;
   props.labelText.maxLines = 1;
@@ -261,8 +256,7 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
   const int pageWidth = renderer.getScreenWidth();
 
   renderer.clearScreen();
-  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight},
-                 server.name.empty() ? tr(STR_OPDS_BROWSER) : server.name.c_str());
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, tr(STR_OPDS_BROWSER));
 
   // Rebuild/publish the app interaction table for every state. Only BROWSING
   // has interactive rows; status, download and error pages publish none.
@@ -270,28 +264,24 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
 
   switch (state) {
     case BrowserState::BROWSING: {
-      const auto labels =
-          mappedInput.mapLabels(tr(STR_BACK), tr(STR_SELECT), "Load", searchTemplate.empty() ? "" : tr(STR_SEARCH));
+      // Second button: Select on a category/page row, Load on a book row. Holding it opens Search.
+      const bool onBook = !entries.empty() && selectorIndex >= 0 && selectorIndex < static_cast<int>(entries.size()) &&
+                          entries[selectorIndex].type == OpdsEntryType::BOOK;
+      const char* actionLabel = entries.empty() ? "" : (onBook ? "Load" : tr(STR_SELECT));
+      const auto labels = mappedInput.mapLabels(tr(STR_BACK), actionLabel, tr(STR_DIR_UP), tr(STR_DIR_DOWN));
       const bool listFillsArea = listNav.visibleRows > 0 && entries.size() >= static_cast<size_t>(listNav.visibleRows);
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea);
       break;
     }
 
     case BrowserState::DOWNLOADING: {
-      // Match OTA's 10pt progress layout: status at Y=367, a 12px outlined
-      // bar centred at Y=400, and the book title at Y=418.
-      renderer.drawCenteredText(UI_10_FONT_ID, 367, tr(STR_DOWNLOADING));
-      const int barY = 394;
-      const int barHeight = 12;
-      const int barX = metrics.contentSidePadding;
-      const int barWidth = pageWidth - metrics.contentSidePadding * 2;
-      renderer.drawRect(barX, barY, barWidth, barHeight);
-
-      if (downloadTotal > 0 && downloadProgress > 0 && barWidth > 4) {
-        const size_t clampedProgress = std::min(downloadProgress, downloadTotal);
-        const int fillWidth = static_cast<int>((static_cast<uint64_t>(barWidth - 4) * clampedProgress) / downloadTotal);
-        if (fillWidth > 0) renderer.fillRect(barX + 2, barY + 2, fillWidth, barHeight - 4);
-      }
+      // Same progress bar as the OTA update screen: percentage at Y=367, bar top at Y=394, 12px high.
+      const size_t clampedProgress = std::min(downloadProgress, downloadTotal);
+      const int percent =
+          downloadTotal > 0 ? static_cast<int>((static_cast<uint64_t>(clampedProgress) * 100) / downloadTotal) : 0;
+      GUI.drawProgressBar(renderer,
+                          Rect{metrics.contentSidePadding, 394, pageWidth - metrics.contentSidePadding * 2, 12},
+                          percent, 100, UI_10_FONT_ID, 367);
       UITheme::drawCenteredText(renderer, UITheme::getInstance().getScreenSafeArea(renderer, true, false),
                                 UI_10_FONT_ID, 418, statusMessage.c_str(), true, EpdFontFamily::Style::ITALIC);
       drawEmptyButtonHints(renderer, mappedInput);
@@ -348,6 +338,8 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
   searchTemplate = parser.getSearchTemplate();
   const auto& nextUrl = parser.getNextPageUrl();
   const auto& prevUrl = parser.getPrevPageUrl();
+  nextPageUrl = nextUrl;
+  prevPageUrl = prevUrl;
   const bool feedTruncated = parser.truncated();
   // Reset the selection before the swap: the render task reads
   // entries[selectorIndex] under only an empty() guard, and the new feed can
@@ -385,7 +377,6 @@ void OpdsBookBrowserActivity::rebuildRowItems() {
     if (entry.type == OpdsEntryType::BOOK && !entry.author.empty()) {
       item.subtitle = entry.author.c_str();
     }
-    if (entry.type == OpdsEntryType::NAVIGATION) item.value = ">";
     item.actionValue = static_cast<int16_t>(rowItems.size());
     rowItems.push_back(item);
   }
@@ -400,7 +391,9 @@ void OpdsBookBrowserActivity::releaseEntries() {
 }
 
 void OpdsBookBrowserActivity::navigateToEntry(const OpdsEntry& entry) {
-  navigationHistory.push_back(currentPath);
+  // Next/Previous Page rows replace the current page; only categories add a Back step.
+  const bool isPageRow = !entry.href.empty() && (entry.href == nextPageUrl || entry.href == prevPageUrl);
+  if (!isPageRow) navigationHistory.push_back(currentPath);
   // Resolve to a full URL so sub-sub-navigation retains parent path context
   const std::string feedUrl = UrlUtils::buildUrl(server.url, currentPath);
   currentPath = UrlUtils::buildUrl(feedUrl, entry.href);

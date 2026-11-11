@@ -573,7 +573,7 @@ void KOReaderSyncActivity::render(RenderLock&&) {
   Rect screen = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
 
   GUI.drawHeader(renderer, Rect{screen.x, screen.y + metrics.topPadding - 6, screen.width, metrics.headerHeight},
-                 state == SHOWING_RESULT ? tr(STR_PROGRESS_FOUND) : tr(STR_KOREADER_SYNC));
+                 tr(STR_KOREADER_SYNC));
 
   const int centreY = renderer.getScreenHeight() / 2;
   const int successY = screen.y + screen.height / 2 - 40;
@@ -590,26 +590,61 @@ void KOReaderSyncActivity::render(RenderLock&&) {
 
   if (state == SYNCING || state == UPLOADING) {
     UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY, statusMessage.c_str());
+    // No actions here: keep the (empty) button hint strip visible.
+    {
+      const auto labels = mappedInput.mapLabels("", "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
     renderer.displayBuffer();
     return;
   }
 
   if (state == SHOWING_RESULT) {
-    // Comparison rows + option selection render through the FreeInkApp
-    // (themed rows, tap-flash); the header above shows "Progress Found".
-    renderUi();
+    // Fixed layout per sheet, everything centred: "Progress found!" at Y=288, remote block at
+    // Y=344/372/400 and local block at Y=456/484/512. Only "Remote:" and "Local:" are bold.
+    const int remoteTocIndex = epub ? epub->getTocIndexForSpineIndex(remotePosition.spineIndex) : -1;
+    const std::string remoteChapter =
+        (remoteTocIndex >= 0) ? epub->getTocItem(remoteTocIndex).title
+                              : (std::string(tr(STR_SECTION_PREFIX)) + std::to_string(remotePosition.spineIndex + 1));
+    const std::string localChapter =
+        !localChapterName.empty() ? localChapterName
+                                  : (std::string(tr(STR_SECTION_PREFIX)) + std::to_string(currentSpineIndex + 1));
+    char remoteVal[64];
+    snprintf(remoteVal, sizeof(remoteVal), tr(STR_PAGE_OVERALL_FORMAT), remotePosition.pageNumber + 1,
+             remoteProgress.percentage * 100);
+    char localVal[64];
+    snprintf(localVal, sizeof(localVal), tr(STR_PAGE_TOTAL_OVERALL_FORMAT), currentPage + 1, totalPagesInSpine,
+             localProgress.percentage * 100);
 
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, 288, tr(STR_PROGRESS_FOUND));
+
+    // "Remote:" in bold, then " from <device>" in regular when a device name is present; centred as one line.
+    const std::string remoteLabel = tr(STR_REMOTE_LABEL);
+    const std::string fromDevice = remoteProgress.device.empty() ? std::string() : (" from " + remoteProgress.device);
+    const int labelWidth = renderer.getTextWidth(UI_10_FONT_ID, remoteLabel.c_str(), EpdFontFamily::BOLD);
+    const int deviceWidth = fromDevice.empty() ? 0 : renderer.getTextWidth(UI_10_FONT_ID, fromDevice.c_str());
+    const int lineX = screen.x + (screen.width - labelWidth - deviceWidth) / 2;
+    renderer.drawText(UI_10_FONT_ID, lineX, 344, remoteLabel.c_str(), true, EpdFontFamily::BOLD);
+    if (!fromDevice.empty()) renderer.drawText(UI_10_FONT_ID, lineX + labelWidth, 344, fromDevice.c_str());
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, 372, remoteChapter.c_str());
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, 400, remoteVal);
+
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, 456, tr(STR_LOCAL_LABEL), true, EpdFontFamily::BOLD);
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, 484, localChapter.c_str());
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, 512, localVal);
+
+    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), "", "Remote", "Local");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
     return;
   }
 
   if (state == NO_REMOTE_PROGRESS) {
-    // Prompt text + upload button render through the FreeInkApp.
-    renderUi();
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY - 14, tr(STR_NO_REMOTE_MSG), true,
+                              EpdFontFamily::BOLD);
+    UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY + 14, "Upload local progress?");
 
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_UPLOAD), "", "");
+    const auto labels = mappedInput.mapLabels(tr(STR_CANCEL), tr(STR_UPLOAD), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     renderer.displayBuffer();
     return;
@@ -618,6 +653,11 @@ void KOReaderSyncActivity::render(RenderLock&&) {
   if (state == UPLOAD_COMPLETE || state == SYNC_COMPLETE) {
     UITheme::drawCenteredText(renderer, screen, UI_10_FONT_ID, centreY,
                               state == UPLOAD_COMPLETE ? tr(STR_UPLOAD_SUCCESS) : tr(STR_ALREADY_SYNCED));
+    // No actions here: keep the (empty) button hint strip visible.
+    {
+      const auto labels = mappedInput.mapLabels("", "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
     renderer.displayBuffer();
     return;
   }
@@ -647,28 +687,23 @@ void KOReaderSyncActivity::loop() {
       returnToReader();
       return;
     }
-    if (mappedInput.wasReleased(MappedInputManager::Button::Back) ||
-        mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+    // Back only: Confirm is disabled on this screen.
+    if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       returnToReader();
     }
     return;
   }
 
   if (state == SHOWING_RESULT) {
-    // Navigate the two options with physical buttons.
-    if (mappedInput.wasReleased(MappedInputManager::Button::Up) ||
-        mappedInput.wasReleased(MappedInputManager::Button::Left) ||
-        mappedInput.wasReleased(MappedInputManager::Button::Down) ||
-        mappedInput.wasReleased(MappedInputManager::Button::Right)) {
-      selectedOption = (selectedOption + 1) % 2;  // Wrap around among 2 options
-      requestUpdate();
-    }
-
-    if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+    // Remote (3rd button) applies the remote progress, Local (4th button) uploads the
+    // local position, Back cancels. Confirm / Up / Down are disabled and do nothing.
+    if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
+      selectedOption = 0;
       chooseResultOption();
-    }
-
-    if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
+    } else if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+      selectedOption = 1;
+      chooseResultOption();
+    } else if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       returnToReader();
     }
     return;

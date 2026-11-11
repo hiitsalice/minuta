@@ -37,6 +37,8 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   std::vector<std::string> navigationHistory;
   std::string currentPath;
   std::string searchTemplate;
+  std::string nextPageUrl;  // page rows replace the current page instead of adding a Back step
+  std::string prevPageUrl;
   int selectorIndex = 0;
   std::string errorMessage;
   std::string statusMessage;

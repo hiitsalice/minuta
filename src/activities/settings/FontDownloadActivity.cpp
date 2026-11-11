@@ -797,7 +797,8 @@ void FontDownloadActivity::render(RenderLock&&) {
   } else if (state_ == GROUP_LIST) {
     renderUi();
     const auto labels = mappedInput.mapLabels("Menu", tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
-    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    // Thin line above the hint buttons only when the list needs a scroll bar (same rule as the family list).
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea());
   } else if (state_ == FAMILY_LIST) {
     renderUi();
 
