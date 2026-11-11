@@ -44,14 +44,12 @@ void drawEmptyButtonHints(GfxRenderer& renderer, const MappedInputManager& mappe
 }  // namespace
 
 OpdsBookBrowserActivity::OpdsBookBrowserActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
-                                                 OpdsServer server, const bool returnToParentOnBack,
-                                                 const bool simulatorTestMode)
+                                                 OpdsServer server, const bool returnToParentOnBack)
     : Activity("OpdsBookBrowser", renderer, mappedInput),
       UiAppHost(renderer),
       buttonNavigator(),
       server(std::move(server)),
-      returnToParentOnBack(returnToParentOnBack),
-      simulatorTestMode(simulatorTestMode) {}
+      returnToParentOnBack(returnToParentOnBack) {}
 
 void OpdsBookBrowserActivity::onEnter() {
   Activity::onEnter();
@@ -70,15 +68,6 @@ void OpdsBookBrowserActivity::onEnter() {
   app.on(ACTION_ROW, &OpdsBookBrowserActivity::onRowEvent, this);
   app.setScreen(&OpdsBookBrowserActivity::rootScreen, this);
 
-#ifdef SIMULATOR
-  if (simulatorTestMode) {
-    // Preview the real loading state without Wi-Fi or a configured server.
-    state = BrowserState::LOADING;
-    statusMessage = "Loading feed...";
-    requestUpdate();
-    return;
-  }
-#endif
 
   requestUpdate();
   checkAndConnectWifi();
@@ -106,16 +95,6 @@ void OpdsBookBrowserActivity::onRowEvent(const fui::ActionEvent& event, void* us
   auto* self = static_cast<OpdsBookBrowserActivity*>(user);
   if (self->state != BrowserState::BROWSING) return;
   if (event.value < 0 || event.value >= static_cast<int16_t>(self->entries.size())) return;
-#ifdef SIMULATOR
-  if (self->simulatorTestMode) {
-    self->selectorIndex = event.value;
-    self->listNav.selected = event.value;
-    self->listNav.follow(static_cast<int>(self->entries.size()));
-    self->app.clearTapFlash();
-    self->requestUpdate();
-    return;
-  }
-#endif
   self->selectorIndex = event.value;
   // The tapped row leaves the screen either way (new feed or download view);
   // a lingering tap flash would gray an unrelated row on the next list.
@@ -124,15 +103,6 @@ void OpdsBookBrowserActivity::onRowEvent(const fui::ActionEvent& event, void* us
 }
 
 void OpdsBookBrowserActivity::loop() {
-#ifdef SIMULATOR
-  if (simulatorTestMode) {
-    // POWER opens the separate OPDS Catalogue List preview.
-    if (mappedInput.wasReleased(MappedInputManager::Button::Power)) {
-      activityManager.goToOpdsCatalogueTestScreen();
-    }
-    return;
-  }
-#endif
 
   if (state == BrowserState::WIFI_SELECTION || state == BrowserState::SEARCH_INPUT) {
     return;

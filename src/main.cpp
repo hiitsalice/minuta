@@ -495,10 +495,6 @@ void setup() {
     activityManager.goHome(HomeMenuItem::NONE, needsWakeRefresh);
   }
 
-#ifdef SIMULATOR
-  // TEMP: open the OPDS screen previews automatically in the simulator.
-  activityManager.goToOpdsCatalogueTestScreen();
-#endif
 
   if (resume == BootResume::Silent) {
     // Block until the first paint physically completes. refreshDisplay()

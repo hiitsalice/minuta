@@ -19,7 +19,7 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   enum class BrowserState { CHECK_WIFI, WIFI_SELECTION, LOADING, BROWSING, DOWNLOADING, ERROR, SEARCH_INPUT };
 
   explicit OpdsBookBrowserActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, OpdsServer server,
-                                     bool returnToParentOnBack = false, bool simulatorTestMode = false);
+                                     bool returnToParentOnBack = false);
 
   void onEnter() override;
   void onExit() override;
@@ -48,7 +48,6 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
 
   OpdsServer server;  // Copied at construction — safe even if the store changes during browsing
   bool returnToParentOnBack = false;
-  bool simulatorTestMode = false;
 
   // Viewport memory (top/visibleRows) for the browsing list; `selected` is
   // mirrored from selectorIndex at build/move time.
@@ -63,9 +62,6 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   void buildStatusScreen(UiScreen& screen);
   void activateSelected();
 
-#ifdef SIMULATOR
-  bool handleForcedRefresh() override { return simulatorTestMode; }
-#endif
 
   void checkAndConnectWifi();
   void launchWifiSelection();

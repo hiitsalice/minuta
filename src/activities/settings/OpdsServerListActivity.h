@@ -14,7 +14,7 @@
 class OpdsServerListActivity final : public UiListActivity {
  public:
   explicit OpdsServerListActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, bool pickerMode = false,
-                                  bool returnToParent = false, bool simulatorTestMode = false);
+                                  bool returnToParent = false);
 
   void onEnter() override;
   void render(RenderLock&&) override;
@@ -30,11 +30,6 @@ class OpdsServerListActivity final : public UiListActivity {
 
   bool pickerMode = false;
   bool returnToParent = false;
-  bool simulatorTestMode = false;
-
-#ifdef SIMULATOR
-  bool handleForcedRefresh() override { return simulatorTestMode; }
-#endif
 
   // Row structure (labels/actionValue and server rows), rebuilt only when the
   // server list itself reloads (rebuildRowItems(), called from onEnter() and
