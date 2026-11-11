@@ -25,17 +25,13 @@ class OpdsServerListActivity final : public UiListActivity {
   void activateIndex(int index) override;
   // Picker mode backs out to the home menu rather than finishing.
   void onBackButton() override;
-  bool handleButtons() override;
   void navigateButtons() override;
-  void drawFooter() override;
-  bool isEmptyPicker() const;
   const char* headerTitle() const override;
 
   bool pickerMode = false;
   bool returnToParent = false;
   bool simulatorTestMode = false;
 
-  bool handleCustomInput() override;
 #ifdef SIMULATOR
   bool handleForcedRefresh() override { return simulatorTestMode; }
 #endif

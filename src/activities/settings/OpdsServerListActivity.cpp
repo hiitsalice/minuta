@@ -125,16 +125,6 @@ void OpdsServerListActivity::rebuildRowItems() {
   }
 }
 
-bool OpdsServerListActivity::handleCustomInput() {
-#ifdef SIMULATOR
-  if (simulatorTestMode && mappedInput.wasReleased(MappedInputManager::Button::Power)) {
-    activityManager.goToOpdsBrowserTestScreens();
-    return true;
-  }
-#endif
-  return false;
-}
-
 void OpdsServerListActivity::onBackButton() {
   if (pickerMode && !returnToParent) {
     activityManager.goHome(HomeMenuItem::OPDS_BROWSER);
@@ -145,33 +135,6 @@ void OpdsServerListActivity::onBackButton() {
 
 bool OpdsServerListActivity::isEmptyPicker() const {
   return pickerMode && OPDS_STORE.getCount() == 0;
-}
-
-bool OpdsServerListActivity::handleButtons() {
-  if (!isEmptyPicker()) return UiListActivity::handleButtons();
-
-  if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-    onBackButton();
-    return true;
-  }
-  // Confirm is deliberately consumed; there is no selectable item.
-  if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) return true;
-  return false;
-}
-
-void OpdsServerListActivity::navigateButtons() {
-  if (isEmptyPicker()) return;
-  UiListActivity::navigateButtons();
-}
-
-void OpdsServerListActivity::drawFooter() {
-  if (!isEmptyPicker()) {
-    UiListActivity::drawFooter();
-    return;
-  }
-
-  const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
-  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }
 
 const char* OpdsServerListActivity::headerTitle() const { return tr(STR_OPDS_SERVERS); }
@@ -266,19 +229,13 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
   uiTarget.setFont(fui::GfxRendererTarget::FONT_BODY, UI_10_FONT_ID);
   refreshSharedUiThemeTokens(uiTarget);
   const auto& metrics = UITheme::getInstance().getMetrics();
-  // Content below the GUI.drawHeader band, above the button hints; derived
-  // from the safe area so board bezel insets apply (same as LanguageSelect).
-  const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
-  screen.setContentMargin(
-      fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight - 3),
-                  static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
-                  static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height) + metrics.buttonHintsHeight),
-                  static_cast<int16_t>(safe.x)});
+  // Match the Settings list's content margins and row geometry.
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 3), 0,
+                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   const int itemCount = getItemCount();
   if (itemCount == 0) {
-    // The empty picker state is drawn at fixed Y=400 in render().
     return;
   }
 
@@ -287,13 +244,11 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(rowItems_.size());
   props.action = ACTION_ROW;
   props.valueInset = 3;
-  // Keep the folder label clear of its trailing editable value.
-  props.textGap = 36;
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.rowGap = 0;
   props.labelText = screen.theme().smallText;
-  props.labelText.maxLines = 2;
-  props.labelText.lineGap = 6;
+  props.labelText.align = fui::TextAlign::Center;
+  props.labelText.maxLines = 1;
   props.valueText = screen.theme().smallText;
   props.valueText.align = fui::TextAlign::Right;
 
@@ -313,21 +268,5 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
 }
 
 void OpdsServerListActivity::render(RenderLock&& lock) {
-  if (isEmptyPicker()) {
-    const auto& metrics = UITheme::getInstance().getMetrics();
-    renderer.clearScreen();
-    GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, renderer.getScreenWidth(), metrics.headerHeight},
-                   tr(STR_OPDS_BROWSER));
-    // Publish an empty interaction table so no stale row can receive a tap.
-    renderUi();
-    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_SERVERS));
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
-    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
-    renderer.displayBuffer();
-    return;
-  }
-
-  // Header via GUI.drawHeader (already FreeInkUI-themed) for the battery
-  // indicator; the rest of the screen renders through the base skeleton.
   UiListActivity::render(std::move(lock));
 }

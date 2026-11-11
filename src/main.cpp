@@ -497,7 +497,7 @@ void setup() {
 
 #ifdef SIMULATOR
   // TEMP: open the OPDS screen previews automatically in the simulator.
-  activityManager.goToOpdsBrowserTestScreens();
+  activityManager.goToOpdsCatalogueTestScreen();
 #endif
 
   if (resume == BootResume::Silent) {
