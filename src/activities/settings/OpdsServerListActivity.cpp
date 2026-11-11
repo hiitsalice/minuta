@@ -113,6 +113,37 @@ void OpdsServerListActivity::onBackButton() {
   }
 }
 
+bool OpdsServerListActivity::isEmptyPicker() const {
+  return pickerMode && OPDS_STORE.getCount() == 0;
+}
+
+bool OpdsServerListActivity::handleButtons() {
+  if (!isEmptyPicker()) return UiListActivity::handleButtons();
+
+  if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
+    onBackButton();
+    return true;
+  }
+  // Confirm is deliberately consumed; there is no selectable item.
+  if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) return true;
+  return false;
+}
+
+void OpdsServerListActivity::navigateButtons() {
+  if (isEmptyPicker()) return;
+  UiListActivity::navigateButtons();
+}
+
+void OpdsServerListActivity::drawFooter() {
+  if (!isEmptyPicker()) {
+    UiListActivity::drawFooter();
+    return;
+  }
+
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+}
+
 const char* OpdsServerListActivity::headerTitle() const { return tr(STR_OPDS_SERVERS); }
 
 void OpdsServerListActivity::activateIndex(const int index) {
@@ -242,6 +273,18 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
 }
 
 void OpdsServerListActivity::render(RenderLock&& lock) {
+  if (isEmptyPicker()) {
+    const auto& metrics = UITheme::getInstance().getMetrics();
+    renderer.clearScreen();
+    GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, renderer.getScreenWidth(), metrics.headerHeight},
+                   headerTitle());
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_SERVERS));
+    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    renderer.displayBuffer();
+    return;
+  }
+
   // Header via GUI.drawHeader (already FreeInkUI-themed) for the battery
   // indicator; the rest of the screen renders through the base skeleton.
   UiListActivity::render(std::move(lock));
