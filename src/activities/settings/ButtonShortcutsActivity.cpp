@@ -76,6 +76,7 @@ struct SectionDef {
 };
 
 constexpr SectionDef kSections[] = {
+    {"Hidden Features", kHiddenFeatures, static_cast<int>(std::size(kHiddenFeatures))},
     {"General", kGeneral, static_cast<int>(std::size(kGeneral))},
     {"Home", kHome, static_cast<int>(std::size(kHome))},
     {"Settings", kSettings, static_cast<int>(std::size(kSettings))},
@@ -85,7 +86,6 @@ constexpr SectionDef kSections[] = {
     {"Reader Menu", kReaderMenu, static_cast<int>(std::size(kReaderMenu))},
     {"Highlight List", kHighlight, static_cast<int>(std::size(kHighlight))},
     {"Dictionary", kDictionary, static_cast<int>(std::size(kDictionary))},
-    {"Hidden Features", kHiddenFeatures, static_cast<int>(std::size(kHiddenFeatures))},
     {"Wi-Fi Networks", kWifi, static_cast<int>(std::size(kWifi))},
     {"OPDS Server", kOpds, static_cast<int>(std::size(kOpds))},
 };
@@ -102,7 +102,8 @@ ButtonShortcutsActivity::ButtonShortcutsActivity(GfxRenderer& renderer, MappedIn
 const char* ButtonShortcutsActivity::headerTitle() const { return tr(STR_BUTTON_SHORTCUTS); }
 
 void ButtonShortcutsActivity::onEnter() {
-  expanded_.assign(kSectionCount, 0);  // every section starts closed, like Settings
+  expanded_.assign(kSectionCount, 0);
+  expanded_[0] = 1;  // Keep Hidden Features visible and expanded on entry.
   rebuildRows();
   UiListActivity::onEnter();
   nav.selected = 0;
