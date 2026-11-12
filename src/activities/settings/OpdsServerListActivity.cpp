@@ -122,7 +122,7 @@ void OpdsServerListActivity::navigateButtons() {
 }
 
 const char* OpdsServerListActivity::headerTitle() const {
-  return tr(pickerMode ? STR_OPDS_BROWSER : STR_OPDS_SERVERS);
+  return I18N.get(pickerMode ? StrId::STR_OPDS_BROWSER : StrId::STR_OPDS_SERVERS);
 }
 
 void OpdsServerListActivity::activateIndex(const int index) {
@@ -219,6 +219,9 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
 
   const int itemCount = getItemCount();
   if (itemCount == 0) {
+    if (pickerMode) {
+      screen.centeredText(tr(STR_NO_SERVERS), screen.theme().bodyText);
+    }
     return;
   }
 
