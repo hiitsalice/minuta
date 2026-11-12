@@ -121,6 +121,16 @@ void OpdsServerListActivity::navigateButtons() {
   UiListActivity::navigateButtons();
 }
 
+void OpdsServerListActivity::drawFooter() {
+  if (!pickerMode || getItemCount() != 0) {
+    UiListActivity::drawFooter();
+    return;
+  }
+
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, false);
+}
+
 const char* OpdsServerListActivity::headerTitle() const {
   return I18N.get(pickerMode ? StrId::STR_OPDS_BROWSER : StrId::STR_OPDS_SERVERS);
 }

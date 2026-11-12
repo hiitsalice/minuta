@@ -26,6 +26,7 @@ class OpdsServerListActivity final : public UiListActivity {
   // Picker mode backs out to the home menu rather than finishing.
   void onBackButton() override;
   void navigateButtons() override;
+  void drawFooter() override;
   const char* headerTitle() const override;
 
   bool pickerMode = false;
