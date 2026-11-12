@@ -121,7 +121,9 @@ void OpdsServerListActivity::navigateButtons() {
   UiListActivity::navigateButtons();
 }
 
-const char* OpdsServerListActivity::headerTitle() const { return tr(STR_OPDS_BROWSER); }
+const char* OpdsServerListActivity::headerTitle() const {
+  return tr(pickerMode ? STR_OPDS_BROWSER : STR_OPDS_SERVERS);
+}
 
 void OpdsServerListActivity::activateIndex(const int index) {
   nav.selected = index;
@@ -228,8 +230,9 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.rowGap = 0;
   props.labelText = screen.theme().smallText;
-  props.labelText.align = fui::TextAlign::Center;
-  props.labelText.maxLines = 1;
+  props.labelText.align = pickerMode ? fui::TextAlign::Center : fui::TextAlign::Left;
+  props.labelText.maxLines = pickerMode ? 1 : 2;
+  props.labelText.lineGap = pickerMode ? 1 : 6;
   props.valueText = screen.theme().smallText;
   props.valueText.align = fui::TextAlign::Right;
 
