@@ -57,13 +57,10 @@ int OpdsServerListActivity::getItemCount() const {
 
 OpdsServerListActivity::OpdsServerListActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                                const bool pickerMode, const bool returnToParent)
-    : UiListActivity("OpdsServerList", renderer, mappedInput),
-      pickerMode(pickerMode),
-      returnToParent(returnToParent) {}
+    : UiListActivity("OpdsServerList", renderer, mappedInput), pickerMode(pickerMode), returnToParent(returnToParent) {}
 
 void OpdsServerListActivity::onEnter() {
   UiListActivity::onEnter();
-
 
   // Reload from disk in case servers were added/removed by a subactivity or the web UI
   OPDS_STORE.loadFromFile();
@@ -153,9 +150,8 @@ void OpdsServerListActivity::handleSelection() {
       if (server) {
         if (returnToParent) {
           // Return to Settings after the browser closes, skipping this picker.
-          startActivityForResult(
-              std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, *server, true),
-              [this](const ActivityResult&) { finish(); });
+          startActivityForResult(std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, *server, true),
+                                 [this](const ActivityResult&) { finish(); });
         } else {
           // Preserve the original Home-launched browser flow.
           activityManager.replaceActivity(std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, *server));
@@ -230,7 +226,7 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
   const int itemCount = getItemCount();
   if (itemCount == 0) {
     if (pickerMode) {
-      screen.centeredText(tr(STR_NO_SERVERS), screen.theme().bodyText);
+      renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_SERVERS));
     }
     return;
   }
@@ -252,8 +248,7 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
   // The folder is editable; shorten only its displayed copy, never the saved path.
   if (!pickerMode) {
     const auto serverCount = static_cast<int>(OPDS_STORE.getServers().size());
-    const std::string folderValue =
-        SETTINGS.opdsDownloadFolder[0] ? SETTINGS.opdsDownloadFolder : tr(STR_OPDS_SD_ROOT);
+    const std::string folderValue = SETTINGS.opdsDownloadFolder[0] ? SETTINGS.opdsDownloadFolder : tr(STR_OPDS_SD_ROOT);
     displayedFolderValue_ =
         fitListValueAfterLabel(uiTarget, screen, props, rowItems_[serverCount + 1].label, folderValue);
     rowItems_[serverCount + 1].value = displayedFolderValue_.c_str();
@@ -264,6 +259,4 @@ void OpdsServerListActivity::buildScreen(UiScreen& screen) {
   screen.list(props);
 }
 
-void OpdsServerListActivity::render(RenderLock&& lock) {
-  UiListActivity::render(std::move(lock));
-}
+void OpdsServerListActivity::render(RenderLock&& lock) { UiListActivity::render(std::move(lock)); }

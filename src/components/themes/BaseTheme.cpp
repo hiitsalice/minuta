@@ -95,8 +95,8 @@ void BaseTheme::drawBatteryLeft(const GfxRenderer& renderer, Rect rect, const bo
   fillBatteryIcon(renderer, iconRect, percentage);
 }
 
-void BaseTheme::drawProgressBar(const GfxRenderer& renderer, Rect rect, const size_t current,
-                                const size_t total, const int percentFontId, const int percentY) const {
+void BaseTheme::drawProgressBar(const GfxRenderer& renderer, Rect rect, const size_t current, const size_t total,
+                                const int percentFontId, const int percentY) const {
   if (total == 0) {
     return;
   }
@@ -331,7 +331,8 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
 
   // Underline only under a titled header: an untitled band (Lyra home screen)
   // historically drew no rule, and the old themes keyed the line on the title.
-  if (showBattery && title != nullptr && props.styles.normal.border.kind == fui::PaintKind::None && tokens.headerUnderline > 0) {
+  if (showBattery && title != nullptr && props.styles.normal.border.kind == fui::PaintKind::None &&
+      tokens.headerUnderline > 0) {
     props.styles.normal.border = fui::Paint::solid(fui::Color::Black);
     props.styles.normal.borderWidth = tokens.headerUnderline;
   }
@@ -343,10 +344,9 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   if (!showBattery && title != nullptr) {
     constexpr int16_t kRuleThickness = 2;
     existingRuleWidth = static_cast<int16_t>(band.width / 2);
-    ui.target.fill(
-        fui::Rect{static_cast<int16_t>(band.x + (band.width - existingRuleWidth) / 2),
-                  static_cast<int16_t>(band.bottom() - kRuleThickness), existingRuleWidth, kRuleThickness},
-        fui::Paint::solid(fui::Color::Black));
+    ui.target.fill(fui::Rect{static_cast<int16_t>(band.x + (band.width - existingRuleWidth) / 2),
+                             static_cast<int16_t>(band.bottom() - kRuleThickness), existingRuleWidth, kRuleThickness},
+                   fui::Paint::solid(fui::Color::Black));
   }
 
   // Add a centered secondary rule below the existing black underline.
@@ -356,52 +356,51 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
     const int16_t secondaryRuleWidth = static_cast<int16_t>(existingRuleWidth * 3 / 4);
     ui.target.fill(
         fui::Rect{static_cast<int16_t>(band.x + (band.width - secondaryRuleWidth) / 2),
-                  static_cast<int16_t>(band.bottom() + kSecondaryRuleGap),
-                  secondaryRuleWidth, kSecondaryRuleThickness},
+                  static_cast<int16_t>(band.bottom() + kSecondaryRuleGap), secondaryRuleWidth, kSecondaryRuleThickness},
         fui::Paint::solid(fui::Color::Black));
   }
 
   if (showBattery) {
     fui::BatteryIndicatorProps battery;
     battery.percent = static_cast<uint8_t>(percentage > 100 ? 100 : percentage);
-  battery.charging = gpio.isUsbConnected();
-  battery.label = showBatteryPercentage ? percentText : nullptr;
-  battery.text = tokens.smallText;
-  battery.glyphWidth = headerBatteryWidth;
-  battery.glyphHeight = headerBatteryHeight;
-  battery.gap = headerBatteryGap;
-  // Detached: hug the corner (12px, the legacy inset) within the battery
-  // strip; shared line: sit on the content grid. Both anchor to the band's top
-  // strip (batteryBarHeight) — the legacy shared-line headers drew the battery
-  // at the top edge, and it keeps the lower-right corner free for the manual
-  // right label below.
-  const int16_t batteryEdgeInset = batteryDetached ? 12 : static_cast<int16_t>(tokens.headerSidePadding - 4);
-  const int16_t batteryX = batteryLeft ? static_cast<int16_t>(band.x + batteryEdgeInset)
-                                       : static_cast<int16_t>(band.right() - batteryEdgeInset - batteryReserve);
-  const int16_t batteryH = static_cast<int16_t>(metrics.batteryBarHeight);
-  const int16_t batteryBandY = batteryDetached ? static_cast<int16_t>(metrics.topPadding + 2) : band.y;
-  if (batteryDetached) {
-    const int16_t iconX = static_cast<int16_t>(batteryX + batteryReserve - headerBatteryWidth - batteryNubWidth);
+    battery.charging = gpio.isUsbConnected();
+    battery.label = showBatteryPercentage ? percentText : nullptr;
+    battery.text = tokens.smallText;
+    battery.glyphWidth = headerBatteryWidth;
+    battery.glyphHeight = headerBatteryHeight;
+    battery.gap = headerBatteryGap;
+    // Detached: hug the corner (12px, the legacy inset) within the battery
+    // strip; shared line: sit on the content grid. Both anchor to the band's top
+    // strip (batteryBarHeight) — the legacy shared-line headers drew the battery
+    // at the top edge, and it keeps the lower-right corner free for the manual
+    // right label below.
+    const int16_t batteryEdgeInset = batteryDetached ? 12 : static_cast<int16_t>(tokens.headerSidePadding - 4);
+    const int16_t batteryX = batteryLeft ? static_cast<int16_t>(band.x + batteryEdgeInset)
+                                         : static_cast<int16_t>(band.right() - batteryEdgeInset - batteryReserve);
+    const int16_t batteryH = static_cast<int16_t>(metrics.batteryBarHeight);
+    const int16_t batteryBandY = batteryDetached ? static_cast<int16_t>(metrics.topPadding + 2) : band.y;
+    if (batteryDetached) {
+      const int16_t iconX = static_cast<int16_t>(batteryX + batteryReserve - headerBatteryWidth - batteryNubWidth);
 
-    if (showBatteryPercentage) {
-      fui::TextStyle labelStyle = battery.text;
-      labelStyle.align = fui::TextAlign::Right;
-      const int16_t labelWidth = static_cast<int16_t>(iconX - headerBatteryGap - batteryX);
+      if (showBatteryPercentage) {
+        fui::TextStyle labelStyle = battery.text;
+        labelStyle.align = fui::TextAlign::Right;
+        const int16_t labelWidth = static_cast<int16_t>(iconX - headerBatteryGap - batteryX);
 
-      ui.target.text(fui::Rect{batteryX, static_cast<int16_t>(batteryBandY), labelWidth, batteryH}, percentText,
-                     labelStyle);
+        ui.target.text(fui::Rect{batteryX, static_cast<int16_t>(batteryBandY), labelWidth, batteryH}, percentText,
+                       labelStyle);
+      }
+
+      fui::BatteryIndicatorProps iconOnly = battery;
+      iconOnly.label = nullptr;
+
+      fui::batteryIndicator(ui.frame,
+                            fui::Rect{iconX, static_cast<int16_t>(batteryBandY + 9),
+                                      static_cast<int16_t>(headerBatteryWidth + batteryNubWidth), headerBatteryHeight},
+                            iconOnly);
+    } else {
+      fui::batteryIndicator(ui.frame, fui::Rect{batteryX, band.y, batteryReserve, batteryH}, battery);
     }
-
-    fui::BatteryIndicatorProps iconOnly = battery;
-    iconOnly.label = nullptr;
-
-    fui::batteryIndicator(ui.frame,
-                          fui::Rect{iconX, static_cast<int16_t>(batteryBandY + 9),
-                                    static_cast<int16_t>(headerBatteryWidth + batteryNubWidth), headerBatteryHeight},
-                          iconOnly);
-  } else {
-    fui::batteryIndicator(ui.frame, fui::Rect{batteryX, band.y, batteryReserve, batteryH}, battery);
-  }
   }
 
   if (manualRightLabel) {
@@ -656,11 +655,7 @@ void BaseTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect, const std:
       renderer.drawCenteredText(UI_10_FONT_ID, continueY, tr(STR_CONTINUE_READING), !bookSelected);
     }
   } else {
-    // No book to continue reading
-    const int y =
-        bookY + (bookHeight - renderer.getLineHeight(UI_12_FONT_ID) - renderer.getLineHeight(UI_10_FONT_ID)) / 2;
-    renderer.drawCenteredText(UI_12_FONT_ID, y, tr(STR_NO_OPEN_BOOK));
-    renderer.drawCenteredText(UI_10_FONT_ID, y + renderer.getLineHeight(UI_12_FONT_ID), tr(STR_START_READING));
+    // No book to continue reading: leave the frame blank (no text).
   }
 }
 

@@ -761,43 +761,6 @@ void WifiSelectionActivity::render(RenderLock&&) {
   }
 
   renderer.displayBuffer();
-  return;
-
-  switch (state) {
-    case WifiSelectionState::AUTO_CONNECTING:
-      renderConnecting(&screen, &metrics);
-      break;
-    case WifiSelectionState::SCANNING:
-      renderConnecting(&screen, &metrics);  // Reuse connecting screen with different message
-      break;
-    case WifiSelectionState::NETWORK_LIST:
-      renderNetworkList(&screen, &metrics);
-      break;
-    case WifiSelectionState::HIDDEN_SSID_ENTRY:
-      // Transitioning to/from the SSID keyboard subactivity - nothing to draw
-      break;
-    case WifiSelectionState::CONNECTING:
-      renderConnecting(&screen, &metrics);
-      break;
-    case WifiSelectionState::CONNECTED:
-      renderConnected(&screen, &metrics);
-      break;
-    case WifiSelectionState::SAVE_PROMPT:
-    case WifiSelectionState::FORGET_PROMPT: {
-      // The app's screen builder draws the option dialog panel itself.
-      renderUi();
-      const auto labels =
-          mappedInput.mapLabels(state == WifiSelectionState::SAVE_PROMPT ? tr(STR_CANCEL) : tr(STR_BACK),
-                                tr(STR_SELECT), tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT));
-      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
-      break;
-    }
-    case WifiSelectionState::CONNECTION_FAILED:
-      renderConnectionFailed(&screen, &metrics);
-      break;
-  }
-
-  renderer.displayBuffer();
 }
 
 void WifiSelectionActivity::listScreen(UiScreen& screen, void* user) {

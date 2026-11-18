@@ -1,8 +1,5 @@
 #include "TxtReaderActivity.h"
 
-#include "CrossPointState.h"
-#include "RecentBooksStore.h"
-
 #include <BidiUtils.h>
 #include <FontCacheManager.h>
 #include <GfxRenderer.h>
@@ -13,9 +10,11 @@
 #include <Utf8.h>
 
 #include "CrossPointSettings.h"
+#include "CrossPointState.h"
 #include "ProgressFile.h"
 #include "ReaderActivity.h"
 #include "ReaderUtils.h"
+#include "RecentBooksStore.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 
@@ -253,7 +252,7 @@ void TxtReaderActivity::renderBook() {
 
   if (pageOffsets.empty()) {
     renderer.clearScreen();
-    renderer.drawCenteredText(UI_12_FONT_ID, 300, tr(STR_EMPTY_FILE), true, EpdFontFamily::BOLD);
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_EMPTY_FILE), true, EpdFontFamily::REGULAR);
     renderer.displayBuffer();
     return;
   }

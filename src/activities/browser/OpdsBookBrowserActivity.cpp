@@ -13,8 +13,8 @@
 
 #include "CrossPointSettings.h"
 #include "MappedInputManager.h"
-#include "activities/ActivityManager.h"
 #include "SilentRestart.h"
+#include "activities/ActivityManager.h"
 #include "activities/network/WifiSelectionActivity.h"
 #include "activities/util/KeyboardEntryActivity.h"
 #include "components/UIScale.h"
@@ -68,7 +68,6 @@ void OpdsBookBrowserActivity::onEnter() {
   app.on(ACTION_ROW, &OpdsBookBrowserActivity::onRowEvent, this);
   app.setScreen(&OpdsBookBrowserActivity::rootScreen, this);
 
-
   requestUpdate();
   checkAndConnectWifi();
 }
@@ -103,7 +102,6 @@ void OpdsBookBrowserActivity::onRowEvent(const fui::ActionEvent& event, void* us
 }
 
 void OpdsBookBrowserActivity::loop() {
-
   if (state == BrowserState::WIFI_SELECTION || state == BrowserState::SEARCH_INPUT) {
     return;
   }
@@ -114,7 +112,7 @@ void OpdsBookBrowserActivity::loop() {
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
       if (WiFi.status() == WL_CONNECTED && WiFi.localIP() != IPAddress(0, 0, 0, 0)) {
         state = BrowserState::LOADING;
-        statusMessage = tr(STR_LOADING);
+        statusMessage = "Loading feed...";
         requestUpdate();
         fetchFeed(currentPath);
       } else {
@@ -143,7 +141,7 @@ void OpdsBookBrowserActivity::loop() {
     }
     if (mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, SEARCH_HOLD_MS)) {
       // Holding Select/Load opens Search, only when the server provides a search template.
-      if (!searchTemplate.empty()) launchSearch();
+      if (!entries.empty() && !searchTemplate.empty()) launchSearch();
       return;
     }
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
@@ -206,7 +204,7 @@ void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   if (entries.empty()) {
-    screen.centeredText(tr(STR_NO_ENTRIES), screen.theme().bodyText);
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_ENTRIES));
     return;
   }
 
@@ -269,7 +267,9 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
       const bool onBook = !entries.empty() && selectorIndex >= 0 && selectorIndex < static_cast<int>(entries.size()) &&
                           entries[selectorIndex].type == OpdsEntryType::BOOK;
       const char* actionLabel = entries.empty() ? "" : (onBook ? "Load" : tr(STR_SELECT));
-      const auto labels = mappedInput.mapLabels(tr(STR_BACK), actionLabel, tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+      const bool hasEntries = !entries.empty();
+      const auto labels = mappedInput.mapLabels(tr(STR_BACK), actionLabel, hasEntries ? tr(STR_DIR_UP) : "",
+                                                hasEntries ? tr(STR_DIR_DOWN) : "");
       const bool listFillsArea = listNav.visibleRows > 0 && entries.size() >= static_cast<size_t>(listNav.visibleRows);
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea);
       break;
@@ -360,8 +360,8 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
     LOG_INF("OPDS", "Feed truncated to fit memory");
   }
 
-  state = entries.empty() ? BrowserState::ERROR : BrowserState::BROWSING;
-  if (entries.empty()) errorMessage = tr(STR_NO_ENTRIES);
+  // An empty feed stays on the browsing screen and shows "No entries found" with only Back.
+  state = BrowserState::BROWSING;
   rebuildRowItems();
   requestUpdate();
 }
@@ -400,7 +400,7 @@ void OpdsBookBrowserActivity::navigateToEntry(const OpdsEntry& entry) {
   currentPath = UrlUtils::buildUrl(feedUrl, entry.href);
 
   state = BrowserState::LOADING;
-  statusMessage = tr(STR_LOADING);
+  statusMessage = "Loading feed...";
   releaseEntries();
   selectorIndex = 0;
   requestUpdate(true);
@@ -418,7 +418,7 @@ void OpdsBookBrowserActivity::navigateBack() {
     currentPath = navigationHistory.back();
     navigationHistory.pop_back();
     state = BrowserState::LOADING;
-    statusMessage = tr(STR_LOADING);
+    statusMessage = "Loading feed...";
     releaseEntries();
     selectorIndex = 0;
     requestUpdate();
@@ -538,7 +538,7 @@ void OpdsBookBrowserActivity::performSearch(const std::string& query) {
   currentPath = url;
 
   state = BrowserState::LOADING;
-  statusMessage = tr(STR_LOADING);
+  statusMessage = "Loading feed...";
   releaseEntries();
   selectorIndex = 0;
   requestUpdate(true);
@@ -548,7 +548,7 @@ void OpdsBookBrowserActivity::performSearch(const std::string& query) {
 void OpdsBookBrowserActivity::checkAndConnectWifi() {
   if (WiFi.status() == WL_CONNECTED && WiFi.localIP() != IPAddress(0, 0, 0, 0)) {
     state = BrowserState::LOADING;
-    statusMessage = tr(STR_LOADING);
+    statusMessage = "Loading feed...";
     requestUpdate();
     fetchFeed(currentPath);
     return;
@@ -567,7 +567,7 @@ void OpdsBookBrowserActivity::launchWifiSelection() {
 void OpdsBookBrowserActivity::onWifiSelectionComplete(const bool connected) {
   if (connected) {
     state = BrowserState::LOADING;
-    statusMessage = tr(STR_LOADING);
+    statusMessage = "Loading feed...";
     requestUpdate(true);
     fetchFeed(currentPath);
   } else {

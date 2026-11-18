@@ -88,14 +88,15 @@ void CrossPointWebServerActivity::onEnter() {
 
   // Launch network mode selection subactivity
   LOG_DBG("WEBACT", "Launching NetworkModeSelectionActivity...");
-  startActivityForResult(std::make_unique<NetworkModeSelectionActivity>(renderer, mappedInput, selectedNetworkModeIndex),
-                         [this](const ActivityResult& result) {
-                           if (result.isCancelled) {
-                             finish();
-                           } else {
-                             onNetworkModeSelected(std::get<NetworkModeResult>(result.data).mode);
-                           }
-                         });
+  startActivityForResult(
+      std::make_unique<NetworkModeSelectionActivity>(renderer, mappedInput, selectedNetworkModeIndex),
+      [this](const ActivityResult& result) {
+        if (result.isCancelled) {
+          finish();
+        } else {
+          onNetworkModeSelected(std::get<NetworkModeResult>(result.data).mode);
+        }
+      });
 }
 
 void CrossPointWebServerActivity::onExit() {
@@ -138,14 +139,15 @@ void CrossPointWebServerActivity::returnToNetworkModeSelection() {
   }
 
   state = WebServerActivityState::MODE_SELECTION;
-  startActivityForResult(std::make_unique<NetworkModeSelectionActivity>(renderer, mappedInput, selectedNetworkModeIndex),
-                         [this](const ActivityResult& result) {
-                           if (result.isCancelled) {
-                             finish();
-                           } else {
-                             onNetworkModeSelected(std::get<NetworkModeResult>(result.data).mode);
-                           }
-                         });
+  startActivityForResult(
+      std::make_unique<NetworkModeSelectionActivity>(renderer, mappedInput, selectedNetworkModeIndex),
+      [this](const ActivityResult& result) {
+        if (result.isCancelled) {
+          finish();
+        } else {
+          onNetworkModeSelected(std::get<NetworkModeResult>(result.data).mode);
+        }
+      });
 }
 
 void CrossPointWebServerActivity::onNetworkModeSelected(NetworkMode mode) {
@@ -177,14 +179,15 @@ void CrossPointWebServerActivity::onNetworkModeSelected(NetworkMode mode) {
         std::make_unique<CalibreConnectActivity>(renderer, mappedInput), [this](const ActivityResult& result) {
           state = WebServerActivityState::MODE_SELECTION;
 
-          startActivityForResult(std::make_unique<NetworkModeSelectionActivity>(renderer, mappedInput, selectedNetworkModeIndex),
-                                 [this](const ActivityResult& result) {
-                                   if (result.isCancelled) {
-                                     finish();
-                                   } else {
-                                     onNetworkModeSelected(std::get<NetworkModeResult>(result.data).mode);
-                                   }
-                                 });
+          startActivityForResult(
+              std::make_unique<NetworkModeSelectionActivity>(renderer, mappedInput, selectedNetworkModeIndex),
+              [this](const ActivityResult& result) {
+                if (result.isCancelled) {
+                  finish();
+                } else {
+                  onNetworkModeSelected(std::get<NetworkModeResult>(result.data).mode);
+                }
+              });
         });
     return;
   }
@@ -229,14 +232,15 @@ void CrossPointWebServerActivity::onWifiSelectionComplete(const bool connected) 
     // User cancelled - go back to mode selection
     state = WebServerActivityState::MODE_SELECTION;
 
-    startActivityForResult(std::make_unique<NetworkModeSelectionActivity>(renderer, mappedInput, selectedNetworkModeIndex),
-                           [this](const ActivityResult& result) {
-                             if (result.isCancelled) {
-                               finish();
-                             } else {
-                               onNetworkModeSelected(std::get<NetworkModeResult>(result.data).mode);
-                             }
-                           });
+    startActivityForResult(
+        std::make_unique<NetworkModeSelectionActivity>(renderer, mappedInput, selectedNetworkModeIndex),
+        [this](const ActivityResult& result) {
+          if (result.isCancelled) {
+            finish();
+          } else {
+            onNetworkModeSelected(std::get<NetworkModeResult>(result.data).mode);
+          }
+        });
   }
 }
 
@@ -429,7 +433,6 @@ void CrossPointWebServerActivity::render(RenderLock&&) {
     renderer.clearScreen();
     const auto& metrics = UITheme::getInstance().getMetrics();
     const auto pageWidth = renderer.getScreenWidth();
-    const auto pageHeight = renderer.getScreenHeight();
 
     GUI.drawHeader(renderer, Rect{0, (metrics.topPadding - 6), pageWidth, metrics.headerHeight},
                    isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_JOIN_NETWORK), nullptr);
@@ -437,9 +440,12 @@ void CrossPointWebServerActivity::render(RenderLock&&) {
     if (state == WebServerActivityState::SERVER_RUNNING) {
       renderServerRunning();
     } else {
-      const auto height = renderer.getLineHeight(UI_10_FONT_ID);
-      const auto top = (pageHeight - height) / 2;
-      renderer.drawCenteredText(UI_10_FONT_ID, top, tr(STR_STARTING_HOTSPOT));
+      renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_STARTING_HOTSPOT));
+      // No actions here: keep the (empty) button hint strip visible.
+      {
+        const auto labels = mappedInput.mapLabels("", "", "", "");
+        GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+      }
     }
     renderer.displayBuffer();
   }
@@ -455,8 +461,8 @@ void CrossPointWebServerActivity::renderServerRunning() const {
                  isApMode ? tr(STR_HOTSPOT_MODE) : tr(STR_JOIN_NETWORK), nullptr);
 
   // Draw two text fragments on one centred line, each with its own font style.
-  const auto drawMixedLine = [&](const char* first, EpdFontFamily::Style firstStyle,
-                                 const char* second, EpdFontFamily::Style secondStyle, int y) {
+  const auto drawMixedLine = [&](const char* first, EpdFontFamily::Style firstStyle, const char* second,
+                                 EpdFontFamily::Style secondStyle, int y) {
     const int firstWidth = renderer.getTextAdvanceX(UI_10_FONT_ID, first, firstStyle);
     const int spaceWidth = renderer.getSpaceWidth(UI_10_FONT_ID, EpdFontFamily::REGULAR);
     const int secondWidth = renderer.getTextAdvanceX(UI_10_FONT_ID, second, secondStyle);
@@ -464,8 +470,7 @@ void CrossPointWebServerActivity::renderServerRunning() const {
     const int x = (pageWidth - totalWidth) / 2;
 
     renderer.drawText(UI_10_FONT_ID, x, y, first, true, firstStyle);
-    renderer.drawText(UI_10_FONT_ID, x + firstWidth + spaceWidth, y,
-                      second, true, secondStyle);
+    renderer.drawText(UI_10_FONT_ID, x + firstWidth + spaceWidth, y, second, true, secondStyle);
   };
 
   if (isApMode) {
@@ -479,35 +484,29 @@ void CrossPointWebServerActivity::renderServerRunning() const {
     const std::string hostnameUrl = std::string("http://") + AP_HOSTNAME + ".local/";
     const std::string ipUrl = std::string("http://") + connectedIP + "/";
 
-    const int totalHeight = lineHeight + WIFI_QR_GAP + QR_CODE_HEIGHT +
-                            URL_SECTION_GAP + lineHeight +
-                            ALTERNATIVE_URL_GAP + lineHeight +
-                            URL_QR_GAP + QR_CODE_HEIGHT;
+    const int totalHeight = lineHeight + WIFI_QR_GAP + QR_CODE_HEIGHT + URL_SECTION_GAP + lineHeight +
+                            ALTERNATIVE_URL_GAP + lineHeight + URL_QR_GAP + QR_CODE_HEIGHT;
 
     int y = (pageHeight - totalHeight) / 2;
 
     // Network name.
-    drawMixedLine("Connect to:", EpdFontFamily::BOLD,
-                  connectedSSID.c_str(), EpdFontFamily::REGULAR, y);
+    drawMixedLine("Connect to:", EpdFontFamily::BOLD, connectedSSID.c_str(), EpdFontFamily::REGULAR, y);
     y += lineHeight + WIFI_QR_GAP;
 
     // Wi-Fi connection QR.
-    const Rect qrBoundsWifi((pageWidth - QR_CODE_WIDTH) / 2, y,
-                            QR_CODE_WIDTH, QR_CODE_HEIGHT);
+    const Rect qrBoundsWifi((pageWidth - QR_CODE_WIDTH) / 2, y, QR_CODE_WIDTH, QR_CODE_HEIGHT);
     QrUtils::drawQrCode(renderer, qrBoundsWifi, wifiConfig);
     y += QR_CODE_HEIGHT + URL_SECTION_GAP;
 
     // File-transfer URL.
-    drawMixedLine("Open URL:", EpdFontFamily::BOLD,
-                  ipUrl.c_str(), EpdFontFamily::REGULAR, y);
+    drawMixedLine("Open URL:", EpdFontFamily::BOLD, ipUrl.c_str(), EpdFontFamily::REGULAR, y);
     y += lineHeight + ALTERNATIVE_URL_GAP;
 
     renderer.drawCenteredText(UI_10_FONT_ID, y, ("or " + hostnameUrl).c_str());
     y += lineHeight + URL_QR_GAP;
 
     // File-transfer URL QR.
-    const Rect qrBoundsUrl((pageWidth - QR_CODE_WIDTH) / 2, y,
-                           QR_CODE_WIDTH, QR_CODE_HEIGHT);
+    const Rect qrBoundsUrl((pageWidth - QR_CODE_WIDTH) / 2, y, QR_CODE_WIDTH, QR_CODE_HEIGHT);
     QrUtils::drawQrCode(renderer, qrBoundsUrl, hostnameUrl);
 
   } else {
@@ -521,13 +520,11 @@ void CrossPointWebServerActivity::renderServerRunning() const {
     int y = (pageHeight - totalHeight) / 2;
 
     // IP address, with a bold label.
-    drawMixedLine("Open URL:", EpdFontFamily::BOLD,
-                  ipUrl.c_str(), EpdFontFamily::REGULAR, y);
+    drawMixedLine("Open URL:", EpdFontFamily::BOLD, ipUrl.c_str(), EpdFontFamily::REGULAR, y);
     y += lineHeight + QR_GAP;
 
     // File-transfer URL QR.
-    const Rect qrBounds((pageWidth - QR_CODE_WIDTH) / 2, y,
-                        QR_CODE_WIDTH, QR_CODE_HEIGHT);
+    const Rect qrBounds((pageWidth - QR_CODE_WIDTH) / 2, y, QR_CODE_WIDTH, QR_CODE_HEIGHT);
     QrUtils::drawQrCode(renderer, qrBounds, ipUrl);
   }
 

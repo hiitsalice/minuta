@@ -171,7 +171,7 @@ void RecentBooksActivity::buildScreen(UiScreen& screen) {
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   if (recentBooks.empty()) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 420, tr(STR_NO_RECENT_BOOKS));
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_RECENT_BOOKS));
     return;
   }
 

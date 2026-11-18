@@ -603,7 +603,7 @@ void FontDownloadActivity::buildScreen(UiScreen& screen) {
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   if (state_ == FAMILY_LIST && filteredIndices_.empty()) {
-    screen.centeredText(tr(STR_NO_FONTS_AVAILABLE), screen.theme().bodyText);
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_FONTS_AVAILABLE));
     return;
   }
 
