@@ -1080,6 +1080,14 @@ bool EpubReaderActivity::skipLoopDelay() {
 void EpubReaderActivity::renderBook() {
   if (!epub) return;
 
+#ifdef SIMULATOR
+  // These two fixtures deliberately enter the real reader error-screen paths.
+  // The hooks are absent from every hardware firmware build.
+  const auto& testBookTitle = epub->getTitle();
+  const bool simulateOutOfBounds = testBookTitle == "Minuta Test - Out of Bounds";
+  const bool simulatePageLoadError = testBookTitle == "Minuta Test - Page Load Error";
+#endif
+
   const auto showPendingSyncSaveError = [this]() {
     if (!pendingSyncSaveError) return;
     pendingSyncSaveError = false;
@@ -1297,6 +1305,15 @@ void EpubReaderActivity::renderBook() {
 
   applyDeferredReposition();
 
+#ifdef SIMULATOR
+  // The normal reader clamps stale saved positions before rendering. Inject
+  // the invalid index afterwards so this fixture can exercise the otherwise
+  // difficult-to-reach out-of-bounds screen.
+  if (simulateOutOfBounds && section->pageCount > 0) {
+    section->currentPage = section->pageCount;
+  }
+#endif
+
   renderer.clearScreen();
 
   if (section->pageCount == 0) {
@@ -1342,7 +1359,11 @@ void EpubReaderActivity::renderBook() {
   updateBookmarkFlag();
 
   {
+#ifdef SIMULATOR
+    auto p = simulatePageLoadError ? std::unique_ptr<Page>{} : section->loadPage(section->currentPage);
+#else
     auto p = section->loadPage(section->currentPage);
+#endif
     if (!p) {
       LOG_ERR("ERS", "Failed to load page from SD - clearing section cache");
       automaticPageTurnActive = false;
