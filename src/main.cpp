@@ -582,7 +582,19 @@ void loop() {
     }
 
     // The latched warning can only be released by USB connection.
-    const bool stillLocked = MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE();
+#ifndef SIMULATOR
+    // USB must stay connected for 1.5 s in a row to release the lockout.
+    static unsigned long usbStableSinceMs = 0;
+    if (gpio.isUsbConnected()) {
+      if (usbStableSinceMs == 0) usbStableSinceMs = millis();
+    } else {
+      usbStableSinceMs = 0;
+    }
+    const bool usbReallyConnected = usbStableSinceMs != 0 && millis() - usbStableSinceMs >= 1500;
+    const bool stillLocked = powerManager.isLowBatteryLockoutActive(usbReallyConnected);
+#else
+    const bool stillLocked = false;
+#endif
     if (!stillLocked) {
       lowBatteryWarningActive = false;
       warningActivityProcessed = false;
