@@ -1301,6 +1301,12 @@ void EpubReaderActivity::renderBook() {
 
   if (section->pageCount == 0) {
     LOG_DBG("ERS", "No pages to render");
+    {
+      const auto& emptyMetrics = UITheme::getInstance().getMetrics();
+      GUI.drawHeader(renderer,
+                     Rect{0, emptyMetrics.topPadding - 6, renderer.getScreenWidth(), emptyMetrics.headerHeight},
+                     epub->getTitle().c_str());
+    }
     renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_EMPTY_CHAPTER), true, EpdFontFamily::REGULAR);
     {
       // Back is the only action here; show it on the hint strip.
