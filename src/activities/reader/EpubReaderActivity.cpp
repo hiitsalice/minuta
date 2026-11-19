@@ -1321,6 +1321,12 @@ void EpubReaderActivity::renderBook() {
 
   if (section->currentPage < 0 || section->currentPage >= section->pageCount) {
     LOG_DBG("ERS", "Page out of bounds: %d (max %d)", section->currentPage, section->pageCount);
+    {
+      const auto& errorMetrics = UITheme::getInstance().getMetrics();
+      GUI.drawHeader(renderer,
+                     Rect{0, errorMetrics.topPadding - 6, renderer.getScreenWidth(), errorMetrics.headerHeight},
+                     epub->getTitle().c_str());
+    }
     renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_OUT_OF_BOUNDS), true, EpdFontFamily::REGULAR);
     {
       // Back is the only action here; show it on the hint strip.
@@ -1348,6 +1354,12 @@ void EpubReaderActivity::renderBook() {
         LOG_ERR("ERS", "Page load retry limit reached, aborting");
         pageLoadRetryCount = 0;
         renderer.clearScreen();
+        {
+          const auto& errorMetrics = UITheme::getInstance().getMetrics();
+          GUI.drawHeader(renderer,
+                         Rect{0, errorMetrics.topPadding - 6, renderer.getScreenWidth(), errorMetrics.headerHeight},
+                         epub->getTitle().c_str());
+        }
         renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_PAGE_LOAD_ERROR), true, EpdFontFamily::REGULAR);
         {
           // Back is the only action here; show it on the hint strip.
