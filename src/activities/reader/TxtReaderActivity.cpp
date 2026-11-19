@@ -69,12 +69,45 @@ void TxtReaderActivity::initializeReader(GfxRenderer& renderer) {
 
   LOG_DBG("TRS", "Viewport: %dx%d, lines per page: %d", viewportWidth, viewportHeight, linesPerPage);
 
+  // A 0-byte file has no pages: it is its own empty state, not a one-page book.
+  if (txt->getFileSize() == 0) {
+    pageOffsets.clear();
+    totalPages = 0;
+    currentPage = 0;
+    initialized = true;
+    return;
+  }
+
   // Try to load cached page index first
   if (!loadPageIndexCache()) {
     // Cache not found, build page index
     buildPageIndex(renderer);
     // Save to cache for next time
     savePageIndexCache();
+  }
+
+  // A file with only spaces or blank lines is empty too.
+  bool hasText = false;
+  for (size_t i = 0; i < pageOffsets.size() && !hasText; ++i) {
+    std::vector<std::string> pageLines;
+    size_t nextPageOffset = 0;
+    loadPageAtOffset(renderer, pageOffsets[i], pageLines, nextPageOffset);
+    for (const auto& pageLine : pageLines) {
+      for (const char c : pageLine) {
+        if (!isspace(static_cast<unsigned char>(c))) {
+          hasText = true;
+          break;
+        }
+      }
+      if (hasText) break;
+    }
+  }
+  if (!hasText) {
+    pageOffsets.clear();
+    totalPages = 0;
+    currentPage = 0;
+    initialized = true;
+    return;
   }
 
   // Load saved progress
@@ -252,7 +285,12 @@ void TxtReaderActivity::renderBook() {
 
   if (pageOffsets.empty()) {
     renderer.clearScreen();
+    const auto& emptyMetrics = UITheme::getInstance().getMetrics();
+    GUI.drawHeader(renderer, Rect{0, emptyMetrics.topPadding - 6, renderer.getScreenWidth(), emptyMetrics.headerHeight},
+                   txt->getTitle().c_str());
     renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_EMPTY_FILE), true, EpdFontFamily::REGULAR);
+    const auto emptyLabels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+    GUI.drawButtonHints(renderer, emptyLabels.btn1, emptyLabels.btn2, emptyLabels.btn3, emptyLabels.btn4);
     renderer.displayBuffer();
     return;
   }
@@ -344,6 +382,14 @@ void TxtReaderActivity::renderStatusBar() const {
 }
 
 void TxtReaderActivity::loop() {
+  // Empty file: only Back works and it returns to the previous screen.
+  if (initialized && pageOffsets.empty()) {
+    if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
+      activityManager.popActivity();
+    }
+    return;
+  }
+
   const bool atEndOfBook = isAtEndOfBook();
 
   // Match EPUB's optional automatic removal from Recents while finished.
@@ -431,7 +477,8 @@ bool TxtReaderActivity::skipPages(int amount) {
   return false;
 }
 
-bool TxtReaderActivity::isAtEndOfBook() const { return initialized && currentPage >= totalPages; }
+// An empty file has no pages and is its own state, never the end of a book.
+bool TxtReaderActivity::isAtEndOfBook() const { return initialized && totalPages > 0 && currentPage >= totalPages; }
 
 void TxtReaderActivity::onReturnFromEndOfBook() { currentPage = totalPages > 0 ? totalPages - 1 : 0; }
 

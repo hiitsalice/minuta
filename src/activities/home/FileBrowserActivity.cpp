@@ -60,8 +60,7 @@ void FileBrowserActivity::loadFiles() {
       currentDirectoryHasHiddenFiles = true;
     }
 
-    if ((!showHiddenFiles && isHidden) ||
-        strcmp(fileNameBuffer.get(), "System Volume Information") == 0) {
+    if ((!showHiddenFiles && isHidden) || strcmp(fileNameBuffer.get(), "System Volume Information") == 0) {
       continue;
     }
 
@@ -343,8 +342,7 @@ bool FileBrowserActivity::handleCustomInput() {
   // Long press BACK is consumed in the Books File Browser. If the current
   // directory has hidden files, toggle their visibility; otherwise do nothing.
   // Firmware-pick mode keeps Back as ordinary directory navigation/cancel.
-  if (mode == Mode::Books &&
-      mappedInput.wasLongPressed(MappedInputManager::Button::Back, HIDDEN_FILES_TOGGLE_MS)) {
+  if (mode == Mode::Books && mappedInput.wasLongPressed(MappedInputManager::Button::Back, HIDDEN_FILES_TOGGLE_MS)) {
     if (!currentDirectoryHasHiddenFiles) {
       return true;
     }
@@ -371,8 +369,7 @@ bool FileBrowserActivity::handleCustomInput() {
 }
 
 bool FileBrowserActivity::handleButtons() {
-  if (mode == Mode::Books &&
-      mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, DELETE_MS)) {
+  if (mode == Mode::Books && mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, DELETE_MS)) {
     activateSelected(/*forceDelete=*/true);
     return true;
   }
@@ -446,20 +443,13 @@ void FileBrowserActivity::buildScreen(UiScreen& screen) {
   // Content below the GUI.drawHeader band, above the button hints.
   screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 3), 0,
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
-  screen.spacer(static_cast<int16_t>(
-      metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
+  screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   if (files.empty()) {
     if (mode == Mode::PickFirmware) {
-      renderer.drawCenteredText(
-          UI_10_FONT_ID,
-          400,
-          tr(STR_NO_BIN_FILES));
+      renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_BIN_FILES));
     } else {
-      renderer.drawCenteredText(
-          UI_10_FONT_ID,
-          400,
-          tr(STR_NO_FILES_FOUND));
+      renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_NO_FILES_FOUND));
     }
     return;
   }
@@ -506,10 +496,12 @@ void FileBrowserActivity::drawChrome() {
   const auto pageWidth = renderer.getScreenWidth();
   const auto& metrics = UITheme::getInstance().getMetrics();
 
-  std::string folderName =
-      (mode == Mode::PickFirmware)
-          ? std::string(tr(STR_SELECT_FIRMWARE_FILE))
-          : ((basepath == "/") ? std::string(tr(STR_LIBRARY)) : basepath.substr(basepath.rfind('/') + 1));
+  std::string folderName = (mode == Mode::PickFirmware) ? std::string(tr(STR_SELECT_FIRMWARE_FILE))
+                                                        : ((basepath == "/") ? std::string(tr(STR_LIBRARY)) : [&] {
+                                                            std::string b = basepath;
+                                                            while (b.size() > 1 && b.back() == '/') b.pop_back();
+                                                            return b.substr(b.rfind('/') + 1);
+                                                          }());
   // Header via GUI.drawHeader (already FreeInkUI-themed) for the battery
   // indicator; the rest of the screen renders through the app.
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight}, folderName.c_str());
@@ -521,7 +513,6 @@ void FileBrowserActivity::drawFooter() {
   const auto labels = mappedInput.mapLabels(backLabel, confirmLabel, files.empty() ? "" : tr(STR_DIR_UP),
                                             files.empty() ? "" : tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1, listFillsArea());
-
 }
 
 size_t FileBrowserActivity::findEntry(const std::string& name) const {
