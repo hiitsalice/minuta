@@ -803,10 +803,14 @@ void FontDownloadActivity::render(RenderLock&&) {
     renderUi();
 
     const bool hasVisibleFamilies = !filteredIndices_.empty();
+    const bool selectedFamilyHasUpdate =
+        !isDownloadAllRow(nav.selected) && !isUpdateAllRow(nav.selected) &&
+        nav.selected >= specialRowCount() && nav.selected < listItemCount() &&
+        families_[familyIndexFromList(nav.selected)].hasUpdate;
     const char* confirmLabel = !hasVisibleFamilies            ? ""
                                : isSelectedFamilyDeletable()  ? tr(STR_DELETE)
-                               : isUpdateAllRow(nav.selected) ? tr(STR_UPDATE)
-                                                              : "Install";
+                               : (selectedFamilyHasUpdate || isUpdateAllRow(nav.selected)) ? tr(STR_UPDATE)
+                                                                                           : "Install";
     const auto labels =
         mappedInput.mapLabels(hasGroupScreen() ? tr(STR_BACK) : "Menu", confirmLabel,
                               hasVisibleFamilies ? tr(STR_DIR_UP) : "", hasVisibleFamilies ? tr(STR_DIR_DOWN) : "");
