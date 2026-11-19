@@ -343,17 +343,11 @@ void SettingsActivity::toggleCurrentSetting() {
       case SettingAction::OPDSServers:
         startActivityForResult(std::make_unique<OpdsServerListActivity>(renderer, mappedInput), resultHandler);
         break;
-      case SettingAction::OPDSBrowser: {
-        const auto& servers = OPDS_STORE.getServers();
-        if (servers.size() == 1) {
-          startActivityForResult(std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, servers[0], true),
-                                 resultHandler);
-        } else {
-          startActivityForResult(std::make_unique<OpdsServerListActivity>(renderer, mappedInput, true, true),
-                                 resultHandler);
-        }
+      case SettingAction::OPDSBrowser:
+        // Always show the server list, even with a single server.
+        startActivityForResult(std::make_unique<OpdsServerListActivity>(renderer, mappedInput, true, true),
+                               resultHandler);
         break;
-      }
       case SettingAction::FileTransfer:
         activityManager.goToFileTransfer();
         break;

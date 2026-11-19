@@ -31,6 +31,9 @@ namespace fui = freeink::ui;
 
 namespace {
 constexpr fui::ActionId ACTION_ROW = 1;
+// The book whose download last failed, so Retry repeats the download, not the feed fetch.
+bool downloadFailed = false;
+OpdsEntry failedBook;
 constexpr int DOWNLOAD_PROGRESS_STEP_PERCENT = 5;
 constexpr unsigned long DOWNLOAD_PROGRESS_MIN_UPDATE_MS = 5000;
 constexpr unsigned long SEARCH_HOLD_MS = 700;  // hold Select/Load this long to open Search
@@ -111,9 +114,14 @@ void OpdsBookBrowserActivity::loop() {
     int ty = 0;
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
       if (WiFi.status() == WL_CONNECTED && WiFi.localIP() != IPAddress(0, 0, 0, 0)) {
+        if (downloadFailed) {
+          const OpdsEntry again = failedBook;
+          downloadBook(again);
+          return;
+        }
         state = BrowserState::LOADING;
         statusMessage = "Loading feed...";
-        requestUpdate();
+        requestUpdate(true);
         fetchFeed(currentPath);
       } else {
         launchWifiSelection();
@@ -309,6 +317,7 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
 }
 
 void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
+  downloadFailed = false;
   if (server.url.empty()) {
     state = BrowserState::ERROR;
     errorMessage = tr(STR_NO_SERVER_URL);
@@ -421,12 +430,13 @@ void OpdsBookBrowserActivity::navigateBack() {
     statusMessage = "Loading feed...";
     releaseEntries();
     selectorIndex = 0;
-    requestUpdate();
+    requestUpdate(true);
     fetchFeed(currentPath);
   }
 }
 
 void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
+  downloadFailed = false;
   state = BrowserState::DOWNLOADING;
   statusMessage = book.title;
   downloadProgress = downloadTotal = 0;
@@ -488,6 +498,8 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
     LOG_ERR("OPDS", "Download failed: %d", static_cast<int>(result));
     state = BrowserState::ERROR;
     errorMessage = tr(STR_DOWNLOAD_FAILED);
+    failedBook = book;
+    downloadFailed = true;
   }
   requestUpdate();
 }
@@ -549,7 +561,7 @@ void OpdsBookBrowserActivity::checkAndConnectWifi() {
   if (WiFi.status() == WL_CONNECTED && WiFi.localIP() != IPAddress(0, 0, 0, 0)) {
     state = BrowserState::LOADING;
     statusMessage = "Loading feed...";
-    requestUpdate();
+    requestUpdate(true);
     fetchFeed(currentPath);
     return;
   }
