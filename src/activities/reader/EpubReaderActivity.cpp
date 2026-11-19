@@ -821,8 +821,7 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
       break;
     }
     case EpubReaderMenuActivity::MenuAction::DISPLAY_QR: {
-      requestUpdateAndWait();  // finish the reader render (after any orientation change) before the action reads the
-                               // page
+      // page
       // Read the page text under the render lock: right after the menu closes the render task
       // is re-reading the same section file, and an unlocked read could come back empty.
       std::string fullText;
