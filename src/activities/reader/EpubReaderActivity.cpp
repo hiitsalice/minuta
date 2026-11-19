@@ -493,7 +493,7 @@ void EpubReaderActivity::loop() {
   const bool confirmLongPressed =
       confirmHoldMs != 0 && mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, confirmHoldMs);
   const bool confirmReleased = mappedInput.wasReleased(MappedInputManager::Button::Confirm);
-  if (confirmLongPressed) {
+  if (confirmLongPressed && !infoScreenShown) {
     switch (SETTINGS.longPressMenuFunction) {
       case CrossPointSettings::LP_MENU_HIGHLIGHT:
         openHighlightWordSelect();
@@ -549,7 +549,7 @@ void EpubReaderActivity::loop() {
     return;
   }
 
-  if (confirmReleased) {
+  if (confirmReleased && !infoScreenShown) {
     openReaderMenu();
   }
 
@@ -585,7 +585,7 @@ void EpubReaderActivity::loop() {
     return;
   }
 
-  if (!section) {
+  if (!section && !infoScreenIsPageLoadError) {
     requestUpdate();
     return;
   }
@@ -999,7 +999,27 @@ void EpubReaderActivity::toggleAutoPageTurn(const uint8_t selectedPageTurnOption
 }
 
 bool EpubReaderActivity::pageTurn(bool isForwardTurn) {
-  if (!section) return false;
+  if (!section) {
+    // Page load error: the section was dropped, so Prev/Next step between chapters.
+    if (!infoScreenIsPageLoadError) return false;
+    RenderLock lock;
+    if (isForwardTurn && !infoScreenBlocksNext) {
+      nextPageNumber = 0;
+      currentSpineIndex++;
+      lastPageTurnTime = millis();
+      return true;
+    }
+    if (!isForwardTurn && !infoScreenBlocksPrev) {
+      nextPageNumber = 0;
+      pendingPageJump = std::numeric_limits<uint16_t>::max();
+      currentSpineIndex--;
+      lastPageTurnTime = millis();
+      return true;
+    }
+    return false;
+  }
+  if (isForwardTurn && infoScreenBlocksNext) return false;
+  if (!isForwardTurn && infoScreenBlocksPrev) return false;
   {
     RenderLock lock;
     clearDeferredReposition();
@@ -1041,6 +1061,8 @@ bool EpubReaderActivity::pageTurn(bool isForwardTurn) {
 
 bool EpubReaderActivity::skipPages(int amount) {
   if (!section) return false;
+  if (amount > 0 && infoScreenBlocksNext) return false;
+  if (amount <= 0 && infoScreenBlocksPrev) return false;
   if (amount > 0) {
     RenderLock lock;
     nextPageNumber = 0;
@@ -1316,7 +1338,19 @@ void EpubReaderActivity::renderBook() {
 
   renderer.clearScreen();
 
-  if (section->pageCount == 0) {
+  infoScreenBlocksPrev = false;
+  infoScreenBlocksNext = false;
+  infoScreenIsPageLoadError = false;
+  infoScreenShown = false;
+
+  bool chapterIsEmpty = section->pageCount == 0;
+  if (!chapterIsEmpty && !section->isBuilding() && section->pageCount == 1) {
+    // The builder keeps one blank page for an empty chapter; treat it as empty.
+    const auto probe = section->loadPage(0);
+    chapterIsEmpty = probe && probe->elements.empty();
+  }
+
+  if (chapterIsEmpty) {
     LOG_DBG("ERS", "No pages to render");
     {
       const auto& emptyMetrics = UITheme::getInstance().getMetrics();
@@ -1324,13 +1358,21 @@ void EpubReaderActivity::renderBook() {
                      Rect{0, emptyMetrics.topPadding - 6, renderer.getScreenWidth(), emptyMetrics.headerHeight},
                      epub->getTitle().c_str());
     }
-    renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_EMPTY_CHAPTER), true, EpdFontFamily::REGULAR);
+    renderer.drawCenteredText(UI_10_FONT_ID, 400,
+                              (epub->getSpineItemsCount() <= 1 ? "Empty book" : tr(STR_EMPTY_CHAPTER)), true,
+                              EpdFontFamily::REGULAR);
+    const bool noPrev = currentSpineIndex <= 0;
+    const bool noNext = currentSpineIndex + 1 >= static_cast<int>(epub->getSpineItemsCount());
     {
-      // Back is the only action here; show it on the hint strip.
-      const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+      // Info screen: only Back, plus Prev/Next where a neighbouring chapter exists.
+      const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", noPrev ? "" : "Prev", noNext ? "" : "Next");
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     }
-    renderer.displayBuffer();
+    infoScreenShown = true;
+    infoScreenBlocksPrev = noPrev;
+    infoScreenBlocksNext = noNext;
+    pagesUntilFullRefresh = 1;
+    renderer.displayBuffer(HalDisplay::HALF_REFRESH);
     automaticPageTurnActive = false;
     showPendingSyncSaveError();
     return;
@@ -1345,12 +1387,18 @@ void EpubReaderActivity::renderBook() {
                      epub->getTitle().c_str());
     }
     renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_OUT_OF_BOUNDS), true, EpdFontFamily::REGULAR);
+    const bool noPrev = section->currentPage <= 0 && currentSpineIndex <= 0;
+    const bool noNext = currentSpineIndex + 1 >= static_cast<int>(epub->getSpineItemsCount());
     {
-      // Back is the only action here; show it on the hint strip.
-      const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+      // Info screen: only Back, plus Prev/Next where a neighbouring chapter exists.
+      const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", noPrev ? "" : "Prev", noNext ? "" : "Next");
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     }
-    renderer.displayBuffer();
+    infoScreenShown = true;
+    infoScreenBlocksPrev = noPrev;
+    infoScreenBlocksNext = noNext;
+    pagesUntilFullRefresh = 1;
+    renderer.displayBuffer(HalDisplay::HALF_REFRESH);
     automaticPageTurnActive = false;
     showPendingSyncSaveError();
     return;
@@ -1382,12 +1430,19 @@ void EpubReaderActivity::renderBook() {
                          epub->getTitle().c_str());
         }
         renderer.drawCenteredText(UI_10_FONT_ID, 400, tr(STR_PAGE_LOAD_ERROR), true, EpdFontFamily::REGULAR);
+        const bool noPrev = currentSpineIndex <= 0;
+        const bool noNext = currentSpineIndex + 1 >= static_cast<int>(epub->getSpineItemsCount());
         {
-          // Back is the only action here; show it on the hint strip.
-          const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+          // Info screen: only Back, plus Prev/Next where a neighbouring chapter exists.
+          const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", noPrev ? "" : "Prev", noNext ? "" : "Next");
           GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
         }
-        renderer.displayBuffer();
+        infoScreenShown = true;
+        infoScreenBlocksPrev = noPrev;
+        infoScreenBlocksNext = noNext;
+        infoScreenIsPageLoadError = true;
+        pagesUntilFullRefresh = 1;
+        renderer.displayBuffer(HalDisplay::HALF_REFRESH);
         showPendingSyncSaveError();
         return;
       }

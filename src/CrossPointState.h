@@ -23,6 +23,8 @@ class CrossPointState : public PersistableStore<CrossPointState> {
   uint8_t readerActivityLoadCount = 0;
   bool lastSleepFromReader = false;
   bool showBootScreen = true;
+  // Set once the low-battery lockout confirms; only a steady USB connection clears it.
+  bool lowBatteryLocked = false;
 
   static const char* getFilePath() { return "/.crosspoint/state.json"; }
   void toJson(JsonDocument& doc) const;

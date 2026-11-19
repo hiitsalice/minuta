@@ -61,6 +61,9 @@ class HalPowerManager {
   // Confirm low battery and maintain a USB-released lockout.
   bool isLowBatteryLockoutActive(bool usbConnected) const;
 
+  // Restore a lockout saved before sleep, so it holds after boot.
+  void forceLowBatteryLockout() const { _lowBatteryLockoutActive = true; }
+
   // RAII helper class to manage power saving locks
   // Usage: create an instance of Lock in a scope to disable power saving, for example when running a task that needs
   // full performance. When the Lock instance is destroyed (goes out of scope), power saving will be re-enabled.

@@ -458,7 +458,8 @@ void setup() {
   const bool showTimedBootSplash = false;
 #else
   const bool showTimedBootSplash = !recoveryFirmwareMode && !rebootedFromPanic &&
-                                   powerManager.getBatteryPercentage() != 0 && resume != BootResume::Silent;
+                                   powerManager.getBatteryPercentage() != 0 && resume != BootResume::Silent &&
+                                   !APP_STATE.lowBatteryLocked;
 #endif
   if (showTimedBootSplash) {
     activityManager.requestUpdateAndWait();
@@ -468,7 +469,15 @@ void setup() {
   // Output polarity is resolved per render by ActivityManager (night mode
   // inverts only the reading surfaces), so nothing to restore here.
 
-  if (recoveryFirmwareMode) {
+  if (APP_STATE.lowBatteryLocked) {
+    // A confirmed low-battery lockout survives sleep and boot: start directly on
+    // the warning screen. Only a steady USB connection (checked in loop()) clears it.
+#ifndef SIMULATOR
+    powerManager.forceLowBatteryLockout();
+#endif
+    lowBatteryWarningActive = true;
+    activityManager.replaceActivity(std::make_unique<LowBatteryWarningActivity>(renderer, mappedInputManager));
+  } else if (recoveryFirmwareMode) {
     // Skip normal home/reader routing: jump straight into the SD firmware picker.
     activityManager.replaceActivity(
         std::make_unique<SdFirmwareUpdateActivity>(renderer, mappedInputManager, /*recoveryMode=*/true));
@@ -597,6 +606,8 @@ void loop() {
 #endif
     if (!stillLocked) {
       lowBatteryWarningActive = false;
+      APP_STATE.lowBatteryLocked = false;
+      APP_STATE.saveToFile();
       warningActivityProcessed = false;
       powerReleasedSinceLowBatteryWake = false;
       activityManager.goHome(HomeMenuItem::NONE, true);
@@ -622,6 +633,8 @@ void loop() {
   // The exclusive-storage loop above is intentionally left undisturbed.
   if (MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE()) {
     lowBatteryWarningActive = true;
+    APP_STATE.lowBatteryLocked = true;
+    APP_STATE.saveToFile();
     activityManager.replaceActivity(std::make_unique<LowBatteryWarningActivity>(renderer, mappedInputManager));
     activityManager.loop();
     return;

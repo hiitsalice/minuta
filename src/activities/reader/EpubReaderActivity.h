@@ -10,8 +10,8 @@
 #include <vector>
 
 #include "BookmarkEntry.h"
-#include "HighlightEntry.h"
 #include "EpubReaderMenuActivity.h"
+#include "HighlightEntry.h"
 #include "ProgressMapper.h"
 #include "ReaderActivity.h"
 
@@ -138,6 +138,12 @@ class EpubReaderActivity final : public ReaderActivity {
   bool pageTurn(bool isForward) override;
   bool skipPages(int amount) override;
   bool isAtEndOfBook() const override;
+  // True while an info screen (empty chapter, out of bounds, page load error) is shown. Those
+  // directions are disabled on its hint strip, so the buttons are ignored too.
+  bool infoScreenBlocksPrev = false;
+  bool infoScreenBlocksNext = false;
+  bool infoScreenIsPageLoadError = false;
+  bool infoScreenShown = false;
   void onReturnFromEndOfBook() override;
 
   bool skipLoopDelay() override;
