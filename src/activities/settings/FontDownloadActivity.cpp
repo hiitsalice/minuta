@@ -107,10 +107,12 @@ void FontDownloadActivity::onWifiSelectionComplete(const bool success) {
   if (!fetchAndParseManifest()) {
     {
       RenderLock lock(*this);
+      manifestFailed_ = true;
       state_ = ERROR;
     }
     return;
   }
+  manifestFailed_ = false;
 
   if (!hasGroupScreen()) buildFilteredIndices(0);
 
@@ -731,6 +733,16 @@ bool FontDownloadActivity::handleCustomInput() {
       requestUpdate();
     }
   } else if (state_ == ERROR) {
+    if (manifestFailed_) {
+      // No font list was loaded: Back leaves, Retry fetches the list again.
+      if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
+        mappedInput.suppressRelease(MappedInputManager::Button::Back);
+        finish();
+      } else if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+        onWifiSelectionComplete(true);
+      }
+      return true;
+    }
     if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       mappedInput.suppressRelease(MappedInputManager::Button::Back);
       {
@@ -803,12 +815,11 @@ void FontDownloadActivity::render(RenderLock&&) {
     renderUi();
 
     const bool hasVisibleFamilies = !filteredIndices_.empty();
-    const bool selectedFamilyHasUpdate =
-        !isDownloadAllRow(nav.selected) && !isUpdateAllRow(nav.selected) &&
-        nav.selected >= specialRowCount() && nav.selected < listItemCount() &&
-        families_[familyIndexFromList(nav.selected)].hasUpdate;
-    const char* confirmLabel = !hasVisibleFamilies            ? ""
-                               : isSelectedFamilyDeletable()  ? tr(STR_DELETE)
+    const bool selectedFamilyHasUpdate = !isDownloadAllRow(nav.selected) && !isUpdateAllRow(nav.selected) &&
+                                         nav.selected >= specialRowCount() && nav.selected < listItemCount() &&
+                                         families_[familyIndexFromList(nav.selected)].hasUpdate;
+    const char* confirmLabel = !hasVisibleFamilies                                         ? ""
+                               : isSelectedFamilyDeletable()                               ? tr(STR_DELETE)
                                : (selectedFamilyHasUpdate || isUpdateAllRow(nav.selected)) ? tr(STR_UPDATE)
                                                                                            : "Install";
     const auto labels =
@@ -827,7 +838,9 @@ void FontDownloadActivity::render(RenderLock&&) {
     const auto labels = mappedInput.mapLabels("", tr(STR_DONE), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state_ == ERROR) {
-    renderer.drawCenteredText(UI_10_FONT_ID, 386, tr(STR_FONT_INSTALL_FAILED), true, EpdFontFamily::BOLD);
+    // A failed list fetch is not an install failure.
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, manifestFailed_ ? tr(STR_ERROR_MSG) : tr(STR_FONT_INSTALL_FAILED),
+                              true, EpdFontFamily::BOLD);
     if (!errorMessage_.empty()) {
       renderer.drawCenteredText(UI_10_FONT_ID, 414, errorMessage_.c_str());
     }

@@ -15,8 +15,7 @@
 
 #ifndef FONT_MANIFEST_URL
 // Final Minuta font catalogue, published independently.
-#define FONT_MANIFEST_URL \
-  "https://github.com/hiitsalice/minuta-fonts/releases/download/fonts-v1/fonts.json"
+#define FONT_MANIFEST_URL "https://github.com/hiitsalice/minuta-fonts/releases/download/fonts-v1/fonts.json"
 #endif
 
 class FontDownloadActivity final : public UiListActivity {
@@ -66,6 +65,8 @@ class FontDownloadActivity final : public UiListActivity {
   static constexpr size_t MAX_SCRIPT_GROUPS = 32;
 
   State state_ = WIFI_SELECTION;
+  // True when the manifest fetch failed, so Retry fetches again instead of resuming a download.
+  bool manifestFailed_ = false;
   FontInstaller fontInstaller_;
 
   // Manifest data
