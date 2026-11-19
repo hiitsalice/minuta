@@ -13,12 +13,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   friend class PersistableStore<CrossPointSettings>;
 
  public:
-  enum SLEEP_SCREEN_MODE {
-    DEFAULT_SCREEN = 0,
-    CUSTOM = 1,
-    COVER = 2,
-    SLEEP_SCREEN_MODE_COUNT
-  };
+  enum SLEEP_SCREEN_MODE { DEFAULT_SCREEN = 0, CUSTOM = 1, COVER = 2, SLEEP_SCREEN_MODE_COUNT };
   enum SLEEP_SCREEN_COVER_MODE { FIT = 0, CROP = 1, SLEEP_SCREEN_COVER_MODE_COUNT };
   enum SLEEP_SCREEN_COVER_FILTER {
     NO_FILTER = 0,
@@ -113,17 +108,13 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   };
 
   // Short power button press actions
-  enum SHORT_PWRBTN {
-    FORCE_REFRESH = 0,
-    SLEEP = 1,
-    SHORT_PWRBTN_COUNT
-  };
+  enum SHORT_PWRBTN { FORCE_REFRESH = 0, SLEEP = 1, SHORT_PWRBTN_COUNT };
 
   // Long-press Confirm action while reading an EPUB. The setting cycles through these values.
   // Persisted in settings.json by index: any new function (e.g. dictionary, bookmark) MUST use a
   // value >= 2 and be appended at the END of the enumValues array in SettingsList.h, otherwise the
   // stored indices shift and existing saves are silently misinterpreted.
-enum LONG_PRESS_MENU_FUNCTION {
+  enum LONG_PRESS_MENU_FUNCTION {
     LP_MENU_DICTIONARY = 0,
     LP_MENU_HIGHLIGHT = 1,
     LP_MENU_SCREENSHOT = 2,
@@ -208,8 +199,6 @@ enum LONG_PRESS_MENU_FUNCTION {
   uint8_t longPressMenuFunction = LP_MENU_DICTIONARY;
   // UI Theme
   uint8_t uiTheme = SOLUM;
-  // Sunlight fading compensation
-  uint8_t fadingFix = 0;
   // Power button return from footnotes (1 = enabled, 0 = disabled)
   // Use book's embedded CSS styles for EPUB rendering (1 = enabled, 0 = disabled)
   uint8_t embeddedStyle = 0;
@@ -247,9 +236,7 @@ enum LONG_PRESS_MENU_FUNCTION {
   SdFontIdResolver sdFontIdResolver = nullptr;
   void* sdFontResolverCtx = nullptr;
 
-  uint16_t getPowerButtonDuration() const {
-    return 700;
-  }
+  uint16_t getPowerButtonDuration() const { return 700; }
   int getReaderFontId() const;
 
   // Drop the SD font selection and fall back to the built-in family. The reader

@@ -181,8 +181,7 @@ inline SettingInfo buildDictionarySetting(const std::vector<DictionaryEntry>& di
 }
 
 inline std::vector<StrId> buildLongPressMenuValues() {
-  static constexpr StrId VALUES[] = {StrId::STR_KOSYNC, StrId::STR_DICTIONARY,
-                                     StrId::STR_READER_MENU};
+  static constexpr StrId VALUES[] = {StrId::STR_KOSYNC, StrId::STR_DICTIONARY, StrId::STR_READER_MENU};
   const size_t count = BoardConfig::hasHomeKey() ? std::size(VALUES) : std::size(VALUES) - 1;
   return {VALUES, VALUES + count};
 }
@@ -202,11 +201,7 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
   static const std::vector<SettingInfo> baseList = [] {
     // Enum settings are persisted as numeric values. Assign these labels by enum
     // value so a reordered menu or enum cannot silently swap their behavior.
-    std::vector<StrId> sleepScreenValues = {
-        StrId::STR_DEFAULT,
-        StrId::STR_CUSTOM,
-        StrId::STR_COVER
-    };
+    std::vector<StrId> sleepScreenValues = {StrId::STR_DEFAULT, StrId::STR_CUSTOM, StrId::STR_COVER};
 
     std::vector<SettingInfo> v = {
         // --- Display ---
@@ -220,13 +215,11 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
             .withNoPopup(),
         SettingInfo::Enum(StrId::STR_UI_THEME, &CrossPointSettings::uiTheme,
                           {StrId::STR_THEME_SOLUM, StrId::STR_THEME_QUARTUM}, "uiTheme", StrId::STR_CAT_DISPLAY),
-        SettingInfo::Toggle(StrId::STR_SUNLIGHT_FADING_FIX, &CrossPointSettings::fadingFix, "fadingFix",
-                            StrId::STR_CAT_DISPLAY),
         // --- Reader ---
         // Built-in font-family entry. Replaced per-call with a registry-aware
         // version when SD fonts are installed.
-        SettingInfo::Enum(StrId::STR_FONT_FAMILY, &CrossPointSettings::fontFamily,
-                          {StrId::STR_YOUNG_SERIF}, "fontFamily", StrId::STR_CAT_READER)
+        SettingInfo::Enum(StrId::STR_FONT_FAMILY, &CrossPointSettings::fontFamily, {StrId::STR_YOUNG_SERIF},
+                          "fontFamily", StrId::STR_CAT_READER)
             .withTextSettings(),
         // Placeholder: the selectable sizes depend on the active font family, so
         // this entry is always replaced by buildFontSizeSetting() below. It only
@@ -267,8 +260,7 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
         // --- Controls ---
 
         SettingInfo::Enum(StrId::STR_SIDE_BTN_LAYOUT, &CrossPointSettings::sideButtonLayout,
-                          {StrId::STR_PREV_NEXT, StrId::STR_NEXT_PREV}, "sideButtonLayout",
-                          StrId::STR_CAT_CONTROLS),
+                          {StrId::STR_PREV_NEXT, StrId::STR_NEXT_PREV}, "sideButtonLayout", StrId::STR_CAT_CONTROLS),
         // --- System ---
         SettingInfo::Value(
             StrId::STR_TIME_TO_SLEEP, &CrossPointSettings::sleepTimeoutMinutes,

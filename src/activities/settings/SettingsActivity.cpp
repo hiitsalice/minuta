@@ -16,15 +16,15 @@
 #include "FontDownloadActivity.h"
 #include "KOReaderSettingsActivity.h"
 #include "MappedInputManager.h"
-#include "OpdsServerStore.h"
 #include "OpdsServerListActivity.h"
-#include "activities/browser/OpdsBookBrowserActivity.h"
+#include "OpdsServerStore.h"
 #include "OtaUpdateActivity.h"
 #include "SdCardFontSystem.h"
 #include "SdFirmwareUpdateActivity.h"
 #include "SettingsList.h"
 #include "StatusBarSettingsActivity.h"
 #include "TextSettingsActivity.h"
+#include "activities/browser/OpdsBookBrowserActivity.h"
 #include "activities/network/WifiSelectionActivity.h"
 #include "activities/util/IntervalSelectionActivity.h"
 #include "components/UITheme.h"
@@ -38,10 +38,7 @@ const char* const SettingsActivity::categoryNames[categoryCount] = {
     "Device",
 };
 
-namespace {
-
-
-}  // namespace
+namespace {}  // namespace
 
 SettingsActivity::SettingsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
     : UiTabListActivity("Settings", renderer, mappedInput) {}
@@ -56,9 +53,8 @@ void SettingsActivity::rebuildSettingsLists() {
   const auto allSettings = getSettingsList(&sdFontSystem.registry());
 
   const auto appendSetting = [&](std::vector<SettingInfo>& destination, const StrId nameId) {
-    const auto it =
-        std::find_if(allSettings.begin(), allSettings.end(),
-                     [nameId](const SettingInfo& setting) { return setting.nameId == nameId; });
+    const auto it = std::find_if(allSettings.begin(), allSettings.end(),
+                                 [nameId](const SettingInfo& setting) { return setting.nameId == nameId; });
     if (it != allSettings.end()) {
       destination.push_back(*it);
     }
@@ -77,7 +73,6 @@ void SettingsActivity::rebuildSettingsLists() {
     appendSetting(deviceSettings, StrId::STR_TIME_TO_SLEEP);
     appendSetting(deviceSettings, StrId::STR_SLEEP_SCREEN);
     appendSetting(deviceSettings, StrId::STR_REFRESH_FREQ);
-    appendSetting(deviceSettings, StrId::STR_SUNLIGHT_FADING_FIX);
   });
 
   addSettingsSection("Controls", [&] {
@@ -249,10 +244,8 @@ void SettingsActivity::navigateButtons() {
   const auto previousRow = [this, rowCount] { moveRingTo(ringPos() <= 1 ? rowCount : ringPos() - 1); };
 
   // Tap: front Left/Right behave exactly like side Up/Down (one row).
-  settingsNavigator.onRelease({Button::Down, Button::Right},
-                              nextRow);
-  settingsNavigator.onRelease({Button::Up, Button::Left},
-                              previousRow);
+  settingsNavigator.onRelease({Button::Down, Button::Right}, nextRow);
+  settingsNavigator.onRelease({Button::Up, Button::Left}, previousRow);
 
   // Hold: jump to the next / previous section header, repeating while held.
   settingsNavigator.onContinuous({Button::Down, Button::Right}, [this] { jumpToAdjacentSection(1); });
@@ -277,9 +270,7 @@ void SettingsActivity::applyUiSettingChange(uint8_t CrossPointSettings::* valueP
   resetUi();
 }
 
-bool SettingsActivity::handleCustomInput() {
-  return false;
-}
+bool SettingsActivity::handleCustomInput() { return false; }
 
 bool SettingsActivity::handleButtons() {
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
@@ -355,11 +346,11 @@ void SettingsActivity::toggleCurrentSetting() {
       case SettingAction::OPDSBrowser: {
         const auto& servers = OPDS_STORE.getServers();
         if (servers.size() == 1) {
-          startActivityForResult(
-              std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, servers[0], true), resultHandler);
+          startActivityForResult(std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, servers[0], true),
+                                 resultHandler);
         } else {
-          startActivityForResult(
-              std::make_unique<OpdsServerListActivity>(renderer, mappedInput, true, true), resultHandler);
+          startActivityForResult(std::make_unique<OpdsServerListActivity>(renderer, mappedInput, true, true),
+                                 resultHandler);
         }
         break;
       }
@@ -382,8 +373,8 @@ void SettingsActivity::toggleCurrentSetting() {
         startActivityForResult(std::make_unique<SdFirmwareUpdateActivity>(renderer, mappedInput), resultHandler);
         break;
 
-      // TEMPORARY UI TEST ACTIONS - remove before final firmware.
-case SettingAction::DownloadFonts:
+        // TEMPORARY UI TEST ACTIONS - remove before final firmware.
+      case SettingAction::DownloadFonts:
         startActivityForResult(std::make_unique<FontDownloadActivity>(renderer, mappedInput),
                                [this](const ActivityResult&) {
                                  SETTINGS.saveToFile();
@@ -476,7 +467,6 @@ void SettingsActivity::buildScreen(UiScreen& screen) {
                                       static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
-
   // Give the settings list a comfortable gap below the tab bar.
   // No additional list padding below the tab row.
 
@@ -519,7 +509,6 @@ void SettingsActivity::buildScreen(UiScreen& screen) {
 }
 
 void SettingsActivity::render(RenderLock&&) {
-
   renderer.clearScreen();
 
   const auto pageWidth = renderer.getScreenWidth();

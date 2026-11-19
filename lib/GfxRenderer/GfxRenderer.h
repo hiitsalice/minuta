@@ -44,7 +44,6 @@ class GfxRenderer {
   HalDisplay& display;
   RenderMode renderMode;
   Orientation orientation;
-  bool fadingFix;
   uint8_t* frameBuffer = nullptr;
   uint16_t panelWidth = HalDisplay::DISPLAY_WIDTH;
   uint16_t panelHeight = HalDisplay::DISPLAY_HEIGHT;
@@ -123,8 +122,7 @@ class GfxRenderer {
   void fillRectImpl(int x, int y, int width, int height) const;
 
  public:
-  explicit GfxRenderer(HalDisplay& halDisplay)
-      : display(halDisplay), renderMode(BW), orientation(Portrait), fadingFix(false) {}
+  explicit GfxRenderer(HalDisplay& halDisplay) : display(halDisplay), renderMode(BW), orientation(Portrait) {}
   ~GfxRenderer() { freeBwBufferChunks(); }
 
   // Setup
@@ -187,7 +185,6 @@ class GfxRenderer {
   Orientation getOrientation() const { return orientation; }
 
   // Fading fix control
-  void setFadingFix(const bool enabled) { fadingFix = enabled; }
 
   // Screen ops
   int getScreenWidth() const;
@@ -206,12 +203,12 @@ class GfxRenderer {
   // Non-blocking refresh: starts the waveform and returns so CPU work (e.g.
   // grayscale strip rendering) can overlap the panel's refresh time. The
   // framebuffer must stay untouched until waitRefreshComplete(). Falls back to
-  // a blocking refresh when fadingFix is enabled or the panel lacks deferral
+  // a blocking refresh when the panel lacks deferral
   // support. See HalDisplay::displayBufferAsync for the baseline contract.
   void displayBufferAsync(HalDisplay::RefreshMode refreshMode = HalDisplay::FAST_REFRESH) const;
   void waitRefreshComplete() const;
   // True when displayBufferAsync() genuinely overlaps: panel defers and
-  // fadingFix isn't forcing the blocking path. Callers can skip overlap
+  //. Callers can skip overlap
   // scaffolding (e.g. whole-plane grayscale buffers) when false.
   bool supportsAsyncRefresh() const;
   // EXPERIMENTAL: Windowed update - display only a rectangular region
@@ -290,8 +287,7 @@ class GfxRenderer {
                         BidiUtils::BidiBaseDir baseDir = BidiUtils::BidiBaseDir::AUTO) const;
   void drawText(int fontId, int x, int y, const char* text, bool black = true,
                 EpdFontFamily::Style style = EpdFontFamily::REGULAR,
-                BidiUtils::BidiBaseDir baseDir = BidiUtils::BidiBaseDir::AUTO,
-                const int* verticalOffsets = nullptr,
+                BidiUtils::BidiBaseDir baseDir = BidiUtils::BidiBaseDir::AUTO, const int* verticalOffsets = nullptr,
                 const int* horizontalOffsets = nullptr) const;
   int getSpaceWidth(int fontId, EpdFontFamily::Style style = EpdFontFamily::REGULAR) const;
   /// Returns the total inter-word advance: fp4::toPixel(spaceAdvance + kern(leftCp,' ') + kern(' ',rightCp)).

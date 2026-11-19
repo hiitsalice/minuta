@@ -1754,23 +1754,17 @@ void GfxRenderer::displayBuffer(HalDisplay::RefreshMode refreshMode) const {
   auto elapsed = millis() - start_ms;
   LOG_DBG("GFX", "Time = %lu ms from clearScreen to displayBuffer", elapsed);
   refreshMode = applyPromotedRefresh(refreshMode);
-  display.displayBuffer(refreshMode, fadingFix);
+  display.displayBuffer(refreshMode);
 }
 
 void GfxRenderer::displayBufferAsync(HalDisplay::RefreshMode refreshMode) const {
   refreshMode = applyPromotedRefresh(refreshMode);
-  // The async path has no turn-off-screen hook, which the sunlight fading fix
-  // relies on; keep those users on the blocking path.
-  if (fadingFix) {
-    display.displayBuffer(refreshMode, fadingFix);
-    return;
-  }
   display.displayBufferAsync(refreshMode);
 }
 
 void GfxRenderer::waitRefreshComplete() const { display.waitRefreshComplete(); }
 
-bool GfxRenderer::supportsAsyncRefresh() const { return !fadingFix && display.supportsAsyncRefresh(); }
+bool GfxRenderer::supportsAsyncRefresh() const { return display.supportsAsyncRefresh(); }
 
 size_t GfxRenderer::readFramebufferRegion(int x, int y, int w, int h, uint8_t* dst, size_t dstCapacity) const {
   if (dst == nullptr || w <= 0 || h <= 0) return 0;
@@ -2279,7 +2273,7 @@ size_t GfxRenderer::getBufferSize() const { return frameBufferSize; }
 // void GfxRenderer::grayscaleRevert() const { display.grayscaleRevert(); }
 
 void GfxRenderer::displayGrayscaleBase(HalDisplay::RefreshMode fallback) const {
-  display.displayGrayscaleBase(fallback, fadingFix);
+  display.displayGrayscaleBase(fallback);
 }
 
 void GfxRenderer::preconditionGrayscale() const { display.preconditionGrayscale(); }
@@ -2306,7 +2300,7 @@ void GfxRenderer::copyGrayscaleLsbBuffers() const { display.copyGrayscaleLsbBuff
 
 void GfxRenderer::copyGrayscaleMsbBuffers() const { display.copyGrayscaleMsbBuffers(frameBuffer); }
 
-void GfxRenderer::displayGrayBuffer() const { display.displayGrayBuffer(fadingFix); }
+void GfxRenderer::displayGrayBuffer() const { display.displayGrayBuffer(); }
 
 void GfxRenderer::writeGrayscalePlaneStrip(bool lsbPlane, const uint8_t* scratch, int yStart, int numRows) const {
   // Guard the uint16_t casts below: a negative would wrap to a huge length.

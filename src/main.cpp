@@ -9,8 +9,7 @@
 #include <HalPowerManager.h>
 
 #ifndef SIMULATOR
-#define MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE() \
-  powerManager.isLowBatteryLockoutActive(gpio.isUsbConnected())
+#define MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE() powerManager.isLowBatteryLockoutActive(gpio.isUsbConnected())
 #else
 #define MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE() false
 #endif
@@ -40,13 +39,13 @@
 #include "activities/Activity.h"
 #include "activities/ActivityManager.h"
 #include "activities/settings/SdFirmwareUpdateActivity.h"
+#include "activities/util/LowBatteryWarningActivity.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
-#include "activities/util/LowBatteryWarningActivity.h"
 #include "images/LoadingIcon.h"
 #include "platform/UsbSerialJtagHandoff.h"
-#include "util/ButtonNavigator.h"
 #include "util/BookCacheUtils.h"
+#include "util/ButtonNavigator.h"
 #include "util/ScreenshotUtil.h"
 
 GfxRenderer renderer(display);
@@ -67,8 +66,7 @@ bool verifyRollbackLater() {
   const esp_partition_t* running = esp_ota_get_running_partition();
   esp_ota_img_states_t otaState;
 
-  if (esp_ota_get_state_partition(running, &otaState) == ESP_OK &&
-      otaState == ESP_OTA_IMG_PENDING_VERIFY) {
+  if (esp_ota_get_state_partition(running, &otaState) == ESP_OK && otaState == ESP_OTA_IMG_PENDING_VERIFY) {
     freshFirmwareInstall = true;
   }
 
@@ -87,8 +85,8 @@ void invalidateBookCachesForFirmwareBuild() {
 
   const String storedBuildId = prefs.getString("cacheBuildId", "");
   if (storedBuildId != BOOK_CACHE_BUILD_ID) {
-    LOG_INF("BookCache", "Firmware build changed: %s -> %s; clearing caches",
-            storedBuildId.c_str(), BOOK_CACHE_BUILD_ID);
+    LOG_INF("BookCache", "Firmware build changed: %s -> %s; clearing caches", storedBuildId.c_str(),
+            BOOK_CACHE_BUILD_ID);
 
     clearAllBookCaches();
 
@@ -137,7 +135,6 @@ EpdFont youngserif20BoldItalicFont(&youngserif_20_bolditalic);
 EpdFontFamily youngserif20FontFamily(&youngserif20RegularFont, &youngserif20BoldFont, &youngserif20ItalicFont,
                                      &youngserif20BoldItalicFont);
 
-
 #endif  // OMIT_FONTS
 
 EpdFont steinem8RegularFont(&steinem_8_regular);
@@ -159,7 +156,6 @@ EpdFont steinem12ItalicFont(&steinem_12_italic);
 EpdFont steinem12BoldItalicFont(&steinem_12_bolditalic);
 EpdFontFamily steinem12FontFamily(&steinem12RegularFont, &steinem12BoldFont, &steinem12ItalicFont,
                                   &steinem12BoldItalicFont);
-
 
 // Definitions for SilentRestart.h. RTC_NOINIT survives ESP.restart() but not power loss.
 RTC_NOINIT_ATTR uint32_t silentRebootMagic;
@@ -184,7 +180,6 @@ enum class BootResume : uint8_t {
 // device back up against the user's sleep gesture. Never cleared:
 // startDeepSleep() does not return, so a set latch only ends at the wakeup reset.
 static bool deepSleepInProgress = false;
-
 
 void silentRestart() {
   if (deepSleepInProgress) return;  // sleeping supersedes the heap-defrag reboot
@@ -373,8 +368,7 @@ void setup() {
   invalidateBookCachesForFirmwareBuild();
 
   if (freshFirmwareInstall) {
-    if (Storage.exists("/.crosspoint/settings.json") &&
-        !Storage.remove("/.crosspoint/settings.json")) {
+    if (Storage.exists("/.crosspoint/settings.json") && !Storage.remove("/.crosspoint/settings.json")) {
       LOG_ERR("SETTINGS", "failed to reset user settings");
       esp_ota_mark_app_invalid_rollback_and_reboot();
       return;
@@ -401,7 +395,7 @@ void setup() {
     LOG_INF("MAIN", "Recovery firmware mode (UP + POWER held at boot)");
   }
 
-    SETTINGS.loadFromFile();
+  SETTINGS.loadFromFile();
   RECENT_BOOKS.loadFromFile();
   I18N.setLanguage(static_cast<Language>(SETTINGS.language));
   KOREADER_STORE.loadFromFile();
@@ -457,15 +451,14 @@ void setup() {
       break;
   }
 
-  // Keep the normal boot splash visible for 1.5 seconds after its
-  // first render has physically completed. Special recovery/error routes
-  // take priority and the silent reboot path intentionally skips the splash.
+    // Keep the normal boot splash visible for 1.5 seconds after its
+    // first render has physically completed. Special recovery/error routes
+    // take priority and the silent reboot path intentionally skips the splash.
 #ifdef SIMULATOR
   const bool showTimedBootSplash = false;
 #else
-  const bool showTimedBootSplash =
-      !recoveryFirmwareMode && !rebootedFromPanic &&
-      powerManager.getBatteryPercentage() != 0 && resume != BootResume::Silent;
+  const bool showTimedBootSplash = !recoveryFirmwareMode && !rebootedFromPanic &&
+                                   powerManager.getBatteryPercentage() != 0 && resume != BootResume::Silent;
 #endif
   if (showTimedBootSplash) {
     activityManager.requestUpdateAndWait();
@@ -494,7 +487,6 @@ void setup() {
     // Minuta always opens Home after a normal boot or wake.
     activityManager.goHome(HomeMenuItem::NONE, needsWakeRefresh);
   }
-
 
   if (resume == BootResume::Silent) {
     // Block until the first paint physically completes. refreshDisplay()
@@ -539,8 +531,6 @@ void loop() {
     }
     return;
   }
-
-  renderer.setFadingFix(SETTINGS.fadingFix);
 
   if (Serial && millis() - lastMemPrint >= 10000) {
     LOG_INF("MEM", "Free: %d bytes, Total: %d bytes, Min Free: %d bytes, MaxAlloc: %d bytes", ESP.getFreeHeap(),
@@ -592,8 +582,7 @@ void loop() {
     }
 
     // The latched warning can only be released by USB connection.
-    const bool stillLocked =
-        MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE();
+    const bool stillLocked = MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE();
     if (!stillLocked) {
       lowBatteryWarningActive = false;
       warningActivityProcessed = false;
@@ -607,8 +596,7 @@ void loop() {
       powerReleasedSinceLowBatteryWake = true;
     }
 
-    if (powerReleasedSinceLowBatteryWake && millis() >= allowSleepAt &&
-        gpio.isPressed(HalGPIO::BTN_POWER) &&
+    if (powerReleasedSinceLowBatteryWake && millis() >= allowSleepAt && gpio.isPressed(HalGPIO::BTN_POWER) &&
         gpio.getPowerButtonHeldTime() >= SETTINGS.getPowerButtonDuration()) {
       enterDeepSleep();
       return;
@@ -622,8 +610,7 @@ void loop() {
   // The exclusive-storage loop above is intentionally left undisturbed.
   if (MINUTA_LOW_BATTERY_LOCKOUT_ACTIVE()) {
     lowBatteryWarningActive = true;
-    activityManager.replaceActivity(
-        std::make_unique<LowBatteryWarningActivity>(renderer, mappedInputManager));
+    activityManager.replaceActivity(std::make_unique<LowBatteryWarningActivity>(renderer, mappedInputManager));
     activityManager.loop();
     return;
   }
