@@ -882,9 +882,8 @@ void WifiSelectionActivity::renderConnected(const Rect* screen, const ThemeMetri
 }
 
 void WifiSelectionActivity::renderConnectionFailed(const Rect* screen, const ThemeMetrics* metrics) const {
-  // Fixed layout per audit: header bold at Y=386, reason at Y=414.
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 386, tr(STR_CONNECTION_FAILED), true,
-                            EpdFontFamily::BOLD);
+  // Match the standard error-screen layout: Error: at Y=386, reason at Y=414.
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 386, tr(STR_ERROR_MSG), true, EpdFontFamily::BOLD);
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 414, connectionError.c_str());
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
