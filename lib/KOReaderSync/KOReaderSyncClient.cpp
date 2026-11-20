@@ -301,13 +301,13 @@ const char* KOReaderSyncClient::errorString(Error error) {
     case AUTH_FAILED:
       return "Authentication failed";
     case SERVER_ERROR:
-      return "Server error (try again later)";
+      return "Server error";
     case JSON_ERROR:
       return "JSON parse error";
     case NOT_FOUND:
       return "No progress found";
     case LOW_MEMORY:
-      return "Not enough memory for sync — please retry";
+      return "Not enough memory";
     default:
       return "Unknown error";
   }
