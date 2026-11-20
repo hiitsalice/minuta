@@ -87,7 +87,7 @@ void KOReaderAuthActivity::render(RenderLock&&) {
   const bool signUp = mode == Mode::SIGN_UP;
 
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding - 6, pageWidth, metrics.headerHeight},
-                 signUp ? tr(STR_SIGN_UP) : tr(STR_KOREADER_AUTH));
+                 tr(STR_KOREADER_AUTH));
 
   // Keep the requested screen positions exact on the X4's 800px portrait canvas.
   const int centreY = static_cast<int>(pageHeight / 2);
