@@ -832,14 +832,17 @@ void WifiSelectionActivity::renderNetworkList(const Rect* screen, const ThemeMet
 }
 
 void WifiSelectionActivity::renderConnecting(const Rect* screen, const ThemeMetrics* metrics) const {
-  constexpr int MAX_STATUS_LINES = 2;
-  const auto height = renderer.getLineHeight(UI_10_FONT_ID);
+  constexpr int MAX_STATUS_LINES = 1;
   if (state == WifiSelectionState::SCANNING) {
     const char* statusText = autoConnecting ? tr(STR_FINDING_SAVED_WIFI) : tr(STR_SCANNING);
-    const Rect statusBounds{screen->x + metrics->contentSidePadding, 400,
-                            screen->width - metrics->contentSidePadding * 2, screen->height};
-    UITheme::drawCenteredWrappedText(renderer, statusBounds, UI_10_FONT_ID, statusText, MAX_STATUS_LINES, true,
-                                     EpdFontFamily::Style::REGULAR, UITheme::TextVerticalAlignment::TOP);
+    const int statusWidth = screen->width - metrics->contentSidePadding * 2;
+    const auto statusLines =
+        renderer.wrappedText(UI_10_FONT_ID, statusText, statusWidth, MAX_STATUS_LINES,
+                             EpdFontFamily::Style::REGULAR);
+    if (!statusLines.empty()) {
+      UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 400,
+                                statusLines.front().c_str(), true, EpdFontFamily::Style::REGULAR);
+    }
   } else {
     const char* statusText = autoConnecting ? tr(STR_CONNECTING_SAVED_WIFI) : tr(STR_CONNECTING);
 
