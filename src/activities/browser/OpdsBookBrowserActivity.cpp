@@ -37,6 +37,7 @@ OpdsEntry failedBook;
 constexpr int DOWNLOAD_PROGRESS_STEP_PERCENT = 5;
 constexpr unsigned long DOWNLOAD_PROGRESS_MIN_UPDATE_MS = 5000;
 constexpr unsigned long SEARCH_HOLD_MS = 700;  // hold Select/Load this long to open Search
+bool searchHoldArmed = false;                  // a Confirm press that began on the list may become a Search hold
 
 void drawEmptyButtonHints(GfxRenderer& renderer, const MappedInputManager& mappedInput) {
   // Match WifiSelectionActivity::renderConnecting() exactly.
@@ -142,17 +143,40 @@ void OpdsBookBrowserActivity::loop() {
 
   if (state == BrowserState::DOWNLOADING) return;
 
+  if (state == BrowserState::NO_SEARCH) {
+    // Info screen: only Back works, and it returns to the list.
+    if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
+      state = BrowserState::BROWSING;
+      requestUpdate();
+    }
+    return;
+  }
+
   if (state == BrowserState::BROWSING) {
     if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       navigateBack();
       return;
     }
+    if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
+      // Only a press that started on this list can become a Search hold.
+      searchHoldArmed = true;
+    }
     if (mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, SEARCH_HOLD_MS)) {
-      // Holding Select/Load opens Search, only when the server provides a search template.
-      if (!entries.empty() && !searchTemplate.empty()) launchSearch();
+      // Holding Select/Load opens Search, or says the server has none.
+      if (searchHoldArmed && !entries.empty()) {
+        if (!searchTemplate.empty()) {
+          launchSearch();
+        } else {
+          state = BrowserState::NO_SEARCH;
+          requestUpdate();
+        }
+      }
+      searchHoldArmed = false;
+      mappedInput.suppressRelease(MappedInputManager::Button::Confirm);
       return;
     }
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+      searchHoldArmed = false;
       // One button for both: Select opens a category or page row, Load downloads a book.
       activateSelected();
       return;
@@ -207,8 +231,21 @@ void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
   refreshSharedUiThemeTokens(uiTarget);
 
   const auto& metrics = UITheme::getInstance().getMetrics();
-  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 2), 0,
-                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
+
+  // A book with an author has two lines (title + author). A list has one row
+  // height, so a page with any two-line row uses the Font Browser's geometry;
+  // a page of one-line rows uses Settings'.
+  bool hasTwoLineRows = false;
+  for (const auto& entry : entries) {
+    if (entry.type == OpdsEntryType::BOOK && !entry.author.empty()) {
+      hasTwoLineRows = true;
+      break;
+    }
+  }
+
+  screen.setContentMargin(
+      fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - (hasTwoLineRows ? 2 : 3)), 0,
+                  static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   if (entries.empty()) {
@@ -220,28 +257,39 @@ void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
   props.items = rowItems.data();
   props.count = static_cast<uint16_t>(rowItems.size());
   props.action = ACTION_ROW;
-  props.sidePadding = 12;
-  props.rowInset = 18;
-  props.valueInset = 0;
-  props.labelText = screen.theme().bodyText;
-  props.labelText.font = fui::GfxRendererTarget::FONT_BODY;
-  props.labelText.bold = true;
-  props.labelText.italic = false;
-  props.labelText.align = fui::TextAlign::Center;
-  props.labelText.maxLines = 1;
-  props.labelText.lineGap = 1;
-  props.subtitleText = screen.theme().smallText;
-  props.subtitleText.font = fui::GfxRendererTarget::FONT_BODY;
-  props.subtitleText.bold = false;
-  props.subtitleText.align = fui::TextAlign::Center;
-  props.subtitleText.italic = false;
-  props.subtitleText.maxLines = 1;
-  props.subtitleText.lineGap = 1;
-  props.subtitleGap = 6;
-
-  const int16_t rowHeight = static_cast<int16_t>(metrics.listWithSubtitleRowHeight + 2);
-  props.rowHeight = rowHeight;
   props.rowGap = 0;
+
+  int16_t rowHeight;
+  if (hasTwoLineRows) {
+    // Font Browser geometry, everything centred.
+    props.sidePadding = 12;
+    props.rowInset = 18;
+    props.valueInset = 0;
+    props.labelText = screen.theme().bodyText;
+    props.labelText.font = fui::GfxRendererTarget::FONT_BODY;
+    props.labelText.bold = true;
+    props.labelText.italic = false;
+    props.labelText.align = fui::TextAlign::Center;
+    props.labelText.maxLines = 1;
+    props.labelText.lineGap = 1;
+    props.subtitleText = screen.theme().smallText;
+    props.subtitleText.font = fui::GfxRendererTarget::FONT_BODY;
+    props.subtitleText.bold = false;
+    props.subtitleText.align = fui::TextAlign::Center;
+    props.subtitleText.italic = false;
+    props.subtitleText.maxLines = 1;
+    props.subtitleText.lineGap = 1;
+    props.subtitleGap = 6;
+    rowHeight = static_cast<int16_t>(metrics.listWithSubtitleRowHeight + 2);
+  } else {
+    // Settings geometry (theme row height and insets), everything centred.
+    props.labelText = screen.theme().smallText;
+    props.labelText.align = fui::TextAlign::Center;
+    props.labelText.maxLines = 2;
+    props.labelText.lineGap = 6;
+    rowHeight = static_cast<int16_t>(metrics.listRowHeight);
+  }
+  props.rowHeight = rowHeight;
   listNav.selected = selectorIndex;
   listNav.syncToProps(screen.body(), rowHeight, screen.theme().listRowGap, static_cast<int>(entries.size()), props);
   screen.list(props);
@@ -305,6 +353,13 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
       break;
     }
 
+    case BrowserState::NO_SEARCH: {
+      renderer.drawCenteredText(UI_10_FONT_ID, 400, "Search is not available");
+      const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+      break;
+    }
+
     default:
       // CHECK_WIFI and LOADING share the same layout and keep only the
       // empty hint strip, with no assigned hint actions.
@@ -360,10 +415,11 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
 
   entries.reserve(entries.size() + (prevUrl.empty() ? 0 : 1) + (nextUrl.empty() ? 0 : 1));
   if (!prevUrl.empty()) {
-    entries.insert(entries.begin(), OpdsEntry{OpdsEntryType::NAVIGATION, tr(STR_PREV_PAGE), "", prevUrl, ""});
+    entries.insert(entries.begin(),
+                   OpdsEntry{OpdsEntryType::NAVIGATION, std::string("< ") + tr(STR_PREV_PAGE), "", prevUrl, ""});
   }
   if (!nextUrl.empty()) {
-    entries.push_back(OpdsEntry{OpdsEntryType::NAVIGATION, tr(STR_NEXT_PAGE), "", nextUrl, ""});
+    entries.push_back(OpdsEntry{OpdsEntryType::NAVIGATION, std::string(tr(STR_NEXT_PAGE)) + " >", "", nextUrl, ""});
   }
   if (feedTruncated) {
     LOG_INF("OPDS", "Feed truncated to fit memory");
@@ -387,6 +443,9 @@ void OpdsBookBrowserActivity::rebuildRowItems() {
     if (entry.type == OpdsEntryType::BOOK && !entry.author.empty()) {
       item.subtitle = entry.author.c_str();
     }
+    // Page rows read as navigation: italic, with the arrow as part of the text.
+    item.italic = entry.type == OpdsEntryType::NAVIGATION && !entry.href.empty() &&
+                  (entry.href == nextPageUrl || entry.href == prevPageUrl);
     item.actionValue = static_cast<int16_t>(rowItems.size());
     rowItems.push_back(item);
   }

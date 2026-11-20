@@ -16,10 +16,19 @@
  */
 class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
  public:
-  enum class BrowserState { CHECK_WIFI, WIFI_SELECTION, LOADING, BROWSING, DOWNLOADING, ERROR, SEARCH_INPUT };
+  enum class BrowserState {
+    CHECK_WIFI,
+    WIFI_SELECTION,
+    LOADING,
+    BROWSING,
+    DOWNLOADING,
+    ERROR,
+    SEARCH_INPUT,
+    NO_SEARCH
+  };
 
   explicit OpdsBookBrowserActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, OpdsServer server,
-                                     bool returnToParentOnBack = false);
+                                   bool returnToParentOnBack = false);
 
   void onEnter() override;
   void onExit() override;
@@ -61,7 +70,6 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   void buildDownloadScreen(UiScreen& screen);
   void buildStatusScreen(UiScreen& screen);
   void activateSelected();
-
 
   void checkAndConnectWifi();
   void launchWifiSelection();
