@@ -838,9 +838,11 @@ void FontDownloadActivity::render(RenderLock&&) {
     const auto labels = mappedInput.mapLabels("", tr(STR_DONE), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else if (state_ == ERROR) {
-    // A failed list fetch is not an install failure.
-    renderer.drawCenteredText(UI_10_FONT_ID, 386, manifestFailed_ ? tr(STR_ERROR_MSG) : tr(STR_FONT_INSTALL_FAILED),
-                              true, EpdFontFamily::BOLD);
+    // Keep the error heading specific to the operation that failed.
+    const char* errorTitle = manifestFailed_ ? tr(STR_ERROR_MSG)
+                             : errorMessage_ == "Failed to delete font" ? "Font deletion failed"
+                                                                         : tr(STR_FONT_INSTALL_FAILED);
+    renderer.drawCenteredText(UI_10_FONT_ID, 386, errorTitle, true, EpdFontFamily::BOLD);
     if (!errorMessage_.empty()) {
       renderer.drawCenteredText(UI_10_FONT_ID, 414, errorMessage_.c_str());
     }
