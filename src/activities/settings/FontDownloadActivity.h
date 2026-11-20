@@ -65,7 +65,7 @@ class FontDownloadActivity final : public UiListActivity {
   static constexpr size_t MAX_SCRIPT_GROUPS = 32;
 
   State state_ = WIFI_SELECTION;
-  // True when the manifest fetch failed, so Retry fetches again instead of resuming a download.
+  // True when manifest loading failed; used to determine the error screen's Back destination.
   bool manifestFailed_ = false;
   FontInstaller fontInstaller_;
 
