@@ -226,7 +226,7 @@ void KOReaderSyncActivity::performSync() {
     {
       RenderLock lock(*this);
       state = SYNC_FAILED;
-      statusMessage = "";
+      statusMessage = "Failed to reload book for syncing";
     }
     requestUpdate(true);
     return;
