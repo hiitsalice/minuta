@@ -733,34 +733,16 @@ bool FontDownloadActivity::handleCustomInput() {
       requestUpdate();
     }
   } else if (state_ == ERROR) {
-    if (manifestFailed_) {
-      // No font list was loaded: Back leaves, Retry fetches the list again.
-      if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
-        mappedInput.suppressRelease(MappedInputManager::Button::Back);
-        finish();
-      } else if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
-        onWifiSelectionComplete(true);
-      }
-      return true;
-    }
+    // Error screens are informational: only Back is active.
     if (mappedInput.wasPressed(MappedInputManager::Button::Back)) {
       mappedInput.suppressRelease(MappedInputManager::Button::Back);
-      {
-        RenderLock lock(*this);
-        state_ = FAMILY_LIST;
-        rowsDirty_ = true;  // the failed download reset installed/hasUpdate
-      }
-      requestUpdate();
-    } else if (mappedInput.wasPressed(MappedInputManager::Button::Confirm)) {
-      if (downloadingFamilyIndex_ >= 0 && downloadingFamilyIndex_ < static_cast<int>(families_.size())) {
-        downloadFamily(families_[downloadingFamilyIndex_]);
-        requestUpdateAndWait();
-        return true;
+      if (manifestFailed_) {
+        finish();
       } else {
         {
           RenderLock lock(*this);
           state_ = FAMILY_LIST;
-          rowsDirty_ = true;
+          rowsDirty_ = true;  // the failed operation may have changed installed/hasUpdate
         }
         requestUpdate();
       }
@@ -846,7 +828,7 @@ void FontDownloadActivity::render(RenderLock&&) {
     if (!errorMessage_.empty()) {
       renderer.drawCenteredText(UI_10_FONT_ID, 414, errorMessage_.c_str());
     }
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_RETRY), "", "");
+    const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   }
 
