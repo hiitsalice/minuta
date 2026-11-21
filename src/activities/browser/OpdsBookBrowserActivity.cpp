@@ -762,7 +762,25 @@ void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
       },
       nullptr, server.username, server.password);
 
-  if (result == HttpDownloader::OK) {
+  // An .epub is a zip file and starts with "PK". Anything else (for example a web page) is not a book.
+  bool notABook = false;
+  if (result == HttpDownloader::OK && filename.size() >= 5 && filename.compare(filename.size() - 5, 5, ".epub") == 0) {
+    bool looksLikeZip = false;
+    {
+      HalFile check;
+      if (Storage.openFileForRead("OPDS", filename.c_str(), check)) {
+        uint8_t magic[2] = {0, 0};
+        looksLikeZip = check.read(magic, 2) == 2 && magic[0] == 'P' && magic[1] == 'K';
+        check.close();
+      }
+    }
+    if (!looksLikeZip) {
+      LOG_ERR("OPDS", "Downloaded file is not a zip: %s", filename.c_str());
+      Storage.remove(filename.c_str());
+      notABook = true;
+    }
+  }
+  if (result == HttpDownloader::OK && !notABook) {
     clearBookCache(filename);
     state = BrowserState::BROWSING;
   } else if (result == HttpDownloader::ABORTED) {
