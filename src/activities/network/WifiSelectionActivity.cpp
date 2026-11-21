@@ -832,18 +832,20 @@ void WifiSelectionActivity::renderNetworkList(const Rect* screen, const ThemeMet
 }
 
 void WifiSelectionActivity::renderConnecting(const Rect* screen, const ThemeMetrics* metrics) const {
-  constexpr int MAX_STATUS_LINES = 2;
-  const auto height = renderer.getLineHeight(UI_10_FONT_ID);
+  constexpr int MAX_STATUS_LINES = 1;
   if (state == WifiSelectionState::SCANNING) {
     const char* statusText = autoConnecting ? tr(STR_FINDING_SAVED_WIFI) : tr(STR_SCANNING);
-    const Rect statusBounds{screen->x + metrics->contentSidePadding, 400,
-                            screen->width - metrics->contentSidePadding * 2, screen->height};
-    UITheme::drawCenteredWrappedText(renderer, statusBounds, UI_10_FONT_ID, statusText, MAX_STATUS_LINES, true,
-                                     EpdFontFamily::Style::REGULAR, UITheme::TextVerticalAlignment::TOP);
+    const int statusWidth = screen->width - metrics->contentSidePadding * 2;
+    const auto statusLines =
+        renderer.wrappedText(UI_10_FONT_ID, statusText, statusWidth, MAX_STATUS_LINES, EpdFontFamily::Style::REGULAR);
+    if (!statusLines.empty()) {
+      UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 400, statusLines.front().c_str(), true,
+                                EpdFontFamily::Style::REGULAR);
+    }
   } else {
     const char* statusText = autoConnecting ? tr(STR_CONNECTING_SAVED_WIFI) : tr(STR_CONNECTING);
 
-    std::string ssidInfo = std::string(tr(STR_TO_PREFIX)) + selectedSSID;
+    std::string ssidInfo = selectedSSID;
     if (ssidInfo.length() > 25) {
       ssidInfo.replace(22, ssidInfo.length() - 22, "...");
     }
@@ -882,9 +884,8 @@ void WifiSelectionActivity::renderConnected(const Rect* screen, const ThemeMetri
 }
 
 void WifiSelectionActivity::renderConnectionFailed(const Rect* screen, const ThemeMetrics* metrics) const {
-  // Fixed layout per audit: header bold at Y=386, reason at Y=414.
-  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 386, tr(STR_CONNECTION_FAILED), true,
-                            EpdFontFamily::BOLD);
+  // Match the standard error-screen layout: Error: at Y=386, reason at Y=414.
+  UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 386, tr(STR_ERROR_MSG), true, EpdFontFamily::BOLD);
   UITheme::drawCenteredText(renderer, *screen, UI_10_FONT_ID, 414, connectionError.c_str());
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");

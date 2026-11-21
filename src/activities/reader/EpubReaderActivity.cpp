@@ -1358,11 +1358,11 @@ void EpubReaderActivity::renderBook() {
                      Rect{0, emptyMetrics.topPadding - 6, renderer.getScreenWidth(), emptyMetrics.headerHeight},
                      epub->getTitle().c_str());
     }
-    renderer.drawCenteredText(UI_10_FONT_ID, 400,
-                              (epub->getSpineItemsCount() <= 1 ? "Empty book" : tr(STR_EMPTY_CHAPTER)), true,
+    const bool isEmptyBook = epub->getSpineItemsCount() <= 1;
+    renderer.drawCenteredText(UI_10_FONT_ID, 400, (isEmptyBook ? "Empty book" : tr(STR_EMPTY_CHAPTER)), true,
                               EpdFontFamily::REGULAR);
-    const bool noPrev = currentSpineIndex <= 0;
-    const bool noNext = currentSpineIndex + 1 >= static_cast<int>(epub->getSpineItemsCount());
+    const bool noPrev = isEmptyBook || currentSpineIndex <= 0;
+    const bool noNext = isEmptyBook || currentSpineIndex + 1 >= static_cast<int>(epub->getSpineItemsCount());
     {
       // Info screen: only Back, plus Prev/Next where a neighbouring chapter exists.
       const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", noPrev ? "" : "Prev", noNext ? "" : "Next");
