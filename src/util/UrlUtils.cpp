@@ -85,6 +85,9 @@ std::string buildUrl(const std::string& serverUrl, const std::string& path) {
   if (queryPos != std::string::npos) {
     base.resize(queryPos);
   }
+  if (path[0] == '?') {
+    return encodeUnsafeUrlChars(base + path);
+  }
   if (base.back() == '/') {
     return encodeUnsafeUrlChars(base + path);
   }

@@ -43,8 +43,15 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   // so buildBrowsingScreen() reuses it on every repaint instead of rebuilding
   // a ListItem vector per render.
   std::vector<freeink::ui::ListItem> rowItems;
+  std::vector<std::string> rowLabels;  // display text, shortened to one line
+  std::vector<std::string> rowSubs;
   void rebuildRowItems();
   std::vector<std::string> navigationHistory;
+  std::vector<std::string> pageTrail;                  // pages we came through, for Previous Page
+  std::vector<std::vector<std::string>> trailHistory;  // one trail per Back step
+  bool hasReturnPage = false;                          // Back from an error returns to returnPath
+  std::string returnPath;
+  std::vector<std::string> returnTrail;
   std::string currentPath;
   std::string searchTemplate;
   std::string nextPageUrl;  // page rows replace the current page instead of adding a Back step
@@ -75,9 +82,13 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   void launchWifiSelection();
   void onWifiSelectionComplete(bool connected);
   void fetchFeed(const std::string& path);
+  int fetchPage(const std::string& url, std::vector<OpdsEntry>& out, std::string& next, std::string* search,
+                bool* truncated);
+  void loadMoreIfNeeded();
   void releaseEntries();
   void navigateToEntry(const OpdsEntry& entry);
   void navigateBack();
+  void leaveError();
   void downloadBook(const OpdsEntry& book);
   void launchSearch();
   void performSearch(const std::string& query);
