@@ -82,9 +82,15 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   void launchWifiSelection();
   void onWifiSelectionComplete(bool connected);
   void fetchFeed(const std::string& path);
+  // The remaining pages of a section load one per loop pass, so the loading screen keeps updating.
+  bool loadingMore = false;
+  std::vector<OpdsEntry> loadingEntries;
+  std::string loadingCursor;
+  int loadingPages = 0;
+  void stepLoading();
+  void finishLoading();
   int fetchPage(const std::string& url, std::vector<OpdsEntry>& out, std::string& next, std::string* search,
                 bool* truncated);
-  void loadMoreIfNeeded();
   void releaseEntries();
   void navigateToEntry(const OpdsEntry& entry);
   void navigateBack();

@@ -31,9 +31,8 @@ namespace fui = freeink::ui;
 
 namespace {
 constexpr fui::ActionId ACTION_ROW = 1;
-constexpr size_t FILL_ENTRIES = 40;  // keep loading pages until the list has about this many entries
-constexpr int MAX_AUTO_PAGES = 4;    // extra pages loaded up front
-constexpr size_t MAX_ENTRIES = 300;  // stop growing here to protect memory
+constexpr uint32_t MIN_FREE_HEAP = 60000;  // stop loading pages if memory gets tight
+constexpr size_t MAX_ENTRIES = 300;        // stop growing here to protect memory
 
 // Feeds such as ManyBooks wrap titles in markup with line breaks and spaces. Trim the edges,
 // collapse inner whitespace, and drop entries without a title (they would show as blank rows).
@@ -90,6 +89,9 @@ void OpdsBookBrowserActivity::onEnter() {
   trailHistory.clear();
   hasReturnPage = false;
   searchTemplate = "";
+  loadingMore = false;
+  loadingEntries.clear();
+  loadingCursor.clear();
   currentPath = "";
   selectorIndex = 0;
   errorMessage.clear();
@@ -151,7 +153,9 @@ void OpdsBookBrowserActivity::loop() {
   }
 
   if (state == BrowserState::LOADING) {
-    return;  // all buttons are disabled while loading a feed
+    // All buttons are disabled while loading a feed. Pages load one per pass, so the screen keeps updating.
+    if (loadingMore) stepLoading();
+    return;
   }
 
   if (state == BrowserState::DOWNLOADING) return;
@@ -200,7 +204,7 @@ void OpdsBookBrowserActivity::loop() {
         selectorIndex = index;
         listNav.selected = index;
         listNav.follow(static_cast<int>(entries.size()));
-        loadMoreIfNeeded();
+        // every page is loaded when the feed opens
         requestUpdate();
       };
       // Browsing uses the side buttons exclusively for list navigation. The
@@ -212,13 +216,10 @@ void OpdsBookBrowserActivity::loop() {
           {MappedInputManager::Button::Up, MappedInputManager::Button::Left},
           [this, &moveSelection] { moveSelection(ButtonNavigator::previousIndex(selectorIndex, entries.size())); });
       buttonNavigator.onContinuous(
-          {MappedInputManager::Button::Down, MappedInputManager::Button::Right}, [this, &moveSelection] {
-            moveSelection(ButtonNavigator::nextPageIndex(selectorIndex, entries.size(), listNav.visibleRows));
-          });
-      buttonNavigator.onContinuous(
-          {MappedInputManager::Button::Up, MappedInputManager::Button::Left}, [this, &moveSelection] {
-            moveSelection(ButtonNavigator::previousPageIndex(selectorIndex, entries.size(), listNav.visibleRows));
-          });
+          {MappedInputManager::Button::Down, MappedInputManager::Button::Right},
+          [this, &moveSelection] { moveSelection(std::min(selectorIndex + 6, static_cast<int>(entries.size()) - 1)); });
+      buttonNavigator.onContinuous({MappedInputManager::Button::Up, MappedInputManager::Button::Left},
+                                   [this, &moveSelection] { moveSelection(std::max(selectorIndex - 6, 0)); });
     }
   }
 }
@@ -386,6 +387,7 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
 }
 
 // Fetches one feed page. Returns 0 on success, 1 if the request failed, 2 if the feed could not be read.
+// Fetches one feed page. Returns 0 on success, 1 if the request failed, 2 if the feed could not be read.
 int OpdsBookBrowserActivity::fetchPage(const std::string& url, std::vector<OpdsEntry>& out, std::string& next,
                                        std::string* search, bool* truncated) {
   OpdsParser parser;
@@ -432,58 +434,70 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
   if (truncated) LOG_INF("OPDS", "Feed truncated to fit memory");
 
   searchTemplate = search;
-  nextPageUrl = next.empty() ? std::string() : UrlUtils::buildUrl(url, next);
+  nextPageUrl.clear();  // no Next/Previous rows: the whole section is one list
   prevPageUrl.clear();
 
-  // Keep loading pages until the list fills the screen (or there are no more).
-  for (int extra = 0; extra < MAX_AUTO_PAGES && !nextPageUrl.empty() && loaded.size() < FILL_ENTRIES; ++extra) {
-    std::vector<OpdsEntry> more;
-    std::string nextHref;
-    const std::string pageUrl = nextPageUrl;
-    if (fetchPage(pageUrl, more, nextHref, nullptr, nullptr) != 0) {
-      nextPageUrl.clear();  // later pages cannot be read: stop quietly
-      break;
-    }
-    loaded.insert(loaded.end(), std::make_move_iterator(more.begin()), std::make_move_iterator(more.end()));
-    nextPageUrl = nextHref.empty() ? std::string() : UrlUtils::buildUrl(pageUrl, nextHref);
-    if (nextPageUrl == pageUrl || loaded.size() >= MAX_ENTRIES) nextPageUrl.clear();
+  // The remaining pages load one per loop pass (see stepLoading), so the loading screen keeps updating.
+  loadingEntries = std::move(loaded);
+  loadingCursor = next.empty() ? std::string() : UrlUtils::buildUrl(url, next);
+  loadingPages = 0;
+  loadingMore = !loadingCursor.empty();
+  if (!loadingMore) finishLoading();
+}
+
+// Loads the next page of the section. A page that cannot be loaded just ends the list, quietly.
+void OpdsBookBrowserActivity::stepLoading() {
+  if (loadingPages >= 200 || loadingCursor.empty() || loadingEntries.size() >= MAX_ENTRIES ||
+      ESP.getFreeHeap() <= MIN_FREE_HEAP) {
+    finishLoading();
+    return;
   }
-  tidyEntries(loaded);
+
+  std::vector<OpdsEntry> more;
+  std::string nextHref;
+  const std::string pageUrl = loadingCursor;
+  if (fetchPage(pageUrl, more, nextHref, nullptr, nullptr) != 0 || more.empty()) {
+    finishLoading();
+    return;
+  }
+  loadingEntries.insert(loadingEntries.end(), std::make_move_iterator(more.begin()),
+                        std::make_move_iterator(more.end()));
+  loadingCursor = nextHref.empty() ? std::string() : UrlUtils::buildUrl(pageUrl, nextHref);
+  if (loadingCursor == pageUrl) loadingCursor.clear();
+  ++loadingPages;
+
+  if (loadingCursor.empty()) {
+    finishLoading();
+    return;
+  }
+  // Show progress now and then: every update refreshes the e-ink panel.
+  if (loadingPages % 4 == 0) {
+    {
+      RenderLock lock;
+      statusMessage = "Loading feed... " + std::to_string(loadingEntries.size()) + " entries";
+    }
+    requestUpdate(true);
+  }
+}
+
+void OpdsBookBrowserActivity::finishLoading() {
+  loadingMore = false;
+  tidyEntries(loadingEntries);
 
   // Reset the selection before the swap: the render task reads
   // entries[selectorIndex] under only an empty() guard, and the new feed can
   // be shorter than the old selection.
   selectorIndex = 0;
   listNav.reset();
-  entries = std::move(loaded);
+  entries = std::move(loadingEntries);
+  loadingEntries.clear();
+  loadingCursor.clear();
 
   // An empty feed stays on the browsing screen and shows "No entries found" with only Back.
   state = BrowserState::BROWSING;
   hasReturnPage = false;
   rebuildRowItems();
   requestUpdate();
-}
-
-// Appends the next page when the selection gets near the end of the list.
-void OpdsBookBrowserActivity::loadMoreIfNeeded() {
-  if (nextPageUrl.empty() || state != BrowserState::BROWSING || entries.empty()) return;
-  if (selectorIndex < static_cast<int>(entries.size()) - 4) return;
-
-  const std::string pageUrl = nextPageUrl;
-  std::vector<OpdsEntry> more;
-  std::string nextHref;
-  if (fetchPage(pageUrl, more, nextHref, nullptr, nullptr) != 0) {
-    nextPageUrl.clear();  // end of the list, or a page that cannot be read: stop quietly
-    return;
-  }
-  tidyEntries(more);
-  {
-    RenderLock lock;
-    entries.insert(entries.end(), std::make_move_iterator(more.begin()), std::make_move_iterator(more.end()));
-    nextPageUrl = nextHref.empty() ? std::string() : UrlUtils::buildUrl(pageUrl, nextHref);
-    if (nextPageUrl == pageUrl || entries.size() >= MAX_ENTRIES) nextPageUrl.clear();
-    rebuildRowItems();
-  }
 }
 
 void OpdsBookBrowserActivity::rebuildRowItems() {
@@ -529,12 +543,16 @@ void OpdsBookBrowserActivity::rebuildRowItems() {
     while (out.size() > 1 && widthOf(out + "...", style) > maxWidth) dropLastChar(out);
     return out + "...";
   };
+  const auto drawable = [&](std::string text) {
+    if (!text.empty() && widthOf(text, titleStyle) <= 0) return std::string("(title not shown)");
+    return text;
+  };
   const auto isPageRow = [&](const OpdsEntry& e) {
     return e.type == OpdsEntryType::NAVIGATION && !e.href.empty() && (e.href == nextPageUrl || e.href == prevPageUrl);
   };
 
   for (const auto& entry : entries) {
-    rowLabels.push_back(isPageRow(entry) ? entry.title : fit(entry.title, titleStyle));
+    rowLabels.push_back(isPageRow(entry) ? entry.title : drawable(fit(entry.title, titleStyle)));
     rowSubs.push_back(entry.type == OpdsEntryType::BOOK && !entry.author.empty()
                           ? fit(entry.author, EpdFontFamily::REGULAR)
                           : std::string());
