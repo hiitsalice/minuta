@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <FreeInkUIIcon.h>
 #include <GfxRenderer.h>
+#include <HalDisplay.h>
 #include <HalStorage.h>
 #include <I18n.h>
 #include <Logging.h>
@@ -246,21 +247,9 @@ void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
   refreshSharedUiThemeTokens(uiTarget);
 
   const auto& metrics = UITheme::getInstance().getMetrics();
-
-  // A book with an author has two lines (title + author). A list has one row
-  // height, so a page with any two-line row uses the Font Browser's geometry;
-  // a page of one-line rows uses Settings'.
-  bool hasTwoLineRows = false;
-  for (const auto& entry : entries) {
-    if (entry.type == OpdsEntryType::BOOK && !entry.author.empty()) {
-      hasTwoLineRows = true;
-      break;
-    }
-  }
-
-  screen.setContentMargin(
-      fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - (hasTwoLineRows ? 2 : 3)), 0,
-                  static_cast<int16_t>(metrics.buttonHintsHeight), 0});
+  // Same content margins and row geometry as the Settings list: left aligned, one line per row.
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(metrics.topPadding + metrics.headerHeight - 3), 0,
+                                      static_cast<int16_t>(metrics.buttonHintsHeight), 0});
   screen.spacer(static_cast<int16_t>(metrics.verticalSpacing > 6 ? metrics.verticalSpacing - 6 : 0));
 
   if (entries.empty()) {
@@ -273,40 +262,13 @@ void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
   props.count = static_cast<uint16_t>(rowItems.size());
   props.action = ACTION_ROW;
   props.rowGap = 0;
-
-  int16_t rowHeight;
-  if (hasTwoLineRows) {
-    // Font Browser geometry, everything centred.
-    props.sidePadding = 12;
-    props.rowInset = 18;
-    props.valueInset = 0;
-    props.labelText = screen.theme().bodyText;
-    props.labelText.font = fui::GfxRendererTarget::FONT_BODY;
-    props.labelText.bold = true;
-    props.labelText.italic = false;
-    props.labelText.align = fui::TextAlign::Center;
-    props.labelText.maxLines = 1;
-    props.labelText.lineGap = 1;
-    props.subtitleText = screen.theme().smallText;
-    props.subtitleText.font = fui::GfxRendererTarget::FONT_BODY;
-    props.subtitleText.bold = false;
-    props.subtitleText.align = fui::TextAlign::Center;
-    props.subtitleText.italic = false;
-    props.subtitleText.maxLines = 1;
-    props.subtitleText.lineGap = 1;
-    props.subtitleGap = 6;
-    rowHeight = static_cast<int16_t>(metrics.listWithSubtitleRowHeight + 2);
-  } else {
-    // Settings geometry (theme row height and insets), everything centred.
-    props.labelText = screen.theme().smallText;
-    props.labelText.align = fui::TextAlign::Center;
-    props.labelText.maxLines = 1;
-    props.labelText.lineGap = 6;
-    rowHeight = static_cast<int16_t>(metrics.listRowHeight);
-  }
-  props.rowHeight = rowHeight;
+  props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
+  props.labelText = screen.theme().smallText;
+  props.labelText.maxLines = 1;
+  props.labelText.lineGap = 6;
   listNav.selected = selectorIndex;
-  listNav.syncToProps(screen.body(), rowHeight, screen.theme().listRowGap, static_cast<int>(entries.size()), props);
+  listNav.syncToProps(screen.body(), props.rowHeight, screen.theme().listRowGap, static_cast<int>(entries.size()),
+                      props);
   screen.list(props);
 }
 
@@ -441,12 +403,15 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
   loadingEntries = std::move(loaded);
   loadingCursor = next.empty() ? std::string() : UrlUtils::buildUrl(url, next);
   loadingPages = 0;
+  lastLoadingUpdateMs = 0;
   loadingMore = !loadingCursor.empty();
   if (!loadingMore) finishLoading();
 }
 
 // Loads the next page of the section. A page that cannot be loaded just ends the list, quietly.
 void OpdsBookBrowserActivity::stepLoading() {
+  while (ESP.getFreeHeap() <= MIN_FREE_HEAP + 30000 && dropOldestSavedList()) {
+  }
   if (loadingPages >= 200 || loadingCursor.empty() || loadingEntries.size() >= MAX_ENTRIES ||
       ESP.getFreeHeap() <= MIN_FREE_HEAP) {
     finishLoading();
@@ -471,7 +436,8 @@ void OpdsBookBrowserActivity::stepLoading() {
     return;
   }
   // Show progress now and then: every update refreshes the e-ink panel.
-  if (loadingPages % 4 == 0) {
+  if (millis() - lastLoadingUpdateMs >= 1000) {
+    lastLoadingUpdateMs = millis();
     {
       RenderLock lock;
       statusMessage = "Loading feed... " + std::to_string(loadingEntries.size()) + " entries";
@@ -503,26 +469,15 @@ void OpdsBookBrowserActivity::finishLoading() {
 void OpdsBookBrowserActivity::rebuildRowItems() {
   rowItems.clear();
   rowLabels.clear();
-  rowSubs.clear();
   rowItems.reserve(entries.size());
   rowLabels.reserve(entries.size());
-  rowSubs.reserve(entries.size());
 
   const auto& metrics = UITheme::getInstance().getMetrics();
-  bool twoLine = false;
-  for (const auto& e : entries) {
-    if (e.type == OpdsEntryType::BOOK && !e.author.empty()) {
-      twoLine = true;
-      break;
-    }
-  }
-  // Text width the row can use (a little under, so nothing ever wraps).
-  const int sideInsets = twoLine ? 30 : (metrics.listInset + metrics.listSidePadding);
-  const int maxWidth = renderer.getScreenWidth() - 2 * sideInsets - 16;
-  const auto titleStyle = twoLine ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
+  // Text width a row can use (a little under, so nothing ever wraps).
+  const int maxWidth = renderer.getScreenWidth() - 2 * (metrics.listInset + metrics.listSidePadding) - 16;
 
-  const auto widthOf = [&](const std::string& text, EpdFontFamily::Style style) {
-    return renderer.getTextAdvanceX(UI_10_FONT_ID, text.c_str(), style);
+  const auto widthOf = [&](const std::string& text) {
+    return renderer.getTextAdvanceX(UI_10_FONT_ID, text.c_str(), EpdFontFamily::REGULAR);
   };
   const auto dropLastChar = [](std::string& text) {
     if (text.empty()) return;
@@ -531,38 +486,83 @@ void OpdsBookBrowserActivity::rebuildRowItems() {
     text.resize(i);
   };
   // One line only: drop whole words from the end until it fits, then add "...".
-  const auto fit = [&](const std::string& text, EpdFontFamily::Style style) {
-    if (widthOf(text, style) <= maxWidth) return text;
+  const auto fit = [&](const std::string& text) {
+    if (widthOf(text) <= maxWidth) return text;
     std::string out = text;
     while (true) {
       const size_t cut = out.find_last_of(' ');
       if (cut == std::string::npos) break;
       out.resize(cut);
-      if (widthOf(out + "...", style) <= maxWidth) return out + "...";
+      if (widthOf(out + "...") <= maxWidth) return out + "...";
     }
-    while (out.size() > 1 && widthOf(out + "...", style) > maxWidth) dropLastChar(out);
+    while (out.size() > 1 && widthOf(out + "...") > maxWidth) dropLastChar(out);
     return out + "...";
   };
-  const auto drawable = [&](std::string text) {
-    if (!text.empty() && widthOf(text, titleStyle) <= 0) return std::string("(title not shown)");
-    return text;
+
+  // Ask the UI font which letters it can draw.
+  const auto& fontMap = renderer.getFontMap();
+  const auto fontIt = fontMap.find(UI_10_FONT_ID);
+  const bool hasSdFonts = !renderer.getSdCardFonts().empty();
+  const auto canDraw = [&](uint32_t cp) {
+    if (cp <= 0x20 || cp == 0xA0) return true;
+    // Chinese, Japanese and Korean letters are drawn by an installed SD font, when there is one.
+    if ((cp >= 0x2E80 && cp <= 0x9FFF) || (cp >= 0xAC00 && cp <= 0xD7AF) || (cp >= 0xF900 && cp <= 0xFAFF) ||
+        (cp >= 0xFF00 && cp <= 0xFFEF)) {
+      return hasSdFonts;
+    }
+    return fontIt == fontMap.end() || fontIt->second.hasCodepoint(cp, EpdFontFamily::REGULAR);
   };
-  const auto isPageRow = [&](const OpdsEntry& e) {
-    return e.type == OpdsEntryType::NAVIGATION && !e.href.empty() && (e.href == nextPageUrl || e.href == prevPageUrl);
+  // A title the font mostly cannot draw would be a blank row: show a placeholder.
+  // A few undrawable letters show as "?", and marks that cannot stand alone are dropped.
+  const auto drawable = [&](const std::string& text) {
+    std::string out;
+    out.reserve(text.size());
+    size_t total = 0;
+    size_t missing = 0;
+    for (size_t i = 0; i < text.size();) {
+      const unsigned char c = static_cast<unsigned char>(text[i]);
+      uint32_t cp = c;
+      size_t len = 1;
+      if ((c & 0xE0) == 0xC0 && i + 1 < text.size()) {
+        cp = ((c & 0x1Fu) << 6) | (static_cast<unsigned char>(text[i + 1]) & 0x3Fu);
+        len = 2;
+      } else if ((c & 0xF0) == 0xE0 && i + 2 < text.size()) {
+        cp = ((c & 0x0Fu) << 12) | ((static_cast<unsigned char>(text[i + 1]) & 0x3Fu) << 6) |
+             (static_cast<unsigned char>(text[i + 2]) & 0x3Fu);
+        len = 3;
+      } else if ((c & 0xF8) == 0xF0 && i + 3 < text.size()) {
+        cp = ((c & 0x07u) << 18) | ((static_cast<unsigned char>(text[i + 1]) & 0x3Fu) << 12) |
+             ((static_cast<unsigned char>(text[i + 2]) & 0x3Fu) << 6) |
+             (static_cast<unsigned char>(text[i + 3]) & 0x3Fu);
+        len = 4;
+      }
+      const std::string piece = text.substr(i, len);
+      i += len;
+      if (cp <= 0x20) {
+        out += piece;
+        continue;
+      }
+      if (canDraw(cp)) {
+        ++total;
+        out += piece;
+        continue;
+      }
+      if ((cp >= 0x0300 && cp <= 0x036F) || (cp >= 0x200B && cp <= 0x200F) || cp == 0xFEFF) continue;
+      ++total;
+      ++missing;
+      out += '?';
+    }
+    if (text.empty()) return text;
+    if (total == 0 || missing * 2 > total || widthOf(out) <= 0) return std::string("(title not shown)");
+    return out;
   };
 
   for (const auto& entry : entries) {
-    rowLabels.push_back(isPageRow(entry) ? entry.title : drawable(fit(entry.title, titleStyle)));
-    rowSubs.push_back(entry.type == OpdsEntryType::BOOK && !entry.author.empty()
-                          ? fit(entry.author, EpdFontFamily::REGULAR)
-                          : std::string());
+    rowLabels.push_back(fit(drawable(entry.title)));
   }
   for (size_t i = 0; i < entries.size(); ++i) {
     fui::ListItem item;
     item.label = rowLabels[i].c_str();
-    if (!rowSubs[i].empty()) item.subtitle = rowSubs[i].c_str();
-    // Page rows read as navigation: italic, with the arrow as part of the text.
-    item.italic = isPageRow(entries[i]);
     item.actionValue = static_cast<int16_t>(i);
     rowItems.push_back(item);
   }
@@ -598,6 +598,7 @@ void OpdsBookBrowserActivity::navigateToEntry(const OpdsEntry& entry) {
   // Resolve to a full URL so sub-sub-navigation retains parent path context
   const std::string feedUrl = UrlUtils::buildUrl(server.url, currentPath);
   currentPath = UrlUtils::buildUrl(feedUrl, entry.href);
+  saveListForBack();
 
   state = BrowserState::LOADING;
   statusMessage = "Loading feed...";
@@ -624,30 +625,90 @@ void OpdsBookBrowserActivity::leaveError() {
   fetchFeed(currentPath);
 }
 
+// Puts the list we are leaving aside (with its selection and scroll position) so Back can restore it
+// without loading it again. Called right after navigationHistory gets the path of that list.
+void OpdsBookBrowserActivity::saveListForBack() {
+  SavedList saved;
+  saved.path = navigationHistory.empty() ? std::string() : navigationHistory.back();
+  saved.searchTemplate = searchTemplate;
+  saved.selectorIndex = selectorIndex;
+  saved.nav = listNav;
+  {
+    RenderLock lock;
+    saved.entries = std::move(entries);
+    entries.clear();
+  }
+  saved.valid = !saved.entries.empty();
+  savedLists.push_back(std::move(saved));
+}
+
+// Frees memory by dropping the oldest saved list. The first one is Main: it is tiny and it is
+// what Back returns to last, so it is kept.
+bool OpdsBookBrowserActivity::dropOldestSavedList() {
+  for (size_t i = 1; i < savedLists.size(); ++i) {
+    auto& l = savedLists[i];
+    if (l.valid) {
+      std::vector<OpdsEntry>().swap(l.entries);
+      l.valid = false;  // this level loads again when we go back to it
+      return true;
+    }
+  }
+  return false;
+}
+
 void OpdsBookBrowserActivity::navigateBack() {
   if (navigationHistory.empty()) {
+    savedLists.clear();
     if (returnToParentOnBack) {
       finish();
     } else {
       onGoHome();
     }
-  } else {
-    currentPath = navigationHistory.back();
-    navigationHistory.pop_back();
-    if (!trailHistory.empty()) {
-      pageTrail = trailHistory.back();
-      trailHistory.pop_back();
-    } else {
-      pageTrail.clear();
-    }
-    hasReturnPage = false;
-    state = BrowserState::LOADING;
-    statusMessage = "Loading feed...";
-    releaseEntries();
-    selectorIndex = 0;
-    requestUpdate(true);
-    fetchFeed(currentPath);
+    return;
   }
+
+  currentPath = navigationHistory.back();
+  navigationHistory.pop_back();
+  hasReturnPage = false;
+
+  SavedList saved;
+  bool haveSaved = false;
+  if (!savedLists.empty()) {
+    saved = std::move(savedLists.back());
+    savedLists.pop_back();
+    haveSaved = true;
+  }
+  // Back at the outermost page (Main): free every other saved list.
+  const bool backAtMain = navigationHistory.empty();
+  if (backAtMain) savedLists.clear();
+
+  if (haveSaved && saved.valid && saved.path == currentPath) {
+    // Restore the list we came from instantly, on the row we left.
+    {
+      RenderLock lock;
+      closeRouting();
+      entries = std::move(saved.entries);
+      searchTemplate = saved.searchTemplate;
+      selectorIndex = saved.selectorIndex;
+      listNav = saved.nav;
+      listNav.selected = selectorIndex;
+      nextPageUrl.clear();
+      prevPageUrl.clear();
+      state = BrowserState::BROWSING;
+      rebuildRowItems();
+    }
+    // Back at Main: a half refresh clears the ghosting left by the deeper screens.
+    if (backAtMain) renderer.promoteNextRefresh(HalDisplay::HALF_REFRESH);
+    requestUpdate(true);
+    return;
+  }
+
+  state = BrowserState::LOADING;
+  statusMessage = "Loading feed...";
+  releaseEntries();
+  selectorIndex = 0;
+  requestUpdate(true);
+  fetchFeed(currentPath);
 }
 
 void OpdsBookBrowserActivity::downloadBook(const OpdsEntry& book) {
@@ -767,6 +828,7 @@ void OpdsBookBrowserActivity::performSearch(const std::string& query) {
   pageTrail.clear();
   hasReturnPage = false;
   currentPath = url;
+  saveListForBack();
 
   state = BrowserState::LOADING;
   statusMessage = "Loading feed...";

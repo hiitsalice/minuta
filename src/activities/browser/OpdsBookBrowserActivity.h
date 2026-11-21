@@ -44,7 +44,6 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   // a ListItem vector per render.
   std::vector<freeink::ui::ListItem> rowItems;
   std::vector<std::string> rowLabels;  // display text, shortened to one line
-  std::vector<std::string> rowSubs;
   void rebuildRowItems();
   std::vector<std::string> navigationHistory;
   std::vector<std::string> pageTrail;                  // pages we came through, for Previous Page
@@ -87,8 +86,22 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   std::vector<OpdsEntry> loadingEntries;
   std::string loadingCursor;
   int loadingPages = 0;
+  unsigned long lastLoadingUpdateMs = 0;
   void stepLoading();
   void finishLoading();
+
+  // Lists we came through, kept (at most 3) so Back restores them instantly instead of loading again.
+  struct SavedList {
+    std::string path;
+    std::vector<OpdsEntry> entries;
+    std::string searchTemplate;
+    int selectorIndex = 0;
+    freeink::ui::ListNav nav;
+    bool valid = false;  // false once dropped to free memory
+  };
+  std::vector<SavedList> savedLists;
+  void saveListForBack();
+  bool dropOldestSavedList();
   int fetchPage(const std::string& url, std::vector<OpdsEntry>& out, std::string& next, std::string* search,
                 bool* truncated);
   void releaseEntries();
