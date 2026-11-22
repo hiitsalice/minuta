@@ -58,6 +58,7 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   int selectorIndex = 0;
   std::string errorMessage;
   std::string statusMessage;
+  std::string infoMessage;  // text of the info screen (no search, nothing more here)
   size_t downloadProgress = 0;
   size_t downloadTotal = 0;
 

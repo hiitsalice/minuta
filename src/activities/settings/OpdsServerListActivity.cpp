@@ -148,14 +148,9 @@ void OpdsServerListActivity::handleSelection() {
     if (nav.selected < serverCount) {
       const auto* server = OPDS_STORE.getServer(static_cast<size_t>(nav.selected));
       if (server) {
-        if (returnToParent) {
-          // Return to Settings after the browser closes, skipping this picker.
-          startActivityForResult(std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, *server, true),
-                                 [this](const ActivityResult&) { finish(); });
-        } else {
-          // Preserve the original Home-launched browser flow.
-          activityManager.replaceActivity(std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, *server));
-        }
+        // Back from the browser returns to this server list first; Back again leaves it.
+        startActivityForResult(std::make_unique<OpdsBookBrowserActivity>(renderer, mappedInput, *server, true),
+                               [this](const ActivityResult&) { requestUpdate(); });
       }
     }
     return;

@@ -37,6 +37,16 @@ constexpr size_t MAX_ENTRIES = 300;        // stop growing here to protect memor
 
 // Feeds such as ManyBooks wrap titles in markup with line breaks and spaces. Trim the edges,
 // collapse inner whitespace, and drop entries without a title (they would show as blank rows).
+// A row whose link opens the very page it is on can never go anywhere: drop it.
+void dropSelfLinks(std::vector<OpdsEntry>& list, const std::string& pageUrl) {
+  list.erase(std::remove_if(list.begin(), list.end(),
+                            [&](const OpdsEntry& e) {
+                              return e.type == OpdsEntryType::NAVIGATION && !e.href.empty() &&
+                                     UrlUtils::buildUrl(pageUrl, e.href) == pageUrl;
+                            }),
+             list.end());
+}
+
 void tidyEntries(std::vector<OpdsEntry>& list) {
   const auto tidy = [](std::string& text) {
     std::string out;
@@ -57,7 +67,11 @@ void tidyEntries(std::vector<OpdsEntry>& list) {
     tidy(entry.title);
     tidy(entry.author);
   }
-  list.erase(std::remove_if(list.begin(), list.end(), [](const OpdsEntry& e) { return e.title.empty(); }), list.end());
+  list.erase(std::remove_if(list.begin(), list.end(),
+                            [](const OpdsEntry& e) {
+                              return e.title.empty() || (e.type == OpdsEntryType::NAVIGATION && e.href.empty());
+                            }),
+             list.end());
 }
 constexpr int DOWNLOAD_PROGRESS_STEP_PERCENT = 5;
 constexpr unsigned long DOWNLOAD_PROGRESS_MIN_UPDATE_MS = 5000;
@@ -185,6 +199,7 @@ void OpdsBookBrowserActivity::loop() {
         if (!searchTemplate.empty()) {
           launchSearch();
         } else {
+          infoMessage = "Search is not available";
           state = BrowserState::NO_SEARCH;
           requestUpdate();
         }
@@ -331,7 +346,7 @@ void OpdsBookBrowserActivity::render(RenderLock&&) {
     }
 
     case BrowserState::NO_SEARCH: {
-      renderer.drawCenteredText(UI_10_FONT_ID, 400, "Search is not available");
+      renderer.drawCenteredText(UI_10_FONT_ID, 400, infoMessage.c_str());
       const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
       break;
@@ -394,6 +409,7 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
     return;
   }
   if (truncated) LOG_INF("OPDS", "Feed truncated to fit memory");
+  dropSelfLinks(loaded, url);
 
   searchTemplate = search;
   nextPageUrl.clear();  // no Next/Previous rows: the whole section is one list
@@ -425,6 +441,7 @@ void OpdsBookBrowserActivity::stepLoading() {
     finishLoading();
     return;
   }
+  dropSelfLinks(more, UrlUtils::buildUrl(server.url, currentPath));
   loadingEntries.insert(loadingEntries.end(), std::make_move_iterator(more.begin()),
                         std::make_move_iterator(more.end()));
   loadingCursor = nextHref.empty() ? std::string() : UrlUtils::buildUrl(pageUrl, nextHref);
@@ -449,6 +466,26 @@ void OpdsBookBrowserActivity::stepLoading() {
 void OpdsBookBrowserActivity::finishLoading() {
   loadingMore = false;
   tidyEntries(loadingEntries);
+
+  // Opening a row gave back exactly the list we came from (the server has nothing more behind it).
+  if (!savedLists.empty() && savedLists.back().valid && !loadingEntries.empty() &&
+      savedLists.back().entries.size() == loadingEntries.size()) {
+    bool same = true;
+    for (size_t i = 0; i < loadingEntries.size() && same; ++i) {
+      same = loadingEntries[i].title == savedLists.back().entries[i].title &&
+             loadingEntries[i].href == savedLists.back().entries[i].href;
+    }
+    if (same) {
+      loadingEntries.clear();
+      loadingCursor.clear();
+      loadingMore = false;
+      navigateBack();  // restores the list we left, instantly
+      infoMessage = "Nothing more to show here";
+      state = BrowserState::NO_SEARCH;
+      requestUpdate();
+      return;
+    }
+  }
 
   // Reset the selection before the swap: the render task reads
   // entries[selectorIndex] under only an empty() guard, and the new feed can
@@ -577,6 +614,13 @@ void OpdsBookBrowserActivity::releaseEntries() {
 }
 
 void OpdsBookBrowserActivity::navigateToEntry(const OpdsEntry& entry) {
+  {
+    const std::string here = UrlUtils::buildUrl(server.url, currentPath);
+    if (UrlUtils::buildUrl(here, entry.href) == here) {
+      LOG_DBG("OPDS", "row ignored: it opens the page it is on");
+      return;
+    }
+  }
   // Next/Previous Page rows replace the current page; only categories add a Back step.
   const bool isPageRow = !entry.href.empty() && (entry.href == nextPageUrl || entry.href == prevPageUrl);
   if (!isPageRow) {
