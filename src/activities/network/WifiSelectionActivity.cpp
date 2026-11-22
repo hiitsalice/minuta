@@ -845,7 +845,8 @@ void WifiSelectionActivity::renderConnecting(const Rect* screen, const ThemeMetr
   } else {
     const char* statusText = autoConnecting ? tr(STR_CONNECTING_SAVED_WIFI) : tr(STR_CONNECTING);
 
-    std::string ssidInfo = selectedSSID;
+    // Manual connect reads "Connecting..." / "to <network>"; the saved-Wi-Fi heading already says "to".
+    std::string ssidInfo = autoConnecting ? selectedSSID : std::string(tr(STR_TO_PREFIX)) + selectedSSID;
     if (ssidInfo.length() > 25) {
       ssidInfo.replace(22, ssidInfo.length() - 22, "...");
     }
