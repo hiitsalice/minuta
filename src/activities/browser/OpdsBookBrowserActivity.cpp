@@ -409,6 +409,17 @@ void OpdsBookBrowserActivity::fetchFeed(const std::string& path) {
     return;
   }
   if (truncated) LOG_INF("OPDS", "Feed truncated to fit memory");
+  // Some servers repeat the same links on every page: is this page a copy of the list we came from?
+  loadingSameAsParent = !savedLists.empty() && savedLists.back().valid && !loaded.empty() &&
+                        savedLists.back().entries.size() == loaded.size();
+  if (loadingSameAsParent) {
+    for (size_t i = 0; i < loaded.size(); ++i) {
+      if (loaded[i].href != savedLists.back().entries[i].href) {
+        loadingSameAsParent = false;
+        break;
+      }
+    }
+  }
   dropSelfLinks(loaded, url);
 
   searchTemplate = search;
@@ -467,24 +478,17 @@ void OpdsBookBrowserActivity::finishLoading() {
   loadingMore = false;
   tidyEntries(loadingEntries);
 
-  // Opening a row gave back exactly the list we came from (the server has nothing more behind it).
-  if (!savedLists.empty() && savedLists.back().valid && !loadingEntries.empty() &&
-      savedLists.back().entries.size() == loadingEntries.size()) {
-    bool same = true;
-    for (size_t i = 0; i < loadingEntries.size() && same; ++i) {
-      same = loadingEntries[i].title == savedLists.back().entries[i].title &&
-             loadingEntries[i].href == savedLists.back().entries[i].href;
-    }
-    if (same) {
-      loadingEntries.clear();
-      loadingCursor.clear();
-      loadingMore = false;
-      navigateBack();  // restores the list we left, instantly
-      infoMessage = "Nothing more to show here";
-      state = BrowserState::NO_SEARCH;
-      requestUpdate();
-      return;
-    }
+  // Opening a row gave back the very list we came from (the server has nothing behind it).
+  if (loadingSameAsParent) {
+    loadingSameAsParent = false;
+    loadingEntries.clear();
+    loadingCursor.clear();
+    loadingMore = false;
+    navigateBack();  // restores the list we left, instantly
+    infoMessage = "Nothing more to show here";
+    state = BrowserState::NO_SEARCH;
+    requestUpdate();
+    return;
   }
 
   // Reset the selection before the swap: the render task reads

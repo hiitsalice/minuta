@@ -158,7 +158,7 @@ void XMLCALL OpdsParser::startElement(void* userData, const XML_Char* name, cons
             self->currentEntry.type = OpdsEntryType::BOOK;
             assignBounded(self->currentEntry.href, href, MAX_HREF_CHARS);
           }
-        } else if (type && strstr(type, "application/atom+xml") != nullptr) {
+        } else if (type && strstr(type, "application/atom+xml") != nullptr && !(rel && strcmp(rel, "related") == 0)) {
           if (self->currentEntry.type != OpdsEntryType::BOOK) {
             self->currentEntry.type = OpdsEntryType::NAVIGATION;
             assignBounded(self->currentEntry.href, href, MAX_HREF_CHARS);

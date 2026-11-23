@@ -87,6 +87,7 @@ class OpdsBookBrowserActivity final : public Activity, private UiAppHost {
   std::vector<OpdsEntry> loadingEntries;
   std::string loadingCursor;
   int loadingPages = 0;
+  bool loadingSameAsParent = false;  // this page repeats the list we came from
   unsigned long lastLoadingUpdateMs = 0;
   void stepLoading();
   void finishLoading();
