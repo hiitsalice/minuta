@@ -313,7 +313,10 @@ void EpubReaderActivity::openDictionaryWordSelect() {
 
   startActivityForResult(std::make_unique<DictionaryWordSelectActivity>(renderer, mappedInput, std::move(page),
                                                                         orientedMarginLeft, orientedMarginTop),
-                         [this](const ActivityResult&) { requestUpdate(); });
+                         [this](const ActivityResult&) {
+                           fastRefreshOnce = true;  // back from the dictionary: never a half refresh
+                           requestUpdate();
+                         });
 }
 
 void EpubReaderActivity::openHighlightWordSelect() {
@@ -1591,7 +1594,9 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
   const bool pageHasImagesNeedingDecode = pageHasImages && page->hasImagesNeedingDecode();
   const bool manualRefreshPending = forcedRefreshPending;
   forcedRefreshPending = false;
-  const bool cleanImageBasePending = manualRefreshPending || pagesUntilFullRefresh <= 1;
+  const bool fastOnly = fastRefreshOnce && !manualRefreshPending;
+  fastRefreshOnce = false;
+  const bool cleanImageBasePending = manualRefreshPending || (!fastOnly && pagesUntilFullRefresh <= 1);
   const bool needsTextGrayscale = SETTINGS.textAntiAliasing;
   const bool needsAnyGrayscale = needsTextGrayscale || pageHasImages;
   const bool tiledGrayscale = needsAnyGrayscale && renderer.supportsStripGrayscale();
@@ -1622,7 +1627,16 @@ void EpubReaderActivity::renderContents(std::unique_ptr<Page> page, const int or
     renderer.displayBuffer(cleanImageBasePending ? HalDisplay::HALF_REFRESH : HalDisplay::FAST_REFRESH);
     pagesUntilFullRefresh = 1;
   } else {
-    ReaderUtils::displayWithRefreshCycle(renderer, pagesUntilFullRefresh, overlapRefresh);
+    if (fastOnly) {
+      // Back from the dictionary: plain fast refresh, the half-refresh schedule is left untouched.
+      if (overlapRefresh) {
+        renderer.displayBufferAsync(HalDisplay::FAST_REFRESH);
+      } else {
+        renderer.displayBuffer(HalDisplay::FAST_REFRESH);
+      }
+    } else {
+      ReaderUtils::displayWithRefreshCycle(renderer, pagesUntilFullRefresh, overlapRefresh);
+    }
   }
   const auto tDisplay = millis();
 

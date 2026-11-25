@@ -90,6 +90,7 @@ class EpubReaderActivity final : public ReaderActivity {
   static constexpr unsigned long BUILD_POPUP_DEADLINE_MS = 1000;
   bool buildPopupPending = false;
   void showBuildPopup(GfxRenderer& renderer, int& pagesUntilFullRefresh);
+  bool fastRefreshOnce = false;  // set when coming back from the dictionary
   bool applyDeferredReposition();
   void clearDeferredReposition();
   void rememberCurrentContentOffset();

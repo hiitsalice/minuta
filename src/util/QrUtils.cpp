@@ -8,6 +8,57 @@
 
 #include "Logging.h"
 
+#ifndef SIMULATOR
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include <atomic>
+#endif
+
+namespace {
+
+constexpr int8_t QR_NO_STACK = -100;
+
+#ifndef SIMULATOR
+struct QrJob {
+  QRCode* qrcode;
+  uint8_t* modules;
+  int version;
+  const char* payload;
+  int8_t result;
+  std::atomic<bool> done;
+};
+
+void qrBuildTask(void* arg) {
+  auto* job = static_cast<QrJob*>(arg);
+  job->result = qrcode_initText(job->qrcode, job->modules, job->version, ECC_LOW, job->payload);
+  job->done.store(true);  // last access to the job: the caller may free it right after this
+  vTaskDelete(nullptr);
+}
+#endif
+
+// The QR library keeps several large work buffers on the stack (about 7 KB at version 30 and 11 KB at version 40),
+// which does not fit in the 8 KB render task. Big codes are therefore built on a short-lived task with its own stack.
+int8_t buildQr(QRCode* qrcode, uint8_t* modules, const int version, const char* payload) {
+#ifndef SIMULATOR
+  if (version >= 30) {
+    QrJob job{qrcode, modules, version, payload, QR_NO_STACK, {false}};
+    const uint32_t stackBytes = version >= 40 ? 16384 : 12288;
+    if (xTaskCreate(qrBuildTask, "QrBuild", stackBytes, &job, 1, nullptr) != pdPASS) {
+      LOG_ERR("QR", "Not enough free memory for the QR build stack (%u bytes)", static_cast<unsigned>(stackBytes));
+      return QR_NO_STACK;
+    }
+    while (!job.done.load()) {
+      vTaskDelay(pdMS_TO_TICKS(5));
+    }
+    return job.result;
+  }
+#endif
+  return qrcode_initText(qrcode, modules, version, ECC_LOW, payload);
+}
+
+}  // namespace
+
 void QrUtils::drawQrCode(const GfxRenderer& renderer, const Rect& bounds, const std::string& textPayload) {
   // Dynamically calculate the QR code version based on text length
   // Version 4 holds ~114 bytes, Version 10 ~395, Version 20 ~1066, up to 40
@@ -37,7 +88,14 @@ void QrUtils::drawQrCode(const GfxRenderer& renderer, const Rect& bounds, const 
 
   QRCode qrcode;
   // Initialize the QR code. We use ECC_LOW for max capacity.
-  int8_t res = qrcode_initText(&qrcode, qrcodeBytes.get(), version, ECC_LOW, payload);
+  int8_t res = buildQr(&qrcode, qrcodeBytes.get(), version, payload);
+  if (res == QR_NO_STACK) {
+    // Not enough free memory for the big work stack: fall back to a smaller code (version 20, ~850 bytes of text).
+    static constexpr size_t SAFE_CAPACITY = 858;
+    version = 20;
+    const std::string safe(payload, utf8SafeTruncateBuffer(payload, static_cast<int>(SAFE_CAPACITY)));
+    res = qrcode_initText(&qrcode, qrcodeBytes.get(), version, ECC_LOW, safe.c_str());
+  }
 
   if (res == 0) {
     // Determine the optimal pixel size.

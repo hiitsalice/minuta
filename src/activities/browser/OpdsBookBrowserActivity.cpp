@@ -279,6 +279,7 @@ void OpdsBookBrowserActivity::buildBrowsingScreen(UiScreen& screen) {
   props.rowGap = 0;
   props.rowHeight = static_cast<int16_t>(metrics.listRowHeight);
   props.labelText = screen.theme().smallText;
+  props.labelText.align = fui::TextAlign::Center;
   props.labelText.maxLines = 1;
   props.labelText.lineGap = 6;
   listNav.selected = selectorIndex;
