@@ -156,7 +156,7 @@ Typical persisted areas on SD:
 
 `sections/*.bin` contains rendered pages plus anchor, paragraph, list-item, and
 page-start visible-text-offset lookup tables. The offset table makes reading
-positions content-based: KOReader XPaths resolve to an exact chapter offset,
+positions content-based: XPaths resolve to an exact chapter offset,
 and the current layout derives the corresponding page. For binary cache
 formats, see `docs/file-formats.md`.
 
@@ -177,7 +177,7 @@ Server behavior:
 - WebDAV handler on the HTTP server
 - UDP discovery listener for upload clients
 - file operations backed by SD storage
-- browser APIs for file management, settings, fonts, OPDS servers, and saved Wi-Fi networks
+- browser APIs for file management, settings, fonts, and saved Wi-Fi networks
 - activity requests faster loop responsiveness while server is running
 
 Endpoint reference: `docs/webserver-endpoints.md`.
