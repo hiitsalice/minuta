@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "CrossPointSettings.h"
-#include "KOReaderCredentialStore.h"
 #include "ReaderFontSizes.h"
 #include "activities/settings/SettingsActivity.h"
 #include "util/DictionaryRegistry.h"
@@ -180,12 +179,6 @@ inline SettingInfo buildDictionarySetting(const std::vector<DictionaryEntry>& di
   return s;
 }
 
-inline std::vector<StrId> buildLongPressMenuValues() {
-  static constexpr StrId VALUES[] = {StrId::STR_KOSYNC, StrId::STR_DICTIONARY, StrId::STR_READER_MENU};
-  const size_t count = BoardConfig::hasHomeKey() ? std::size(VALUES) : std::size(VALUES) - 1;
-  return {VALUES, VALUES + count};
-}
-
 // Shared settings list used by both the device settings UI and the web settings API.
 // Each entry has a key (for JSON API) and category (for grouping).
 // ACTION-type entries and entries without a key are device-only.
@@ -266,62 +259,6 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
             StrId::STR_TIME_TO_SLEEP, &CrossPointSettings::sleepTimeoutMinutes,
             {CrossPointSettings::MIN_SLEEP_TIMEOUT_MINUTES, CrossPointSettings::MAX_SLEEP_TIMEOUT_MINUTES, 1},
             "sleepTimeoutMinutes", StrId::STR_CAT_SYSTEM),
-        // OPDS download folder: persisted + web-exposed, but category-less so it
-        // is hidden from the on-device Settings screen (edited via OPDS UI).
-        SettingInfo::String(StrId::STR_OPDS_DOWNLOAD_FOLDER, &SETTINGS.opdsDownloadFolder[0],
-                            sizeof(SETTINGS.opdsDownloadFolder), "opdsDownloadFolder"),
-        // OPDS download filename format: persisted + web-exposed, category-less so it
-        // is hidden from the on-device Settings screen (cycled from the OPDS UI).
-        SettingInfo::Enum(StrId::STR_OPDS_FILENAME_FORMAT, &CrossPointSettings::opdsFilenameFormat,
-                          {StrId::STR_FMT_AUTHOR_TITLE, StrId::STR_FMT_TITLE_AUTHOR, StrId::STR_FMT_TITLE},
-                          "opdsFilenameFormat"),
-
-        // --- KOReader Sync (web-only, uses KOReaderCredentialStore) ---
-        SettingInfo::DynamicString(
-            StrId::STR_KOREADER_USERNAME, [] { return KOREADER_STORE.getUsername(); },
-            [](const std::string& v) {
-              KOREADER_STORE.setCredentials(v, KOREADER_STORE.getPassword());
-              KOREADER_STORE.saveToFile();
-            },
-            "koUsername", StrId::STR_KOREADER_SYNC),
-        SettingInfo::DynamicString(
-            StrId::STR_KOREADER_PASSWORD, [] { return KOREADER_STORE.getPassword(); },
-            [](const std::string& v) {
-              KOREADER_STORE.setCredentials(KOREADER_STORE.getUsername(), v);
-              KOREADER_STORE.saveToFile();
-            },
-            "koPassword", StrId::STR_KOREADER_SYNC),
-        SettingInfo::DynamicString(
-            StrId::STR_SYNC_SERVER_URL, [] { return KOREADER_STORE.getServerUrl(); },
-            [](const std::string& v) {
-              KOREADER_STORE.setServerUrl(v);
-              KOREADER_STORE.saveToFile();
-            },
-            "koServerUrl", StrId::STR_KOREADER_SYNC),
-        SettingInfo::DynamicEnum(
-            StrId::STR_DOCUMENT_MATCHING, {StrId::STR_FILENAME, StrId::STR_BINARY},
-            [] { return static_cast<uint8_t>(KOREADER_STORE.getMatchMethod()); },
-            [](uint8_t v) {
-              KOREADER_STORE.setMatchMethod(static_cast<DocumentMatchMethod>(v));
-              KOREADER_STORE.saveToFile();
-            },
-            "koMatchMethod", StrId::STR_KOREADER_SYNC),
-        SettingInfo::DynamicEnum(
-            StrId::STR_SEND_METADATA, {StrId::STR_STATE_OFF, StrId::STR_STATE_ON},
-            [] { return static_cast<uint8_t>(KOREADER_STORE.getSendMetadata()); },
-            [](uint8_t v) {
-              KOREADER_STORE.setSendMetadata(v != 0);
-              KOREADER_STORE.saveToFile();
-            },
-            "koSendMetadata", StrId::STR_KOREADER_SYNC),
-        SettingInfo::DynamicEnum(
-            StrId::STR_SYNC_BEHAVIOR, {StrId::STR_ASK_EVERY_TIME, StrId::STR_SMART_SYNC},
-            [] { return static_cast<uint8_t>(KOREADER_STORE.getSyncBehavior()); },
-            [](uint8_t v) {
-              KOREADER_STORE.setSyncBehavior(static_cast<KOReaderSyncBehavior>(v));
-              KOREADER_STORE.saveToFile();
-            },
-            "koSyncBehavior", StrId::STR_KOREADER_SYNC),
         // --- Status Bar Settings (web-only, uses StatusBarSettingsActivity) ---
         SettingInfo::Toggle(StrId::STR_CHAPTER_PAGE_COUNT, &CrossPointSettings::statusBarChapterPageCount,
                             "statusBarChapterPageCount", StrId::STR_CUSTOMISE_STATUS_BAR),

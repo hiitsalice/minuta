@@ -3,22 +3,23 @@
 #include <GfxRenderer.h>
 #include <I18n.h>
 
+#include <cstring>
+
 #include "CrossPointSettings.h"
 #include "MappedInputManager.h"
-#include "util/DictionaryRegistry.h"
-
-#include <cstring>
 #include "ReaderUtils.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 #include "fontIds.h"
+#include "util/DictionaryRegistry.h"
 
 namespace fui = freeink::ui;
 
 EpubReaderMenuActivity::EpubReaderMenuActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                                const std::string& title, const int currentPage, const int totalPages,
                                                const int bookProgressPercent, const uint8_t currentOrientation,
-                                               const bool hasFootnotes, const bool hasBookmarks, bool* categoryExpanded, int* selectedRow)
+                                               const bool hasFootnotes, const bool hasBookmarks, bool* categoryExpanded,
+                                               int* selectedRow)
     : UiListActivity("EpubReaderMenu", renderer, mappedInput),
       title(title),
       pendingOrientation(currentOrientation),
@@ -49,7 +50,7 @@ void EpubReaderMenuActivity::rebuildVisibleRows() {
   constexpr size_t APPEARANCE_START = 10;
   constexpr size_t APPEARANCE_END = 13;
   constexpr size_t UTILITIES_START = 13;
-  constexpr size_t UTILITIES_END = 16;
+  constexpr size_t UTILITIES_END = 14;
 
   const auto addCategory = [this](const Category category, const size_t start, const size_t end) {
     const size_t categoryIndex = static_cast<size_t>(category);
@@ -57,8 +58,7 @@ void EpubReaderMenuActivity::rebuildVisibleRows() {
 
     if (!categoryExpanded[categoryIndex]) return;
 
-    for (size_t i = start; i < end; ++i)
-      visibleRows.push_back({false, category, i});
+    for (size_t i = start; i < end; ++i) visibleRows.push_back({false, category, i});
   };
 
   addCategory(Category::NAVIGATION, NAVIGATION_START, NAVIGATION_END);
@@ -70,8 +70,7 @@ void EpubReaderMenuActivity::rebuildVisibleRows() {
 }
 
 void EpubReaderMenuActivity::buildMenuRowItems() {
-  for (size_t i = 0; i < MAX_MENU_ITEMS; ++i)
-    menuRowItems[i] = {};
+  for (size_t i = 0; i < MAX_MENU_ITEMS; ++i) menuRowItems[i] = {};
 
   static constexpr const char* CATEGORY_LABELS[] = {
       "Navigation",
@@ -134,8 +133,6 @@ void EpubReaderMenuActivity::buildMenuItems(std::vector<MenuItem>& items, bool h
   items.push_back({MenuAction::ROTATE_SCREEN, StrId::STR_ORIENTATION});
 
   // Utilities
-  items.push_back({MenuAction::DISPLAY_QR, StrId::STR_DISPLAY_QR});
-  items.push_back({MenuAction::SYNC, StrId::STR_SYNC_PROGRESS});
   items.push_back({MenuAction::DELETE_CACHE, StrId::STR_DELETE_CACHE});
 }
 
@@ -207,8 +204,8 @@ void EpubReaderMenuActivity::activateIndex(const int index) {
     // Cycle through None, then each installed dictionary.
     size_t currentIndex = 0;
     for (size_t i = 0; i < dictionaries.size(); ++i) {
-      if (std::strncmp(dictionaries[i].name.c_str(), SETTINGS.dictionaryName,
-                       sizeof(SETTINGS.dictionaryName) - 1) == 0) {
+      if (std::strncmp(dictionaries[i].name.c_str(), SETTINGS.dictionaryName, sizeof(SETTINGS.dictionaryName) - 1) ==
+          0) {
         currentIndex = i + 1;
         break;
       }
@@ -218,8 +215,7 @@ void EpubReaderMenuActivity::activateIndex(const int index) {
     if (nextIndex == 0) {
       SETTINGS.dictionaryName[0] = '\0';
     } else {
-      std::strncpy(SETTINGS.dictionaryName,
-                   dictionaries[nextIndex - 1].name.c_str(),
+      std::strncpy(SETTINGS.dictionaryName, dictionaries[nextIndex - 1].name.c_str(),
                    sizeof(SETTINGS.dictionaryName) - 1);
       SETTINGS.dictionaryName[sizeof(SETTINGS.dictionaryName) - 1] = '\0';
     }
@@ -280,8 +276,7 @@ void EpubReaderMenuActivity::jumpToAdjacentCategory(const int direction) {
       target = position;
     } else {
       // Move to the adjacent category heading, wrapping at either end.
-      target = direction > 0 ? (position + 1) % headers.size()
-                             : (position + headers.size() - 1) % headers.size();
+      target = direction > 0 ? (position + 1) % headers.size() : (position + headers.size() - 1) % headers.size();
     }
   }
 
@@ -307,12 +302,10 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
   const Rect safe = UITheme::getInstance().getScreenSafeArea(renderer, true, false);
 
   // Shift the complete menu content upward without changing its height.
-  screen.setContentMargin(
-      fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + 7),
-                  static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
-                  static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height)),
-                  static_cast<int16_t>(safe.x)});
-
+  screen.setContentMargin(fui::Insets{static_cast<int16_t>(safe.y + metrics.topPadding + metrics.headerHeight + 7),
+                                      static_cast<int16_t>(renderer.getScreenWidth() - (safe.x + safe.width)),
+                                      static_cast<int16_t>(renderer.getScreenHeight() - (safe.y + safe.height)),
+                                      static_cast<int16_t>(safe.x)});
 
   // Minuta reader menu rows use the same 10pt UI size as the outer menus.
   uiTarget.setFont(fui::GfxRendererTarget::FONT_SMALL, UI_10_FONT_ID);
@@ -339,9 +332,8 @@ void EpubReaderMenuActivity::buildScreen(UiScreen& screen) {
     } else if (action == MenuAction::AUTO_PAGE_TURN) {
       menuRowItems[i].value = pageTurnLabels[selectedPageTurnOption];
     } else if (action == MenuAction::SELECT_DICTIONARY) {
-      selectedDictionaryValue = SETTINGS.dictionaryName[0] != '\0'
-                                    ? SETTINGS.dictionaryName
-                                    : I18N.get(StrId::STR_NONE_OPT);
+      selectedDictionaryValue =
+          SETTINGS.dictionaryName[0] != '\0' ? SETTINGS.dictionaryName : I18N.get(StrId::STR_NONE_OPT);
       menuRowItems[i].value = selectedDictionaryValue.c_str();
     } else {
       menuRowItems[i].value = nullptr;

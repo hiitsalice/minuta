@@ -1,24 +1,23 @@
 #include "HomeActivity.h"
-#include "../settings/ClearCacheActivity.h"
 
 #include <Bitmap.h>
 #include <Epub.h>
 #include <FsHelpers.h>
-#include <Txt.h>
 #include <GfxRenderer.h>
 #include <HalDisplay.h>
 #include <HalStorage.h>
 #include <I18n.h>
+#include <Txt.h>
 #include <Utf8.h>
 
 #include <algorithm>
 #include <cstring>
 #include <vector>
 
+#include "../settings/ClearCacheActivity.h"
 #include "CrossPointSettings.h"
 #include "CrossPointState.h"
 #include "MappedInputManager.h"
-#include "OpdsServerStore.h"
 #include "RecentBooksStore.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
@@ -27,9 +26,6 @@ int HomeActivity::getMenuItemCount() const {
   int count = 4;  // File Browser, Recents, File transfer, Settings
   if (!recentBooks.empty()) {
     count += recentBooks.size();
-  }
-  if (hasOpdsServers) {
-    count++;
   }
   return count;
 }
@@ -118,8 +114,7 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
         // Txt::generateCoverBmp() currently supports BMP and JPG/JPEG,
         // but not PNG. Do not attempt a conversion it cannot perform.
         const bool supportedCover =
-            FsHelpers::hasBmpExtension(sourceCoverPath) ||
-            FsHelpers::hasJpgExtension(sourceCoverPath);
+            FsHelpers::hasBmpExtension(sourceCoverPath) || FsHelpers::hasJpgExtension(sourceCoverPath);
 
         if (supportedCover) {
           updateLoadingProgress();
@@ -164,8 +159,6 @@ void HomeActivity::onEnter() {
   coverRendered = false;
   firstRenderDone = false;
 
-  hasOpdsServers = OPDS_STORE.hasServers();
-
   const auto& metrics = UITheme::getInstance().getMetrics();
   loadRecentBooks(metrics.homeRecentBooksCount);
 
@@ -174,16 +167,11 @@ void HomeActivity::onEnter() {
   // Solum and Quartum are cover-only home screens. They must always enter
   // with the first book selected rather than inheriting a menu selection
   // such as Settings from the screen we returned from.
-  const bool isCoverTheme =
-      SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM ||
-      SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM;
+  const bool isCoverTheme = SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM ||
+                            SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM;
 
   selectorIndex =
-      isCoverTheme
-          ? 0
-          : (initialMenuItem == HomeMenuItem::NONE
-                 ? 0
-                 : base + menuItemToIndex(initialMenuItem, hasOpdsServers));
+      isCoverTheme ? 0 : (initialMenuItem == HomeMenuItem::NONE ? 0 : base + menuItemToIndex(initialMenuItem));
 
   // Trigger first update
   requestUpdate();
@@ -237,32 +225,28 @@ void HomeActivity::loop() {
   const auto& metrics = UITheme::getInstance().getMetrics();
 
   if (mappedInput.wasLongPressed(MappedInputManager::Button::Back, 700)) {
-    startActivityForResult(
-        std::make_unique<ClearCacheActivity>(renderer, mappedInput),
-        [this](const ActivityResult&) { onEnter(); });
+    startActivityForResult(std::make_unique<ClearCacheActivity>(renderer, mappedInput),
+                           [this](const ActivityResult&) { onEnter(); });
     return;
   }
 
   auto activateSelection = [this] {
-           const bool isCoverTheme = SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM ||
-                                  SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM;
-       if (isCoverTheme && recentBooks.empty()) {
-         return;
-       }
+    const bool isCoverTheme = SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM ||
+                              SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM;
+    if (isCoverTheme && recentBooks.empty()) {
+      return;
+    }
     if (selectorIndex < recentBooks.size()) {
       onSelectBook(recentBooks[selectorIndex].path);
       return;
     }
     const int menuIndex = selectorIndex - static_cast<int>(recentBooks.size());
-    switch (indexToMenuItem(menuIndex, hasOpdsServers)) {
+    switch (indexToMenuItem(menuIndex)) {
       case HomeMenuItem::FILE_BROWSER:
         onFileBrowserOpen();
         break;
       case HomeMenuItem::RECENTS:
         onRecentsOpen();
-        break;
-      case HomeMenuItem::OPDS_BROWSER:
-        onOpdsBrowserOpen();
         break;
       case HomeMenuItem::FILE_TRANSFER:
         onFileTransferOpen();
@@ -275,8 +259,8 @@ void HomeActivity::loop() {
     }
   };
 
-    if (SETTINGS.uiTheme != CrossPointSettings::UI_THEME::SOLUM &&
-    SETTINGS.uiTheme != CrossPointSettings::UI_THEME::QUARTUM) {
+  if (SETTINGS.uiTheme != CrossPointSettings::UI_THEME::SOLUM &&
+      SETTINGS.uiTheme != CrossPointSettings::UI_THEME::QUARTUM) {
     buttonNavigator.onNext([this, menuCount] {
       selectorIndex = ButtonNavigator::nextIndex(selectorIndex, menuCount);
       requestUpdate();
@@ -286,7 +270,6 @@ void HomeActivity::loop() {
       selectorIndex = ButtonNavigator::previousIndex(selectorIndex, menuCount);
       requestUpdate();
     });
-
   }
 
   if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM) {
@@ -327,10 +310,8 @@ void HomeActivity::loop() {
       }
 
       // Side Up/Down follow the visible Quartum layout.
-      const bool upReleased =
-          mappedInput.wasReleased(MappedInputManager::Button::Up);
-      const bool downReleased =
-          mappedInput.wasReleased(MappedInputManager::Button::Down);
+      const bool upReleased = mappedInput.wasReleased(MappedInputManager::Button::Up);
+      const bool downReleased = mappedInput.wasReleased(MappedInputManager::Button::Down);
 
       if (upReleased || downReleased) {
         if (bookCount == 2) {
@@ -346,20 +327,16 @@ void HomeActivity::loop() {
           }
         } else if (bookCount == 4) {
           // Complete 2x2 grid: retain the existing column movement.
-          selectorIndex = selectorIndex < 2
-                              ? selectorIndex + 2
-                              : selectorIndex - 2;
+          selectorIndex = selectorIndex < 2 ? selectorIndex + 2 : selectorIndex - 2;
         }
 
         requestUpdate();
         return;
       }
     }
-
   }
 
   if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::SOLUM) {
-
     // Solum Home uses the logical front-button roles:
     // Browse / blank / blank / Read.
     // MappedInputManager translates these through the user's remapping.
@@ -423,14 +400,9 @@ void HomeActivity::render(RenderLock&&) {
   renderer.clearScreen();
   bool bufferRestored = coverBufferStored && restoreCoverBuffer();
 
-  GUI.drawHeader(
-      renderer,
-      Rect{0, metrics.topPadding, pageWidth,
-           metrics.homeTopPadding - metrics.topPadding},
-      metrics.homeContinueReadingInMenu && !recentBooks.empty()
-          ? recentBooks[0].title.c_str()
-          : nullptr,
-      nullptr, false, true);  // the battery shows only on the home screen
+  GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, metrics.homeTopPadding - metrics.topPadding},
+                 metrics.homeContinueReadingInMenu && !recentBooks.empty() ? recentBooks[0].title.c_str() : nullptr,
+                 nullptr, false, true);  // the battery shows only on the home screen
 
   // Record the tile rect so storeCoverBuffer (called from the theme) knows
   // which sub-region of the framebuffer to snapshot. ~16 KB in Portrait
@@ -444,17 +416,12 @@ void HomeActivity::render(RenderLock&&) {
                           recentBooks, selectorIndex, coverRendered, coverBufferStored, bufferRestored,
                           std::bind(&HomeActivity::storeCoverBuffer, this));
 
-    if (SETTINGS.uiTheme != CrossPointSettings::UI_THEME::SOLUM &&
+  if (SETTINGS.uiTheme != CrossPointSettings::UI_THEME::SOLUM &&
       SETTINGS.uiTheme != CrossPointSettings::UI_THEME::QUARTUM) {
     // Build menu items dynamically
     std::vector<const char*> menuItems = {tr(STR_BROWSE_FILES), tr(STR_MENU_RECENT_BOOKS), tr(STR_FILE_TRANSFER),
                                           tr(STR_SETTINGS_TITLE)};
     std::vector<UIIcon> menuIcons = {Folder, Recent, Transfer, Settings};
-
-    if (hasOpdsServers) {
-      menuItems.insert(menuItems.begin() + 2, tr(STR_OPDS_BROWSER));
-      menuIcons.insert(menuIcons.begin() + 2, Library);
-    }
 
     if (metrics.homeContinueReadingInMenu && !recentBooks.empty()) {
       menuItems.insert(menuItems.begin(), tr(STR_CONTINUE_READING));
@@ -464,8 +431,8 @@ void HomeActivity::render(RenderLock&&) {
     GUI.drawButtonMenu(
         renderer,
         Rect{0, metrics.homeTopPadding + metrics.homeCoverTileHeight + metrics.homeMenuTopOffset, pageWidth,
-             pageHeight - (84 /* Home keeps the original header height */ + metrics.homeTopPadding + metrics.verticalSpacing +
-                           metrics.homeMenuTopOffset + metrics.buttonHintsHeight)},
+             pageHeight - (84 /* Home keeps the original header height */ + metrics.homeTopPadding +
+                           metrics.verticalSpacing + metrics.homeMenuTopOffset + metrics.buttonHintsHeight)},
         static_cast<int>(menuItems.size()),
         metrics.homeContinueReadingInMenu ? selectorIndex : selectorIndex - recentBooks.size(),
         [&menuItems](int index) { return std::string(menuItems[index]); },
@@ -473,10 +440,8 @@ void HomeActivity::render(RenderLock&&) {
   }
 
   const bool isQuartum = SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM;
-  const auto labels =
-      isQuartum
-          ? mappedInput.mapLabels("Menu", tr(STR_HOME_READ), "Prev", "Next")
-          : mappedInput.mapLabels("Menu", "", "", tr(STR_HOME_READ));
+  const auto labels = isQuartum ? mappedInput.mapLabels("Menu", tr(STR_HOME_READ), "Prev", "Next")
+                                : mappedInput.mapLabels("Menu", "", "", tr(STR_HOME_READ));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 
   renderer.displayBuffer(cleanInitialRefresh && !firstRenderDone ? HalDisplay::HALF_REFRESH : HalDisplay::FAST_REFRESH);
@@ -516,5 +481,3 @@ void HomeActivity::switchTheme(const MappedInputManager::Button heldButton) {
 void HomeActivity::onSettingsOpen() { activityManager.goToSettings(); }
 
 void HomeActivity::onFileTransferOpen() { activityManager.goToFileTransfer(); }
-
-void HomeActivity::onOpdsBrowserOpen() { activityManager.goToBrowser(); }

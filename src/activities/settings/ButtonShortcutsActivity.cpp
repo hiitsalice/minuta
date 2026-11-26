@@ -1,12 +1,11 @@
 #include "ButtonShortcutsActivity.h"
 
-#include "CrossPointSettings.h"
-
 #include <GfxRenderer.h>
 #include <I18n.h>
 
 #include <iterator>
 
+#include "CrossPointSettings.h"
 #include "MappedInputManager.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
@@ -24,10 +23,8 @@ struct Entry {
   bool currentTool = false;
 };
 
-constexpr Entry kGeneral[] = {{1, "Hold POWER", nullptr},
-                              {2, "Sleep", nullptr},
-                              {1, "Press POWER", nullptr},
-                              {2, "Refresh screen", nullptr}};
+constexpr Entry kGeneral[] = {
+    {1, "Hold POWER", nullptr}, {2, "Sleep", nullptr}, {1, "Press POWER", nullptr}, {2, "Refresh screen", nullptr}};
 constexpr Entry kHome[] = {{1, "Hold READ", nullptr},
                            {2, "Switch theme | Currently:", nullptr, true},
                            {1, "Hold MENU", nullptr},
@@ -37,14 +34,10 @@ constexpr Entry kLibrary[] = {{1, "Hold MENU", nullptr},
                               {1, "Hold SELECT", nullptr},
                               {2, "Delete file |", " No prompt"}};
 constexpr Entry kRecent[] = {{1, "Hold SELECT", nullptr}, {2, "Remove from list |", " No prompt"}};
-constexpr Entry kReader[] = {{1, "Hold SELECT", nullptr},
-                             {2, "Use tool:", nullptr, false, true},
-                             {1, "Hold BACK", nullptr},
-                             {2, "To main menu", nullptr},
-                             {1, "Hold PREV", nullptr},
-                             {2, "To previous chapter", nullptr},
-                             {1, "Hold NEXT", nullptr},
-                             {2, "To next chapter", nullptr}};
+constexpr Entry kReader[] = {{1, "Hold SELECT", nullptr}, {2, "Use tool:", nullptr, false, true},
+                             {1, "Hold BACK", nullptr},   {2, "To main menu", nullptr},
+                             {1, "Hold PREV", nullptr},   {2, "To previous chapter", nullptr},
+                             {1, "Hold NEXT", nullptr},   {2, "To next chapter", nullptr}};
 constexpr Entry kSettings[] = {{1, "Hold UP", nullptr},
                                {2, "To previous section", nullptr},
                                {1, "Hold DOWN", nullptr},
@@ -60,14 +53,8 @@ constexpr Entry kHiddenFeatures[] = {{1, "Hold UP", nullptr},
                                      {2, "To previous section", nullptr},
                                      {1, "Hold DOWN", nullptr},
                                      {2, "To next section", nullptr}};
-constexpr Entry kWifi[] = {{1, "Symbol: +", nullptr},
-                           {2, "Saved Wi-Fi", nullptr},
-                           {1, "Symbol: *", nullptr},
-                           {2, "Encrypted Wi-Fi", nullptr}};
-constexpr Entry kOpds[] = {{1, "Add /opds to URL", nullptr},
-                           {2, "Use Calibre", nullptr}};
-constexpr Entry kOpdsBrowser[] = {{1, "Hold SELECT/LOAD", nullptr},
-                                  {2, "Search (if available)", nullptr}};
+constexpr Entry kWifi[] = {
+    {1, "Symbol: +", nullptr}, {2, "Saved Wi-Fi", nullptr}, {1, "Symbol: *", nullptr}, {2, "Encrypted Wi-Fi", nullptr}};
 
 struct SectionDef {
   const char* title;
@@ -87,8 +74,6 @@ constexpr SectionDef kSections[] = {
     {"Dictionary", kDictionary, static_cast<int>(std::size(kDictionary))},
     {"Hidden Features", kHiddenFeatures, static_cast<int>(std::size(kHiddenFeatures))},
     {"Wi-Fi Networks", kWifi, static_cast<int>(std::size(kWifi))},
-    {"OPDS Server", kOpds, static_cast<int>(std::size(kOpds))},
-    {"OPDS Browser", kOpdsBrowser, static_cast<int>(std::size(kOpdsBrowser))},
 };
 constexpr int kSectionCount = static_cast<int>(std::size(kSections));
 
@@ -120,8 +105,7 @@ void ButtonShortcutsActivity::rebuildRows() {
       const Entry& e = kSections[s].entries[i];
       std::string boldTail = e.boldTail ? e.boldTail : "";
       if (e.currentTheme) {
-        const char* themeName =
-            SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM ? "Quartum" : "Solum";
+        const char* themeName = SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTUM ? "Quartum" : "Solum";
         boldTail = std::string(" ") + themeName;
       }
       if (e.currentTool) {
@@ -139,8 +123,7 @@ void ButtonShortcutsActivity::rebuildRows() {
         }
         boldTail = std::string(" ") + toolName;
       }
-      rows_.push_back({e.level == 1 ? Level::Trigger : Level::Action, s, e.text, boldTail,
-                       e.currentTool});
+      rows_.push_back({e.level == 1 ? Level::Trigger : Level::Action, s, e.text, boldTail, e.currentTool});
     }
   }
 
@@ -209,16 +192,14 @@ void ButtonShortcutsActivity::jumpToAdjacentSection(const int direction) {
       }
     }
 
-    const bool onHeader =
-        rows_[static_cast<size_t>(selected)].level == Level::Section;
+    const bool onHeader = rows_[static_cast<size_t>(selected)].level == Level::Section;
 
     if (direction < 0 && !onHeader) {
       // First reach the current section heading.
       target = position;
     } else {
       // Move to the adjacent section heading, wrapping at either end.
-      target = direction > 0 ? (position + 1) % headers.size()
-                             : (position + headers.size() - 1) % headers.size();
+      target = direction > 0 ? (position + 1) % headers.size() : (position + headers.size() - 1) % headers.size();
     }
   }
 
@@ -255,9 +236,8 @@ void ButtonShortcutsActivity::activateIndex(const int index) {
   if (index < 0 || index >= static_cast<int>(rows_.size())) return;
 
   if (rows_[index].toolSelector) {
-    SETTINGS.longPressMenuFunction = static_cast<uint8_t>(
-        (SETTINGS.longPressMenuFunction + 1) %
-        CrossPointSettings::LONG_PRESS_MENU_FUNCTION_COUNT);
+    SETTINGS.longPressMenuFunction =
+        static_cast<uint8_t>((SETTINGS.longPressMenuFunction + 1) % CrossPointSettings::LONG_PRESS_MENU_FUNCTION_COUNT);
     SETTINGS.saveToFile();
     {
       RenderLock lock(*this);
@@ -288,6 +268,6 @@ void ButtonShortcutsActivity::drawFooter() {
   const bool onToolSelector = validSelection && rows_[nav.selected].toolSelector;
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), (onSection || onToolSelector) ? tr(STR_SELECT) : "",
                                             tr(STR_DIR_UP), tr(STR_DIR_DOWN));
-  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4,
-                      -1, drawButtonHintDivider() && listFillsArea());
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, -1,
+                      drawButtonHintDivider() && listFillsArea());
 }

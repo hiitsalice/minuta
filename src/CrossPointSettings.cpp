@@ -10,11 +10,11 @@
 #include <limits>
 #include <string>
 
-#include "util/BookCacheUtils.h"
 #include "I18nKeys.h"
 #include "ReaderFontSizes.h"
 #include "SettingsList.h"
 #include "fontIds.h"
+#include "util/BookCacheUtils.h"
 
 namespace {
 
@@ -67,7 +67,7 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
 
   for (const auto& info : getSettingsList()) {
     if (!info.key) continue;
-    // Dynamic entries (KOReader etc.) are stored in their own files — skip.
+    // Dynamic entries are stored in their own files — skip.
     if (!info.valuePtr && !info.stringOffset) continue;
 
     if (info.stringOffset) {
@@ -117,7 +117,6 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
   bool needsResave = false;
   bool sleepScreenMigrated = false;
 
-
   const uint8_t storedSettingsVersion = doc["settingsVersion"] | (uint8_t)0;
   if (storedSettingsVersion < 1) {
     CrossPointSettings defaults;
@@ -154,7 +153,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
 
   for (const auto& info : getSettingsList()) {
     if (!info.key) continue;
-    // Dynamic entries (KOReader etc.) are stored in their own files — skip.
+    // Dynamic entries are stored in their own files — skip.
     if (!info.valuePtr && !info.stringOffset) continue;
 
     if (info.stringOffset) {
@@ -215,8 +214,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
   }
 
   // These Display options are fixed in Minuta and no longer exposed in Settings.
-  if (quickResumeSleepScreen != QUICK_RESUME_NEVER ||
-      sleepScreenCoverFilter != BLACK_AND_WHITE ||
+  if (quickResumeSleepScreen != QUICK_RESUME_NEVER || sleepScreenCoverFilter != BLACK_AND_WHITE ||
       sleepScreenCoverMode != FIT) {
     quickResumeSleepScreen = QUICK_RESUME_NEVER;
     sleepScreenCoverFilter = BLACK_AND_WHITE;
@@ -250,8 +248,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
     if (!doc["sideButtonLayout"].isNull()) {
       const uint8_t old = doc["sideButtonLayout"] | (uint8_t)0;
       // old: 0 prev/next, 1 next/prev, 2 disabled
-      sideButtonLayout =
-          (old == 1) ? (uint8_t)NEXT_PREV : (uint8_t)PREV_NEXT;
+      sideButtonLayout = (old == 1) ? (uint8_t)NEXT_PREV : (uint8_t)PREV_NEXT;
     }
 
     if (!doc["fontFamily"].isNull()) {
@@ -266,8 +263,7 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
     if (!doc["shortPwrBtn"].isNull()) {
       const uint8_t old = doc["shortPwrBtn"] | (uint8_t)0;
       // v1: 0 sleep, 1 refresh
-      shortPwrBtn =
-          (old == 1) ? (uint8_t)FORCE_REFRESH : (uint8_t)SLEEP;
+      shortPwrBtn = (old == 1) ? (uint8_t)FORCE_REFRESH : (uint8_t)SLEEP;
     }
 
     needsResave = true;
@@ -276,14 +272,11 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
   // The current controls layout stores Dictionary, Highlight and Screenshot as
   // 0, 1 and 2. Older layouts used different meanings, so migrate those to the
   // safe Dictionary default instead of interpreting their values directly.
-  const uint8_t storedControlsLayoutVersion =
-      doc["controlsLayoutVersion"] | (uint8_t)0;
+  const uint8_t storedControlsLayoutVersion = doc["controlsLayoutVersion"] | (uint8_t)0;
   if (storedControlsLayoutVersion >= 2) {
-    const uint8_t storedFunction =
-        doc["longPressMenuFunction"] | (uint8_t)LP_MENU_DICTIONARY;
+    const uint8_t storedFunction = doc["longPressMenuFunction"] | (uint8_t)LP_MENU_DICTIONARY;
     s.longPressMenuFunction =
-        clamp(storedFunction, (uint8_t)LONG_PRESS_MENU_FUNCTION_COUNT,
-              (uint8_t)LP_MENU_DICTIONARY);
+        clamp(storedFunction, (uint8_t)LONG_PRESS_MENU_FUNCTION_COUNT, (uint8_t)LP_MENU_DICTIONARY);
     if (doc["longPressMenuFunction"].isNull()) {
       needsResave = true;
     }

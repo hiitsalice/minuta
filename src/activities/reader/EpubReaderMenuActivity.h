@@ -24,9 +24,7 @@ class EpubReaderMenuActivity final : public UiListActivity {
     HIGHLIGHT,
     HIGHLIGHT_MARKER,
     SCREENSHOT,
-    DISPLAY_QR,
     GO_HOME,
-    SYNC,
     DELETE_CACHE,
     DICTIONARY,
     SELECT_DICTIONARY
@@ -37,12 +35,7 @@ class EpubReaderMenuActivity final : public UiListActivity {
     StrId labelId;
   };
 
-  enum class Category : uint8_t {
-    NAVIGATION,
-    TOOLS,
-    APPEARANCE,
-    UTILITIES
-  };
+  enum class Category : uint8_t { NAVIGATION, TOOLS, APPEARANCE, UTILITIES };
 
   struct VisibleRow {
     bool isCategory = false;
@@ -54,7 +47,8 @@ class EpubReaderMenuActivity final : public UiListActivity {
 
   explicit EpubReaderMenuActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const std::string& title,
                                   const int currentPage, const int totalPages, const int bookProgressPercent,
-                                  const uint8_t currentOrientation, const bool hasFootnotes, bool hasBookmarks, bool* categoryExpanded, int* selectedRow);
+                                  const uint8_t currentOrientation, const bool hasFootnotes, bool hasBookmarks,
+                                  bool* categoryExpanded, int* selectedRow);
 
   void onEnter() override;
   void render(RenderLock&&) override;

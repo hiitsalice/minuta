@@ -1,7 +1,6 @@
 #include "KeyboardEntryActivity.h"
 
 #include <Arduino.h>
-
 #include <HalGPIO.h>
 #include <I18n.h>
 
@@ -88,8 +87,7 @@ const fui::KeyboardKey URL_SNIP_ROW1[] = {UK("https://", "https://", 2001), UK("
                                           UK(".com", ".com", 2003)};
 const fui::KeyboardKey URL_SNIP_ROW2[] = {UK("http://", "http://", 2004), UK("192.168.", "192.168.", 2005),
                                           UK(".org", ".org", 2006)};
-const fui::KeyboardKey URL_SNIP_ROW3[] = {UK("/opds", "/opds", 2007), UK(":8080", ":8080", 2008),
-                                          UK(".net", ".net", 2009)};
+const fui::KeyboardKey URL_SNIP_ROW3[] = {UK("/", "/", 2007), UK(":8080", ":8080", 2008), UK(".net", ".net", 2009)};
 const fui::KeyboardKey URL_SNIP_BOTTOM[] = {UKS("abc", fui::KeyKind::Mode, fui::QWERTY_KEY_MODE, 2),
                                             UKS("Del", fui::KeyKind::Delete, fui::QWERTY_KEY_BACKSPACE, 2),
                                             UKS("OK", fui::KeyKind::Ok, fui::QWERTY_KEY_ENTER, 2)};
@@ -333,8 +331,7 @@ std::string KeyboardEntryActivity::displayTextForCurrentState() const {
   }
 
   const bool revealRecentInput =
-      !cursorMode && passwordRevealActive &&
-      static_cast<uint32_t>(millis() - passwordRevealStartedAt) < 1500;
+      !cursorMode && passwordRevealActive && static_cast<uint32_t>(millis() - passwordRevealStartedAt) < 1500;
   for (size_t i = 0; i < displayText.length(); i++) {
     if (!revealRecentInput || i < passwordRevealStart || i >= passwordRevealEnd) {
       displayText[i] = '*';
@@ -424,8 +421,7 @@ void KeyboardEntryActivity::loop() {
     upLongHandled = false;
   }
 
-  if (upHeld && !upLongHandled && !text.empty() &&
-      mappedInput.isPressed(MappedInputManager::Button::Up) &&
+  if (upHeld && !upLongHandled && !text.empty() && mappedInput.isPressed(MappedInputManager::Button::Up) &&
       mappedInput.getHeldTime() >= LONG_PRESS_MS) {
     cursorMode = true;
     upLongHandled = true;
@@ -566,7 +562,6 @@ void KeyboardEntryActivity::loop() {
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     onCancel();
   }
-
 }
 
 void KeyboardEntryActivity::render(RenderLock&&) {
@@ -625,13 +620,12 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     visibleStart = absoluteCursorPos;
     leadingEllipsis = visibleStart > 0;
     const int prefixReserve = leadingEllipsis ? ellipsisWidth : 0;
-    visibleEnd = static_cast<size_t>(lineBreakEnd(
-        displayText, static_cast<int>(visibleStart), std::max(1, maxLineWidth - prefixReserve)));
+    visibleEnd = static_cast<size_t>(
+        lineBreakEnd(displayText, static_cast<int>(visibleStart), std::max(1, maxLineWidth - prefixReserve)));
     if (visibleEnd < displayText.length()) {
       trailingEllipsis = true;
-      visibleEnd = static_cast<size_t>(lineBreakEnd(
-          displayText, static_cast<int>(visibleStart),
-          std::max(1, maxLineWidth - prefixReserve - ellipsisWidth)));
+      visibleEnd = static_cast<size_t>(lineBreakEnd(displayText, static_cast<int>(visibleStart),
+                                                    std::max(1, maxLineWidth - prefixReserve - ellipsisWidth)));
     }
   }
 
@@ -660,8 +654,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     if (w > cursorCharWidth) cursorCharWidth = w;
   }
 
-  const int textWidth =
-      renderer.getTextAdvanceX(UI_10_FONT_ID, visibleDisplayText.c_str(), EpdFontFamily::REGULAR);
+  const int textWidth = renderer.getTextAdvanceX(UI_10_FONT_ID, visibleDisplayText.c_str(), EpdFontFamily::REGULAR);
   const int inputTextStartX = centerText ? (pageWidth - maxLineWidth) / 2 : effectiveMargin;
   int cursorPixelX = inputTextStartX;
   const int cursorLineY = inputStartY + 12;
@@ -675,15 +668,13 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       beforeCursor += visibleText.substr(0, renderCursorPos);
     }
 
-    const int beforeWidth =
-        renderer.getTextAdvanceX(UI_10_FONT_ID, beforeCursor.c_str(), EpdFontFamily::REGULAR);
+    const int beforeWidth = renderer.getTextAdvanceX(UI_10_FONT_ID, beforeCursor.c_str(), EpdFontFamily::REGULAR);
     int kernOffset = 0;
     if (cursorCharBytes > 0) {
       const std::string beforeAndCursor = beforeCursor + displayCursorChar;
       const int beforeAndCursorWidth =
           renderer.getTextAdvanceX(UI_10_FONT_ID, beforeAndCursor.c_str(), EpdFontFamily::REGULAR);
-      const int charAdvance =
-          renderer.getTextAdvanceX(UI_10_FONT_ID, displayCursorChar, EpdFontFamily::REGULAR);
+      const int charAdvance = renderer.getTextAdvanceX(UI_10_FONT_ID, displayCursorChar, EpdFontFamily::REGULAR);
       kernOffset = beforeAndCursorWidth - beforeWidth - charAdvance;
     }
 
@@ -778,9 +769,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
   constexpr int tipGap = 9;
   constexpr int tipsOffset = 12;
 
-  auto drawTip = [&](const char* tip, int y) {
-    renderer.drawCenteredText(UI_10_FONT_ID, y + kHintOffsetY, tip, true);
-  };
+  auto drawTip = [&](const char* tip, int y) { renderer.drawCenteredText(UI_10_FONT_ID, y + kHintOffsetY, tip, true); };
 
   /*
    * The bottom Tips area has a fixed top position.
@@ -788,8 +777,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
    * This is intentional: adding "Clear text" when the user types
    * must NOT move the existing tips upward.
    */
-  const int tipsStartY =
-      (underlineBottom + kbRect.y) / 2 - 3 * tipsLh - 2 * tipGap - tipsOffset + 18;
+  const int tipsStartY = (underlineBottom + kbRect.y) / 2 - 3 * tipsLh - 2 * tipGap - tipsOffset + 18;
 
   // The normal uppercase hint is stored as one long string.
   // Split it after "UPPERCASE" so the secondary part gets its own line.
@@ -826,9 +814,7 @@ void KeyboardEntryActivity::render(RenderLock&&) {
         altTipFirst = fullTip.substr(0, splitPos);
         altTipSecond = fullTip.substr(splitPos);
 
-        while (!altTipSecond.empty() &&
-               (altTipSecond.front() == ' ' ||
-                altTipSecond.front() == '\t')) {
+        while (!altTipSecond.empty() && (altTipSecond.front() == ' ' || altTipSecond.front() == '\t')) {
           altTipSecond.erase(altTipSecond.begin());
         }
 
@@ -846,13 +832,11 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     drawTip(passwordVisible ? "Hold LEFT to hide password" : "Hold RIGHT to show password", 366);
 
   } else if (inputType == InputType::Url && urlPanel && cursorMode) {
-
     drawTip(tr(STR_KB_TIPS), 324);
     drawTip("Press DOWN to return to keyboard", 352);
     drawTip("Press LEFT or RIGHT to move cursor", 380);
 
   } else if (inputType == InputType::Url && urlPanel) {
-
     // The URL snippets panel keeps the same hint block in normal mode.
     drawTip(tr(STR_KB_TIPS), 310);
     drawTip("Press ABC to exit URL mode", 338);
@@ -862,13 +846,11 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     }
 
   } else if (inputType == InputType::Url && symbols && cursorMode) {
-
     drawTip(tr(STR_KB_TIPS), 324);
     drawTip("Press DOWN to return to keyboard", 352);
     drawTip("Press LEFT or RIGHT to move cursor", 380);
 
   } else if (inputType == InputType::Url && cursorMode) {
-
     drawTip(tr(STR_KB_TIPS), 296);
     drawTip("Press DOWN to return to keyboard", 324);
     drawTip("Press LEFT or RIGHT to move cursor", 352);
@@ -886,7 +868,6 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     drawTip(tr(STR_KB_HINT_MOVE_CURSOR), 352);
 
   } else if (symbols && inputType == InputType::Url) {
-
     // URL symbol mode uses the same fixed baselines as regular symbol mode.
     drawTip(tr(STR_KB_TIPS), 324);
     if (!text.empty()) {
@@ -895,7 +876,6 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     }
 
   } else if (symbols) {
-
     // Symbol mode has a fixed three-line hint block. The two actions only
     // appear once there is text to edit.
     drawTip(tr(STR_KB_TIPS), 324);
@@ -905,7 +885,6 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     }
 
   } else if (urlPanel) {
-
     drawTip(tr(STR_KB_TIPS), y);
     y += tipsLh + tipGap;
     drawTip(tr(STR_KB_HINT_EXIT_URL_MODE), y);
@@ -916,7 +895,6 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     }
 
   } else if (inputType == InputType::Url) {
-
     // URL entry has a dedicated four-line hint block.
     drawTip(tr(STR_KB_TIPS), 282);
     drawTip(tr(STR_KB_HINT_URL_SNIPPETS), 310);
@@ -924,7 +902,6 @@ void KeyboardEntryActivity::render(RenderLock&&) {
     drawTip("Hold DEL to clear all text", 366);
 
   } else {
-
     // Keep the regular text-entry hints at their requested fixed baselines.
     drawTip(tr(STR_KB_TIPS), 268);
 
@@ -983,22 +960,23 @@ void KeyboardEntryActivity::render(RenderLock&&) {
       // Other layers use the standard compact keyboard dimensions.
       if (inputType == InputType::Url && urlPanel) {
         key.widthPx = 100;
-      } else switch (sourceKey.kind) {
-        case fui::KeyKind::Shift:
-        case fui::KeyKind::Delete:
-          key.widthPx = 60;
-          break;
-        case fui::KeyKind::Mode:
-        case fui::KeyKind::Ok:
-          key.widthPx = 90;
-          break;
-        case fui::KeyKind::Space:
-          key.widthPx = 160;
-          break;
-        default:
-          key.widthPx = static_cast<int16_t>(40 * (sourceKey.widthUnits ? sourceKey.widthUnits : 1));
-          break;
-      }
+      } else
+        switch (sourceKey.kind) {
+          case fui::KeyKind::Shift:
+          case fui::KeyKind::Delete:
+            key.widthPx = 60;
+            break;
+          case fui::KeyKind::Mode:
+          case fui::KeyKind::Ok:
+            key.widthPx = 90;
+            break;
+          case fui::KeyKind::Space:
+            key.widthPx = 160;
+            break;
+          default:
+            key.widthPx = static_cast<int16_t>(40 * (sourceKey.widthUnits ? sourceKey.widthUnits : 1));
+            break;
+        }
 
       // The alternate outputs remain available to long-press handling, but
       // are no longer drawn as small corner labels on the keys.

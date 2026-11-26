@@ -184,8 +184,6 @@ class GfxRenderer {
   void setOrientation(const Orientation o) { orientation = o; }
   Orientation getOrientation() const { return orientation; }
 
-  // Fading fix control
-
   // Screen ops
   int getScreenWidth() const;
   int getScreenHeight() const;

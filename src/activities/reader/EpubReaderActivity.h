@@ -33,7 +33,6 @@ class EpubReaderActivity final : public ReaderActivity {
   bool pendingPercentJump = false;
   float pendingSpineProgress = 0.0f;
   bool pendingScreenshot = false;
-  bool pendingSyncSaveError = false;
   uint8_t pageLoadRetryCount = 0;
   static constexpr uint8_t MAX_PAGE_LOAD_RETRIES = 3;
   bool skipNextButtonCheck = false;
@@ -101,7 +100,6 @@ class EpubReaderActivity final : public ReaderActivity {
   void openReaderMenu();
   void openDictionaryWordSelect();
   void openHighlightWordSelect();
-  bool launchKOReaderSync();
   unsigned long confirmLongPressThreshold() const;
   void toggleAutoPageTurn(uint8_t selectedPageTurnOption);
   void loadCachedBookmarks();
