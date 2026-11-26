@@ -58,7 +58,6 @@ HTML dictionaries that declare `sametypesequence=h` use the EPUB text-layout eng
 
 ## Where to find dictionaries
 
-> credit to https://github.com/koreader/koreader/wiki/Dictionary-support for the list.
 
 - The [reader.dict](https://www.reader-dict.com) (ex "BoboTiG/ebook-reader-dict") project provides StarDict version of daily dumps of [Wiktionary](https://www.wiktionary.org/) monolingual dictionaries for a variety of languages. It also provides [non-free multilingual](https://www.reader-dict.com) dictionaries.
 - The [WikDict](https://www.wikdict.com) project provides free bilingual dictionaries based on [Wiktionary](https://www.wiktionary.org/) for a lot of language pairs. StarDict versions can be [downloaded from here](https://download.wikdict.com/dictionaries/stardict/).
