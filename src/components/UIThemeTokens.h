@@ -29,7 +29,7 @@ inline freeink::ui::ThemeTokens uiThemeTokens(const freeink::ui::GfxRendererTarg
   const auto& vi = BoardConfig::ACTIVE.viewableInsets;
   tokens.listScrollInset = static_cast<int16_t>(metrics.listScrollSide == 1 ? vi.left : vi.right);
   // Screen::header()/status() band height. Without this the SDK's
-  // line-height-derived default applies and fui-drawn headers (OPDS) come out
+  // line-height-derived default applies and fui-drawn headers come out
   // a different height than every GUI.drawHeader band.
   tokens.headerHeight = static_cast<int16_t>(metrics.headerHeight);
   tokens.headerSidePadding = static_cast<int16_t>(metrics.headerSidePadding);

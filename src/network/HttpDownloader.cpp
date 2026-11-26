@@ -20,12 +20,12 @@ extern "C" void wolfSSL_Arduino_Serial_Print(const char* const msg) { LOG_DBG("W
 namespace {
 #if !defined(FREEINK_NET_WOLFSSL)
 // RX holds the response headers. Smaller buffers leave enough contiguous heap
-// for mbedTLS on redirect-heavy OPDS feeds while still preserving the headers
+// for mbedTLS on redirect-heavy feeds while still preserving the headers
 // we read directly (Location, Content-Length).
 constexpr int HTTP_RX_BUF = 2048;
 constexpr int HTTP_TX_BUF = 512;
 #endif
-// Per-socket-op timeout. Some OPDS download endpoints are slow to send headers
+// Per-socket-op timeout. Some download endpoints are slow to send headers
 // (>15s) and chunked catalogs stall mid-body, so 15s killed them. 60s gives
 // slow servers room. esp_http_client's timeout_ms is uint32, so unlike Arduino
 // HTTPClient's uint16 setTimeout it doesn't silently truncate.
@@ -146,7 +146,7 @@ HttpDownloader::DownloadError runGet(const std::string& url, const std::string& 
   }
 
   // open()/read() does not auto-follow redirects (only perform() does), so step
-  // 30x responses manually. OPDS download endpoints and the GitHub release CDN
+  // 30x responses manually. Download endpoints and the GitHub release CDN
   // both redirect.
   esp_err_t err = esp_http_client_open(client, 0);
   if (err != ESP_OK) {

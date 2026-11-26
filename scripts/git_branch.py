@@ -2,7 +2,7 @@
 PlatformIO pre-build script: inject git branch and short SHA into
 CROSSPOINT_VERSION for development environments.
 
-Results in a version string like:  1.1.0-dev-feat-kosync-xpath-05c6cf8
+Results in a version string like:  1.1.0-dev-feat-example-05c6cf8
 Release environments are unaffected; they set CROSSPOINT_VERSION in the ini.
 """
 
