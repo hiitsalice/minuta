@@ -22,7 +22,6 @@ class ButtonShortcutsActivity final : public UiListActivity {
     int section;
     std::string text;
     std::string boldTail;
-    bool toolSelector = false;
   };
 
   int listCount() const override { return static_cast<int>(rows_.size()); }

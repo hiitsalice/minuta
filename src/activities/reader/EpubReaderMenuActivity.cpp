@@ -46,11 +46,9 @@ void EpubReaderMenuActivity::rebuildVisibleRows() {
   constexpr size_t NAVIGATION_START = 0;
   constexpr size_t NAVIGATION_END = 4;
   constexpr size_t TOOLS_START = 4;
-  constexpr size_t TOOLS_END = 10;
-  constexpr size_t APPEARANCE_START = 10;
-  constexpr size_t APPEARANCE_END = 13;
-  constexpr size_t UTILITIES_START = 13;
-  constexpr size_t UTILITIES_END = 14;
+  constexpr size_t TOOLS_END = 11;
+  constexpr size_t APPEARANCE_START = 11;
+  constexpr size_t APPEARANCE_END = 14;
 
   const auto addCategory = [this](const Category category, const size_t start, const size_t end) {
     const size_t categoryIndex = static_cast<size_t>(category);
@@ -64,7 +62,6 @@ void EpubReaderMenuActivity::rebuildVisibleRows() {
   addCategory(Category::NAVIGATION, NAVIGATION_START, NAVIGATION_END);
   addCategory(Category::TOOLS, TOOLS_START, TOOLS_END);
   addCategory(Category::APPEARANCE, APPEARANCE_START, APPEARANCE_END);
-  addCategory(Category::UTILITIES, UTILITIES_START, UTILITIES_END);
 
   buildMenuRowItems();
 }
@@ -76,7 +73,6 @@ void EpubReaderMenuActivity::buildMenuRowItems() {
       "Navigation",
       "Tools",
       "Appearance",
-      "Utilities",
   };
 
   for (size_t i = 0; i < visibleRows.size() && i < MAX_MENU_ITEMS; ++i) {
@@ -126,14 +122,12 @@ void EpubReaderMenuActivity::buildMenuItems(std::vector<MenuItem>& items, bool h
   items.push_back({MenuAction::DICTIONARY, StrId::STR_LOOKUP});
   items.push_back({MenuAction::SELECT_DICTIONARY, StrId::STR_DICTIONARY_SET});
   items.push_back({MenuAction::SCREENSHOT, StrId::STR_SCREENSHOT_BUTTON});
+  items.push_back({MenuAction::DELETE_CACHE, StrId::STR_DELETE_CACHE});
 
   // Appearance
   items.push_back({MenuAction::STATUS_BAR, StrId::STR_CUSTOMISE_STATUS_BAR});
   items.push_back({MenuAction::TEXT_SETTINGS, StrId::STR_TEXT_SETTINGS});
   items.push_back({MenuAction::ROTATE_SCREEN, StrId::STR_ORIENTATION});
-
-  // Utilities
-  items.push_back({MenuAction::DELETE_CACHE, StrId::STR_DELETE_CACHE});
 }
 
 void EpubReaderMenuActivity::closeCancelled() {

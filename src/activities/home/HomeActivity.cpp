@@ -478,6 +478,6 @@ void HomeActivity::switchTheme(const MappedInputManager::Button heldButton) {
   onEnter();  // rebuild Home (covers, selection) for the new theme
 }
 
-void HomeActivity::onSettingsOpen() { activityManager.goToSettings(); }
+void HomeActivity::onSettingsOpen() { activityManager.goToBrowseMenu(); }
 
 void HomeActivity::onFileTransferOpen() { activityManager.goToFileTransfer(); }

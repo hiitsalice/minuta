@@ -489,26 +489,27 @@ void EpubReaderActivity::loop() {
     requestUpdate();
   }
 
-  const unsigned long confirmHoldMs = confirmLongPressThreshold();
   const bool confirmLongPressed =
-      confirmHoldMs != 0 && mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, confirmHoldMs);
+      mappedInput.wasLongPressed(MappedInputManager::Button::Confirm, ReaderUtils::BOOKMARK_HOLD_MS);
   const bool confirmReleased = mappedInput.wasReleased(MappedInputManager::Button::Confirm);
-  if (confirmLongPressed && !infoScreenShown) {
-    switch (SETTINGS.longPressMenuFunction) {
-      case CrossPointSettings::LP_MENU_HIGHLIGHT:
-        openHighlightWordSelect();
-        return;
-      case CrossPointSettings::LP_MENU_SCREENSHOT: {
+  if (!infoScreenShown) {
+    // Fixed hold shortcuts: Select = dictionary, Left = highlight, Right = screenshot.
+    // (Holding the side Up/Down buttons still skips chapters via detectPageTurn.)
+    if (confirmLongPressed) {
+      openDictionaryWordSelect();
+      return;
+    }
+    if (mappedInput.wasLongPressed(MappedInputManager::Button::Left, ReaderUtils::BOOKMARK_HOLD_MS)) {
+      openHighlightWordSelect();
+      return;
+    }
+    if (mappedInput.wasLongPressed(MappedInputManager::Button::Right, ReaderUtils::BOOKMARK_HOLD_MS)) {
+      {
         RenderLock lock;
         pendingScreenshot = true;
       }
-        requestUpdate();
-        return;
-      case CrossPointSettings::LP_MENU_DICTIONARY:
-        openDictionaryWordSelect();
-        return;
-      default:
-        break;
+      requestUpdate();
+      return;
     }
   }
 
@@ -859,18 +860,6 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
           progressChangeResultHandler);
       break;
     }
-  }
-}
-
-unsigned long EpubReaderActivity::confirmLongPressThreshold() const {
-  switch (SETTINGS.longPressMenuFunction) {
-    case CrossPointSettings::LP_MENU_DICTIONARY:
-      return ReaderUtils::BOOKMARK_HOLD_MS;
-    case CrossPointSettings::LP_MENU_HIGHLIGHT:
-    case CrossPointSettings::LP_MENU_SCREENSHOT:
-      return ReaderUtils::BOOKMARK_HOLD_MS;
-    default:
-      return 0;
   }
 }
 

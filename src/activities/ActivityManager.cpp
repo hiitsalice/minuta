@@ -21,7 +21,6 @@
 #include "network/UsbDriveActivity.h"
 #include "reader/ReaderActivity.h"
 #include "reader/ReaderUtils.h"
-#include "settings/SettingsActivity.h"
 #include "util/BmpViewerActivity.h"
 #include "util/FullScreenMessageActivity.h"
 #include "util/UnsupportedFileFormatActivity.h"
@@ -223,8 +222,6 @@ void ActivityManager::goToUsbDrive() {
 #endif
 }
 
-void ActivityManager::goToSettings() { replaceActivity(std::make_unique<SettingsActivity>(renderer, mappedInput)); }
-
 void ActivityManager::goToFileBrowser(std::string path) {
   replaceActivity(std::make_unique<FileBrowserActivity>(renderer, mappedInput, std::move(path)));
 }
@@ -309,8 +306,6 @@ void ActivityManager::goHome(HomeMenuItem initialMenuItem, bool cleanInitialRefr
       initialMenuItem = HomeMenuItem::RECENTS;
     } else if (activityName == "CrossPointWebServer") {
       initialMenuItem = HomeMenuItem::FILE_TRANSFER;
-    } else if (activityName == "Settings") {
-      initialMenuItem = HomeMenuItem::SETTINGS_MENU;
     }
   }
   replaceActivity(std::make_unique<HomeActivity>(renderer, mappedInput, initialMenuItem, cleanInitialRefresh));

@@ -52,7 +52,7 @@ class EpubReaderActivity final : public ReaderActivity {
   bool recentsEntryRemoved = false;
   unsigned long bookmarkMessageTime = 0UL;
   bool pendingReadFolderMove = false;
-  bool readerMenuCategoryExpanded[4] = {false, false, false, false};
+  bool readerMenuCategoryExpanded[3] = {false, false, false};
   int readerMenuSelectedRow = 0;
 
   void resetReaderMenuState();
@@ -100,7 +100,6 @@ class EpubReaderActivity final : public ReaderActivity {
   void openReaderMenu();
   void openDictionaryWordSelect();
   void openHighlightWordSelect();
-  unsigned long confirmLongPressThreshold() const;
   void toggleAutoPageTurn(uint8_t selectedPageTurnOption);
   void loadCachedBookmarks();
   void addBookmark();

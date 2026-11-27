@@ -12,7 +12,7 @@
 
 #include "CrossPointSettings.h"
 #include "ReaderFontSizes.h"
-#include "activities/settings/SettingsActivity.h"
+#include "SettingInfo.h"
 #include "util/DictionaryRegistry.h"
 
 // Build the font family setting dynamically. When registry is non-null, SD card fonts

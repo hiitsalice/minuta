@@ -110,17 +110,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   // Short power button press actions
   enum SHORT_PWRBTN { FORCE_REFRESH = 0, SLEEP = 1, SHORT_PWRBTN_COUNT };
 
-  // Long-press Confirm action while reading an EPUB. The setting cycles through these values.
-  // Persisted in settings.json by index: any new function (e.g. dictionary, bookmark) MUST use a
-  // value >= 2 and be appended at the END of the enumValues array in SettingsList.h, otherwise the
-  // stored indices shift and existing saves are silently misinterpreted.
-  enum LONG_PRESS_MENU_FUNCTION {
-    LP_MENU_DICTIONARY = 0,
-    LP_MENU_HIGHLIGHT = 1,
-    LP_MENU_SCREENSHOT = 2,
-    LONG_PRESS_MENU_FUNCTION_COUNT
-  };
-
   // Hide battery percentage
   enum HIDE_BATTERY_PERCENTAGE { HIDE_NEVER = 0, HIDE_READER = 1, HIDE_ALWAYS = 2, HIDE_BATTERY_PERCENTAGE_COUNT };
 
@@ -187,8 +176,6 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t screenMargin = SCREEN_MARGIN_MAX;
   // Hide battery percentage
   uint8_t hideBatteryPercentage = HIDE_NEVER;
-  // Long-press Confirm function in EPUB reader.
-  uint8_t longPressMenuFunction = LP_MENU_DICTIONARY;
   // UI Theme
   uint8_t uiTheme = SOLUM;
   // Power button return from footnotes (1 = enabled, 0 = disabled)

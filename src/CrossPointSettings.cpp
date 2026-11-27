@@ -89,7 +89,6 @@ void CrossPointSettings::toJson(JsonDocument& doc) const {
   doc["frontButtonConfirm"] = frontButtonConfirm;
   doc["frontButtonLeft"] = frontButtonLeft;
   doc["frontButtonRight"] = frontButtonRight;
-  doc["longPressMenuFunction"] = longPressMenuFunction;
   // Font family and size — both use dynamic getter/setters in SettingsList (the
   // option lists depend on the SD font registry), so the generic loop skips them.
   doc["fontFamily"] = fontFamily;
@@ -267,21 +266,6 @@ bool CrossPointSettings::fromJson(JsonVariantConst doc) {
     }
 
     needsResave = true;
-  }
-
-  // The current controls layout stores Dictionary, Highlight and Screenshot as
-  // 0, 1 and 2. Older layouts used different meanings, so migrate those to the
-  // safe Dictionary default instead of interpreting their values directly.
-  const uint8_t storedControlsLayoutVersion = doc["controlsLayoutVersion"] | (uint8_t)0;
-  if (storedControlsLayoutVersion >= 2) {
-    const uint8_t storedFunction = doc["longPressMenuFunction"] | (uint8_t)LP_MENU_DICTIONARY;
-    s.longPressMenuFunction =
-        clamp(storedFunction, (uint8_t)LONG_PRESS_MENU_FUNCTION_COUNT, (uint8_t)LP_MENU_DICTIONARY);
-    if (doc["longPressMenuFunction"].isNull()) {
-      needsResave = true;
-    }
-  } else {
-    s.longPressMenuFunction = (uint8_t)LP_MENU_DICTIONARY;
   }
 
   // Front button remap — managed by RemapFrontButtons sub-activity, not in SettingsList.

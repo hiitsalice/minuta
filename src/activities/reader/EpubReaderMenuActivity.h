@@ -35,7 +35,7 @@ class EpubReaderMenuActivity final : public UiListActivity {
     StrId labelId;
   };
 
-  enum class Category : uint8_t { NAVIGATION, TOOLS, APPEARANCE, UTILITIES };
+  enum class Category : uint8_t { NAVIGATION, TOOLS, APPEARANCE };
 
   struct VisibleRow {
     bool isCategory = false;
