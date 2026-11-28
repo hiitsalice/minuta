@@ -8,8 +8,9 @@
 #include "activities/UiListActivity.h"
 
 // Menu opened from Solum/Quartum's "Browse" button: one flat list holding the
-// library, fonts and device settings. The Controls / Display / Network groups
-// are collapsible sections that start collapsed.
+// library, fonts and device settings. Hidden Features sits on top; the Files /
+// Reading / Controls / Display / Network groups are collapsible sections that
+// start collapsed.
 class BrowseMenuActivity final : public UiListActivity {
  public:
   explicit BrowseMenuActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);
@@ -18,18 +19,16 @@ class BrowseMenuActivity final : public UiListActivity {
   enum class Entry : uint8_t {
     HiddenFeatures,
     Library,
+    SdFirmwareUpdate,
     RecentBooks,
     ReaderFont,
-    SdFirmwareUpdate,
     RemapFrontButtons,
     ReaderSideButtons,
     TimeToSleep,
     SleepScreen,
     RefreshFrequency,
     WifiNetworks,
-    NetworkMode,
-    HotspotMode,
-    CalibreWireless,
+    FileTransfer,
   };
 
   struct VisibleRow {
@@ -38,14 +37,14 @@ class BrowseMenuActivity final : public UiListActivity {
     Entry entry = Entry::HiddenFeatures;
   };
 
-  static constexpr int SECTION_COUNT = 3;
-  static constexpr int MAX_ROWS = 5 + SECTION_COUNT + 9;
+  static constexpr int SECTION_COUNT = 5;
+  static constexpr int MAX_ROWS = 1 + SECTION_COUNT + 11;
 
   std::vector<SettingInfo> allSettings_;
   std::vector<VisibleRow> visibleRows_;
   std::vector<std::string> rowValues_;
   std::vector<freeink::ui::ListItem> rowItems_;
-  bool sectionExpanded_[SECTION_COUNT] = {false, false, false};
+  bool sectionExpanded_[SECTION_COUNT] = {false, false, false, false, false};
 
   void rebuildVisibleRows();
   void rebuildRowItems();

@@ -2,7 +2,6 @@
 
 #include <functional>
 #include <memory>
-#include <optional>
 #include <string>
 
 #include "NetworkModeSelectionActivity.h"
@@ -31,10 +30,6 @@ enum class WebServerActivityState {
 class CrossPointWebServerActivity final : public Activity {
   WebServerActivityState state = WebServerActivityState::MODE_SELECTION;
 
-  // When set, the activity skips the mode picker and starts this mode directly
-  // (used by the Menu entries); backing out then closes the activity.
-  std::optional<NetworkMode> startMode;
-
   // Network mode
   NetworkMode networkMode = NetworkMode::JOIN_NETWORK;
   int selectedNetworkModeIndex = 0;
@@ -62,16 +57,14 @@ class CrossPointWebServerActivity final : public Activity {
   void renderWifiIndicator(int subHeaderTop) const;
 
   void returnToNetworkModeSelection();
-  void showModeSelection();
   void onNetworkModeSelected(NetworkMode mode);
   void onWifiSelectionComplete(bool connected);
   void startAccessPoint();
   void startWebServer();
 
  public:
-  explicit CrossPointWebServerActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
-                                       std::optional<NetworkMode> initialMode = std::nullopt)
-      : Activity("CrossPointWebServer", renderer, mappedInput), startMode(initialMode) {}
+  explicit CrossPointWebServerActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
+      : Activity("CrossPointWebServer", renderer, mappedInput) {}
   void onEnter() override;
   void onExit() override;
   void loop() override;

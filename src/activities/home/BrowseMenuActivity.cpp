@@ -13,7 +13,6 @@
 #include "activities/ActivityManager.h"
 #include "activities/home/FileBrowserActivity.h"
 #include "activities/home/RecentBooksActivity.h"
-#include "activities/network/CrossPointWebServerActivity.h"
 #include "activities/network/WifiSelectionActivity.h"
 #include "activities/settings/ButtonRemapActivity.h"
 #include "activities/settings/ButtonShortcutsActivity.h"
@@ -33,7 +32,7 @@ struct SectionDef {
 };
 
 // Entries before the first section are always visible.
-constexpr int kTopEntryCount = 5;
+constexpr int kTopEntryCount = 1;
 
 std::string settingValueText(const SettingInfo& setting) {
   if (setting.type == SettingType::TOGGLE && setting.valuePtr != nullptr) {
@@ -83,10 +82,8 @@ BrowseMenuActivity::BrowseMenuActivity(GfxRenderer& renderer, MappedInputManager
 }
 
 namespace {
-constexpr SectionDef kSections[3] = {
-    {"Controls", 2},
-    {"Display", 3},
-    {"Network", 4},
+constexpr SectionDef kSections[5] = {
+    {"Files", 2}, {"Reading", 2}, {"Controls", 2}, {"Display", 3}, {"Network", 2},
 };
 }  // namespace
 
@@ -137,18 +134,19 @@ void BrowseMenuActivity::rebuildRowItems() {
       switch (row.entry) {
         case Entry::HiddenFeatures:
           item.label = I18N.get(StrId::STR_BUTTON_SHORTCUTS);
+          item.bold = true;
           break;
         case Entry::Library:
           item.label = I18N.get(StrId::STR_LIBRARY);
+          break;
+        case Entry::SdFirmwareUpdate:
+          item.label = I18N.get(StrId::STR_SD_FIRMWARE_UPDATE);
           break;
         case Entry::RecentBooks:
           item.label = I18N.get(StrId::STR_MENU_RECENT_BOOKS);
           break;
         case Entry::ReaderFont:
           item.label = I18N.get(StrId::STR_FONT_BROWSER);
-          break;
-        case Entry::SdFirmwareUpdate:
-          item.label = I18N.get(StrId::STR_SD_FIRMWARE_UPDATE);
           break;
         case Entry::RemapFrontButtons:
           item.label = I18N.get(StrId::STR_REMAP_FRONT_BUTTONS);
@@ -168,14 +166,8 @@ void BrowseMenuActivity::rebuildRowItems() {
         case Entry::WifiNetworks:
           item.label = I18N.get(StrId::STR_WIFI_NETWORKS);
           break;
-        case Entry::NetworkMode:
-          item.label = I18N.get(StrId::STR_JOIN_NETWORK);
-          break;
-        case Entry::HotspotMode:
-          item.label = I18N.get(StrId::STR_CREATE_HOTSPOT);
-          break;
-        case Entry::CalibreWireless:
-          item.label = I18N.get(StrId::STR_CALIBRE_WIRELESS);
+        case Entry::FileTransfer:
+          item.label = I18N.get(StrId::STR_FILE_TRANSFER);
           break;
       }
       item.labelXOffset = 0;
@@ -308,17 +300,8 @@ void BrowseMenuActivity::activateIndex(const int index) {
     case Entry::WifiNetworks:
       startActivityForResult(std::make_unique<WifiSelectionActivity>(renderer, mappedInput, false), saveAndRefresh);
       break;
-    case Entry::NetworkMode:
-      activityManager.pushActivity(
-          std::make_unique<CrossPointWebServerActivity>(renderer, mappedInput, NetworkMode::JOIN_NETWORK));
-      break;
-    case Entry::HotspotMode:
-      activityManager.pushActivity(
-          std::make_unique<CrossPointWebServerActivity>(renderer, mappedInput, NetworkMode::CREATE_HOTSPOT));
-      break;
-    case Entry::CalibreWireless:
-      activityManager.pushActivity(
-          std::make_unique<CrossPointWebServerActivity>(renderer, mappedInput, NetworkMode::CONNECT_CALIBRE));
+    case Entry::FileTransfer:
+      activityManager.goToFileTransfer();
       break;
   }
 }
