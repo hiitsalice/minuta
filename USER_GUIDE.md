@@ -20,12 +20,14 @@ Welcome to the **CrossPoint** firmware. This guide outlines the hardware control
       - [Configuring the CrossPoint Plugin in Calibre](#configuring-the-crosspoint-plugin-in-calibre)
       - [Uploading Books](#uploading-books)
       - [Removing a Book](#removing-a-book)
-    - [3.6 Settings](#36-settings)
-      - [3.6.1 Display](#361-display)
-      - [3.6.2 Reader](#362-reader)
-      - [3.6.3 Controls](#363-controls)
-      - [3.6.4 System](#364-system)
-      - [3.6.5 Web Settings (Wi-Fi)](#365-web-settings-wi-fi)
+    - [3.6 Menu](#36-menu)
+      - [3.6.1 Hidden Features](#361-hidden-features)
+      - [3.6.2 Files](#362-files)
+      - [3.6.3 Reading](#363-reading)
+      - [3.6.4 Controls](#364-controls)
+      - [3.6.5 Display](#365-display)
+      - [3.6.6 Network](#366-network)
+      - [3.6.7 Web Settings (Wi-Fi)](#367-web-settings-wi-fi)
     - [3.7 Sleep Screen](#37-sleep-screen)
       - [Cover settings](#cover-settings)
       - [Custom images](#custom-images)
@@ -40,7 +42,7 @@ Welcome to the **CrossPoint** firmware. This guide outlines the hardware control
     - [Supported Languages](#supported-languages)
   - [5. Reader Menu](#5-reader-menu)
     - [5.1 Chapter Selection](#51-chapter-selection)
-    - [5.2 Bookmarks](#52-bookmarks)
+    - [5.2 Highlights](#52-highlights)
   - [6. Current Limitations \& Roadmap](#6-current-limitations--roadmap)
   - [7. Troubleshooting Issues \& Escaping Bootloop](#7-troubleshooting-issues--escaping-bootloop)
 
@@ -55,7 +57,7 @@ The device utilises the standard buttons on the Xteink X4 (in the same layout as
 | **Bottom Edge** | **Back**, **Confirm**, **Left**, **Right**           |
 | **Right Side**  | **Power**, **Volume Up**, **Volume Down**, **Reset** |
 
-Button layout can be customized in the **[Controls Settings](#363-controls)**.
+Button layout can be customized in the **[Controls](#364-controls)** group of the Menu.
 
 ### Taking a Screenshot
 
@@ -68,7 +70,6 @@ Alternatively, while reading a book, press the **Confirm** button to open the re
 ### Power On / Off
 
 To turn the device on or off, **press and hold the Power button for approximately half a second**.
-In the **[Controls Settings](#363-controls)** you can configure the power button to turn the device off with a short press instead of a long one.
 
 To reboot the device (for example after a firmware update or if it's frozen), press and release the Reset button, and then quickly press and hold the Power button for a few seconds.
 
@@ -85,7 +86,7 @@ Upon turning the device on for the first time, you will be placed on the **[Home
 
 ### 3.1 Home Screen
 
-The Home screen is the main entry point to the firmware. From here you can navigate to **[Reading Mode](#4-reading-mode)** with the most recently read book, the **[Browse Files](#33-browse-files-screen)** screen, the **[Recent Books](#34-recent-books-screen)** screen, the **[File Transfer](#35-file-transfer-screen)** screen, or **[Settings](#36-settings)**.
+The Home screen is the main entry point to the firmware. From here you can navigate to **[Reading Mode](#4-reading-mode)** with the most recently read book, the **[Browse Files](#33-browse-files-screen)** screen, the **[Recent Books](#34-recent-books-screen)** screen, the **[File Transfer](#35-file-transfer-screen)** screen, or the **[Menu](#36-menu)**.
 
 ### 3.2 Reading Mode
 
@@ -106,7 +107,7 @@ The Recent Books screen lists the most recently opened books in a chronological 
 
 ### 3.5 File Transfer Screen
 
-The File Transfer screen allows you to upload and manage files on the device. When you enter the screen, choose **Join a Network**, **Calibre Wireless**, or **Create Hotspot**. The reader then starts the web server for the selected mode.
+The File Transfer screen allows you to upload and manage files on the device. When you enter the screen, choose **Network Mode**, **Hotspot Mode**, or **Calibre Wireless**. The reader then starts the web server for the selected mode.
 
 See the [web server docs](./docs/webserver.md) for more information on how to connect to the web server and upload files.
 
@@ -163,148 +164,47 @@ The CrossPoint plugin will connect to your device, create a folder for the book'
 
 Books cannot be removed from your device through Calibre. Use the web interface instead.
 
-### 3.6 Settings
+### 3.6 Menu
 
-The Settings screen allows you to configure the device's behavior. There are a few settings you can adjust:
+The **Menu** replaces the old Settings screen. It is one list: **Hidden Features** sits at the top in bold, followed by five groups (**Files**, **Reading**, **Controls**, **Display** and **Network**). Press **Confirm** on a group to open or close it. Rows with a value on the right, such as Sleep Screen, change when you press **Confirm**.
 
-#### 3.6.1 Display
+#### 3.6.1 Hidden Features
 
-- **Sleep Screen**: Which sleep screen to display when the device sleeps:
-  
-  - "Dark" (default) - The default dark Crosspoint logo sleep screen
-  - "Light" - The same default sleep screen, on a white background
-  - "Custom" - Custom images from the SD card; see [Sleep Screen](#37-sleep-screen) below for more information
-  - "Cover" - The book cover image (Note: this is experimental and may not work as expected)
-  - "None" - A blank screen
-  - "Cover + Custom" - The book cover image while actively reading, falls back to "Custom" behavior otherwise
-  - "Quick resume" - The text of the last page read will be displayed on the sleep screen and a moon icon is shown on the edge of the screen. Waking up the device will return to the same page of the opened book. This is useful for quickly resuming reading without waiting for the device to fully wake up and load the book.
-  - "Transparent" - A transparent overlay image drawn over the current screen; see [Sleep Screen](#37-sleep-screen) below for more information
-- **Sleep Screen Cover Mode**: How to display the book cover when "Cover" sleep screen is selected:
-  
-  - "Fit" (default) - Scale the image down to fit centered on the screen, padding with white borders as necessary
-  - "Crop" - Scale the image down and crop as necessary to try to fill the screen (Note: this is experimental and may not work as expected)
+A read-only reference of button holds and shortcuts that are not labelled on screen, grouped by screen: General, Home, Library, Recent Book(s), Reader, Highlight List, Dictionary and Wi-Fi Networks. Only the groups can be opened and closed; the rows themselves cannot be selected.
 
-- **Sleep Screen Cover Filter**: What filter will be applied to the book cover when "Cover" sleep screen is selected:
-  
-  - "None" (default) - The cover image will be converted to a grayscale image and displayed as it is
-  - "Contrast" - The image will be displayed as a black & white image without grayscale conversion
-  - "Inverted" - The image will be inverted as in white & black and will be displayed without grayscale conversion
+#### 3.6.2 Files
 
-- **Quick Resume on Timeout**: Whether to enable the "Quick Resume" sleep screen when the device goes to sleep due to inactivity (System > Time to Sleep). This is useful for quickly resuming reading without waiting for the device to fully wake up and load the book. This overwrites the Sleep Screen Cover Mode when enabled.
-
-- **Status Bar**: Configure the status bar displayed while reading:
-  
-  - "None" - No status bar
-  - "No Progress" - Show status bar without reading progress
-  - "Full w/ Percentage" - Show status bar with book progress (as percentage)
-  - "Full w/ Book Bar" - Show status bar with book progress (as bar)
-  - "Book Bar Only" - Show book progress (as bar)
-  - "Full w/ Chapter Bar" - Show status bar with chapter progress (as bar)
-
-- **Hide Battery %**: Configure where to suppress the battery percentage display in the status bar; the battery icon will still be shown:
-  
-  - "Never" (default) - Always show battery percentage
-  - "In Reader" - Show battery percentage everywhere except in reading mode
-  - "Always" - Always hide battery percentage
-
-- **Refresh Frequency**: Set how often the screen does a full refresh while reading to reduce ghosting; options are every 1, 5, 10, 15, or 30 pages.
-
-- **UI Theme**: Set which UI theme to use:
-  
-  - "Classic" - The original Crosspoint theme
-  - "Lyra" - The new theme for Crosspoint featuring rounded elements and menu icons
-  - "Lyra Extended" - Lyra, but displays 3 books instead of 1 on the **[Home Screen](#31-home-screen)**
-  - "RoundedRaff" - A rounded theme with additional visual styling
-
-  
-  - "OFF" (default) - Disable the fix
-  - "ON" - Enable the fix
-
-> [!NOTE]
-> A battery charging indicator is shown on the battery icon whenever the device is actively charging.
-
-#### 3.6.2 Reader
-
-- **Reader Font Family**: Choose the font used for reading:
-  
-  - "Noto Serif" (default) - Google's serif font
-  - "Noto Sans" - Google's sans-serif font
-
-- **Reader Font Size**: Adjust the text size for reading; options are "Small", "Medium" (default), "Large", or "X Large".
-
-- **Reader Line Spacing**: Adjust the spacing between lines; options are "Tight", "Normal" (default), or "Wide".
-
-- **Reader Screen Margin**: Controls the screen margins in Reading Mode between 5 and 40 pixels in 5-pixel increments.
-
-- **Reader Paragraph Alignment**: Set the alignment of paragraphs; options are "Justified" (default), "Left", "Center", or "Right".
-
-- **Embedded Style**: Whether to use the EPUB file's embedded HTML and CSS stylisation and formatting; options are "ON" or "OFF".
-
-- **Hyphenation**: Whether to hyphenate text in Reading Mode; options are "ON" or "OFF".
-
-- **Reading Orientation**: Set the screen orientation for reading EPUB files:
-  
-  - "Portrait" (default) - Standard portrait orientation
-  - "Landscape CW" - Landscape, rotated clockwise
-  - "Inverted" - Portrait, upside down
-  - "Landscape CCW" - Landscape, rotated counter-clockwise
-
-- **Extra Paragraph Spacing**: Set how to handle paragraph breaks:
-  
-  - "ON" - Vertical space will be added between paragraphs in Reading Mode
-  - "OFF" - Paragraphs will not have vertical space added, but will have first-line indentation
-
-- **Dictionary**: Select the StarDict dictionary used for word lookups while reading, or "None" to disable lookups. *(Only shown when at least one dictionary folder exists under `/dictionaries/` on the SD card — see [docs/dictionary.md](docs/dictionary.md) for setup and usage.)*
-
-- **Text Anti-Aliasing**: Whether to show smooth grey edges (anti-aliasing) on text in reading mode. Note this slows down page turns slightly.
-
-- **Images**: Whether to display embedded images (JPG/PNG) found in EPUB files; options are "ON" (default) or "OFF".
-
-- **Focus Reading**: Bolds the first part of each word to create visual fixation points, similar to Bionic Reading. This can help improve reading speed and focus; options are "ON" or "OFF" (default).
-
-#### 3.6.3 Controls
-
-- **Remap Front Buttons**: A menu for customising the function of each bottom edge button.
-
-- **Side Button Layout (reader)**: Swap the order of the up and down volume buttons from "Prev/Next" (default) to "Next/Prev". You can also disable them entirely. This change is only in effect when reading.
-
-- **Long-press Chapter Skip**: Set whether long-pressing page turn buttons skips to the next/previous chapter:
-  
-  - "Chapter Skip" (default) - Long-pressing skips to next/previous chapter
-  - "Page Scroll" - Long-pressing scrolls a page up/down
-- **Long-press Menu**: Selects the function bound to holding the menu button (Confirm) while reading an EPUB. **Cycles through the available functions** each time the setting is selected — additional functions may be added in future releases, so this is not a binary on/off toggle. A short press of Confirm always opens the reader menu as normal:
-  - "Bookmark" (default) - Hold Confirm (~0.4 second) to drop a bookmark at the current page.
-  - "Dictionary" - Hold Confirm (~0.4 second) to start dictionary word selection on the current page (see [docs/dictionary.md](docs/dictionary.md)).
-  - "Disabled" - Long-press is ignored; only short-press opens the reader menu.
-
-- **Short Power Button Click**: Controls the effect of a short click of the power button:
-  
-  - "Ignore" (default) - Require a long press to turn off the device
-  - "Sleep" - A short press puts the device into sleep mode
-  - "Page Turn" - A short press in reading mode turns to the next page; a long press turns the device off
-  - "Endnotes" - A short press in reading mode opens the endnotes submenu; if only one endnote is present on the page, the referenced page is opened directly. The short press on the power button can be used to select the endnote in the submenu, and to go back to the original page after finish reading the endnote (like the back button).
-  - "Refresh" - A short press triggers a manual full-screen refresh, useful for clearing ghosting
-- **Quick-return from endnotes**: Toggles on and off the quick return functionality from the endnotes. When the functionality it's active, a short press of the power button will act as the back button from the endnotes page.
-
-#### 3.6.4 System
-
-- **Time to Sleep**: Set the duration of inactivity before the device automatically goes to sleep; options are 1, 3, 5, 10 (default), 15 or 30 minutes.
-
-- **Wi-Fi Networks**: Connect to Wi-Fi networks for file transfers.
-
-- **Clear Reading Cache**: Clear the internal SD card cache.
-
+- **Library**: Browse the files and folders on the SD card (see [Browse Files Screen](#33-browse-files-screen)).
 - **SD Card Firmware Update**: Update the firmware without a USB connection by placing a `firmware.bin` file on the SD card.
 
-- **Language**: Set the UI language. CrossPoint supports 24 languages: English, Spanish, French, German, Czech, Brazilian Portuguese, Russian, Swedish, Romanian, Catalan, Ukrainian, Belarusian, Italian, Polish, Finnish, Danish, Dutch, Turkish, Kazakh, Hungarian, Lithuanian, Slovenian, Valencian, and Hebrew.
+#### 3.6.3 Reading
 
-- **Manage Fonts**: Browse, download, and manage custom font families installed from the SD card. See [Custom Fonts (SD Card)](#38-custom-fonts-sd-card) for more information.
+- **Recent Book(s)**: Open one of the most recently read books (see [Recent Books Screen](#34-recent-books-screen)).
+- **Reader Font**: Browse, download, and manage custom font families. See [Custom Fonts (SD Card)](#38-custom-fonts-sd-card) for more information.
 
-#### 3.6.5 Web Settings (Wi-Fi)
+Text size, spacing, orientation and the status bar are changed from the **[Reader Menu](#5-reader-menu)** while reading.
+
+#### 3.6.4 Controls
+
+- **Remap Front Buttons**: A menu for customising the function of each bottom edge button.
+- **Reader Side Buttons**: Swap the roles of the up and down volume buttons between "Prev/Next" (default) and "Next/Prev". This only applies while reading.
+
+#### 3.6.5 Display
+
+- **Time To Sleep**: Choose how many minutes of inactivity pass before the device goes to sleep automatically.
+- **Sleep Screen**: Which sleep screen to show when the device sleeps. Each press of **Confirm** moves to the next option; see [Sleep Screen](#37-sleep-screen) below for what each one does.
+- **Refresh Frequency**: How often the screen does a full refresh while reading to reduce ghosting; options are every 1, 5, 10, 15, or 30 pages.
+
+#### 3.6.6 Network
+
+- **Wi-Fi Networks**: Manage saved Wi-Fi networks without starting a transfer: pick a network to connect, add one, or forget one.
+- **File Transfer**: Opens the [File Transfer Screen](#35-file-transfer-screen), where you choose **Network Mode**, **Hotspot Mode**, or **Calibre Wireless**.
+
+#### 3.6.7 Web Settings (Wi-Fi)
 
 While in **File Transfer** mode, the web settings page includes a management card for **Wi-Fi Networks**.
 
-1. On device: open **File Transfer** and connect through **Join a Network** or **Create Hotspot**.
+1. On device: open **File Transfer** and connect through **Network Mode** or **Hotspot Mode**.
 2. In a browser, open `http://<device-ip>/settings` or `http://crosspoint.local`.
 3. In **Wi-Fi Networks**, add, edit, or delete saved network entries (SSID + optional password).
 
@@ -369,11 +269,11 @@ CrossPoint supports loading additional fonts from the SD card, extending beyond 
 
 There are three ways to install fonts:
 
-1. **Download from device (recommended):** Go to **Settings -> System -> Manage Fonts**, browse the available font families, and select one to download over Wi-Fi.
+1. **Download from device (recommended):** Go to **Menu -> Reading -> Reader Font**, browse the available font families, and select one to download over Wi-Fi.
 2. **Upload via web interface:** While in **File Transfer** mode, open the web UI in a browser and navigate to the **Fonts** tab to upload `.cpfont` files.
 3. **Manual SD card copy:** Download font files from the [Minuta font catalogue](https://github.com/hiitsalice/minuta-fonts) and copy them to `/.fonts/` (preferred) or `/fonts/` on your SD card.
 
-Once installed, custom fonts appear in **Settings → Reader → Font Family** alongside the built-in fonts.
+Once installed, custom fonts appear in the font list under **Text Settings** in the **[Reader Menu](#5-reader-menu)** alongside the built-in fonts.
 
 See [docs/sd-card-fonts.md](./docs/sd-card-fonts.md) for full installation details and SD card folder structure.
 
@@ -390,16 +290,14 @@ Once you have opened a book, the button layout changes to facilitate reading.
 | **Previous Page** | Press **Left** _or_ **Volume Up**    |
 | **Next Page**     | Press **Right** _or_ **Volume Down** |
 
-The role of the volume (side) buttons can be swapped in the **[Controls Settings](#363-controls)**.
-
-If the **Short Power Button Click** setting is set to "Page Turn", you can also turn to the next page by briefly pressing the Power button.
+The role of the volume (side) buttons can be swapped in **Menu -> Controls -> Reader Side Buttons** (see [Controls](#364-controls)).
 
 ### Chapter Navigation
 
-* **Next Chapter:** Press and **hold** the **Right** (or **Volume Down**) button briefly, then release.
-* **Previous Chapter:** Press and **hold** the **Left** (or **Volume Up**) button briefly, then release.
+* **Next Chapter:** Press and **hold** the **Volume Down** (side) button briefly, then release.
+* **Previous Chapter:** Press and **hold** the **Volume Up** (side) button briefly, then release.
 
-This feature can be disabled in the **[Controls Settings](#363-controls)** to help avoid changing chapters by mistake.
+Holding **Left** or **Right** on the bottom edge starts a tool instead (see [System Navigation](#system-navigation)).
 
 ### Auto Page Turn
 
@@ -407,7 +305,7 @@ Auto Page Turn automatically advances pages at a set interval, useful for hands-
 
 ### Tilt Page Turn (X3 only)
 
-On the **Xteink X3**, the gyroscope can be used to turn pages by tilting the device. This feature is available in the Controls settings.
+On the **Xteink X3**, the gyroscope can be used to turn pages by tilting the device.
 
 ### Endnote Navigation
 
@@ -418,9 +316,13 @@ If the device goes to sleep or you close the book while viewing a endnote, the b
 ### System Navigation
 
 * **Return to Home:** Press the **Back** button to close the book and return to the **[Home](#31-home-screen)** screen.
-* **Return to Browse Files:** Press and hold the **Back** button to close the book and return to the **[Browse Files](#33-browse-files-screen)** screen.
+* **Main Menu:** Press and **hold** the **Back** button to close the book and go to the main menu.
 * **Reader Menu:** Press **Confirm** to open the **[Reader Menu](#5-reader-menu)**, which includes chapter navigation, reading options, and more.
-* **Long-press Confirm (configurable):** Holding **Confirm** runs the function chosen by the **Long-press Menu** setting in **[Controls Settings](#363-controls)** — "Bookmark" (default) drops a bookmark, "Dictionary" starts a word lookup, "Disabled" does nothing. A short press always opens the Reader Menu.
+* **Dictionary:** Hold **Confirm** (about 0.7 seconds) to start dictionary word selection on the current page (see [docs/dictionary.md](docs/dictionary.md)).
+* **Highlight:** Hold **Left** to start a highlight (see [Highlights](#52-highlights)).
+* **Screenshot:** Hold **Right** to save a screenshot of the current page.
+
+These three holds do nothing on the plain message screens the reader shows when a chapter is empty or a page fails to load.
 
 ### Supported Languages
 
@@ -438,17 +340,31 @@ What is not supported with built-in reader fonts: Chinese, Japanese, Korean, Ara
 
 Press **Confirm** while reading to open the Reader Menu. From here you can access reading utilities and navigation options without leaving the book.
 
-Available options include:
+The options are grouped into **Navigation**, **Tools** and **Appearance**, which open and close with **Confirm**. **Delete Book Cache** stands alone at the bottom in bold.
+
+**Navigation**
 
 - **Select Chapter** – Open the table of contents to jump to a specific chapter (see [Chapter Selection](#51-chapter-selection) below).
-- **Endnotes** – Navigate to the endnotes for the current section *(only shown in books that contain endnotes)*.
-- **Look Up** – Select a word on the current page and show its dictionary definition (see [docs/dictionary.md](docs/dictionary.md)). Requires a dictionary to be selected in **Settings → Reader → Dictionary**.
-- **Reading Orientation** – Cycle through screen orientations without leaving the reader.
+- **Go To Percent** – Jump to a specific position in the book by percentage.
+- **Footnotes** – Navigate to the endnotes for the current section.
 - **Auto Turn (sec/page)** – Cycle through automatic page turn speed options for hands-free reading.
-- **Go to %** – Jump to a specific position in the book by percentage.
-- **Take screenshot** – Save a screenshot of the current page to the `screenshots/` folder.
-- **Go Home** – Close the book and return to the Home screen.
-- **Delete Book Cache** – Clear the cached layout data for the current book, forcing a re-index on next open.
+
+**Tools**
+
+- **Highlight** – Start a highlight on the current page (see [Highlights](#52-highlights)).
+- **Highlight Marker** – Turn the highlight markers on the page on or off.
+- **Highlight List** – Browse your saved highlights.
+- **Lookup** – Select a word on the current page and show its dictionary definition (see [docs/dictionary.md](docs/dictionary.md)).
+- **Set Dictionary** – Choose which installed dictionary is used for lookups.
+- **Screenshot** – Save a screenshot of the current page to the `screenshots/` folder.
+
+**Appearance**
+
+- **Status Bar** – Customise the status bar shown while reading.
+- **Text Settings** – Font, text size, spacing and other layout options.
+- **Reader Orientation** – Cycle through screen orientations without leaving the reader.
+
+**Delete Book Cache** – Clear the cached layout data for the current book, forcing a re-index on next open.
 
 Press **Back** at any time to close the menu and return to your current page.
 
@@ -462,15 +378,13 @@ Accessible by selecting **Chapters** from the Reader Menu.
 
 ---
 
-### 5.2 Bookmarks
+### 5.2 Highlights
 
-Bookmarks can be created to quickly save and restore your place in a book.
+Highlights let you save a passage you want to come back to.
 
-To create a bookmark, hold **Confirm** for about half a second while inside a book. A popup will appear letting you know a bookmark was created. The popup message will automatically disappear in a couple of seconds.
+To start a highlight, hold **Left** for about 0.7 seconds while inside a book, or choose **Highlight** under **Tools** in the Reader Menu. Select the first and last word of the passage, then save it. **Highlight Marker** (under **Tools**) turns the markers on the page on and off.
 
-To open bookmarks, press **Confirm** while inside a book. Then navigate to the **Bookmarks** menu. Bookmarks can be opened by navigating to them and pressing **Confirm**, which will redirect you to that place in the book. You can delete bookmarks by holding **Confirm** for about 0.7 seconds, and then pressing **Confirm** again to confirm deletion, or **Back** to cancel.
-
-Bookmarks are stored in the `.crosspoint/bookmarks` folder in the JSON format.
+To browse saved highlights, open **Highlight List** under **Tools**. Highlight a row and press **Confirm** to jump to that place in the book. To delete a highlight, hold **Confirm** on it; there is no confirmation prompt.
 
 ## 6. Current Limitations & Roadmap
 

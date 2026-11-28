@@ -46,9 +46,10 @@ void EpubReaderMenuActivity::rebuildVisibleRows() {
   constexpr size_t NAVIGATION_START = 0;
   constexpr size_t NAVIGATION_END = 4;
   constexpr size_t TOOLS_START = 4;
-  constexpr size_t TOOLS_END = 11;
-  constexpr size_t APPEARANCE_START = 11;
-  constexpr size_t APPEARANCE_END = 14;
+  constexpr size_t TOOLS_END = 10;
+  constexpr size_t APPEARANCE_START = 10;
+  constexpr size_t APPEARANCE_END = 13;
+  constexpr size_t DELETE_CACHE_INDEX = 13;  // Stands alone below the groups.
 
   const auto addCategory = [this](const Category category, const size_t start, const size_t end) {
     const size_t categoryIndex = static_cast<size_t>(category);
@@ -62,6 +63,7 @@ void EpubReaderMenuActivity::rebuildVisibleRows() {
   addCategory(Category::NAVIGATION, NAVIGATION_START, NAVIGATION_END);
   addCategory(Category::TOOLS, TOOLS_START, TOOLS_END);
   addCategory(Category::APPEARANCE, APPEARANCE_START, APPEARANCE_END);
+  visibleRows.push_back({false, Category::APPEARANCE, DELETE_CACHE_INDEX});
 
   buildMenuRowItems();
 }
@@ -95,6 +97,8 @@ void EpubReaderMenuActivity::buildMenuRowItems() {
       } else {
         item.label = I18N.get(menuItems[row.menuIndex].labelId);
       }
+      // Delete Book Cache stands alone in bold, like Hidden Features in the Menu.
+      if (action == MenuAction::DELETE_CACHE) item.bold = true;
     }
 
     item.actionValue = static_cast<int16_t>(i);
@@ -122,12 +126,14 @@ void EpubReaderMenuActivity::buildMenuItems(std::vector<MenuItem>& items, bool h
   items.push_back({MenuAction::DICTIONARY, StrId::STR_LOOKUP});
   items.push_back({MenuAction::SELECT_DICTIONARY, StrId::STR_DICTIONARY_SET});
   items.push_back({MenuAction::SCREENSHOT, StrId::STR_SCREENSHOT_BUTTON});
-  items.push_back({MenuAction::DELETE_CACHE, StrId::STR_DELETE_CACHE});
 
   // Appearance
   items.push_back({MenuAction::STATUS_BAR, StrId::STR_CUSTOMISE_STATUS_BAR});
   items.push_back({MenuAction::TEXT_SETTINGS, StrId::STR_TEXT_SETTINGS});
   items.push_back({MenuAction::ROTATE_SCREEN, StrId::STR_ORIENTATION});
+
+  // Stands alone
+  items.push_back({MenuAction::DELETE_CACHE, StrId::STR_DELETE_CACHE});
 }
 
 void EpubReaderMenuActivity::closeCancelled() {
